@@ -5,21 +5,13 @@
         <!-- START WIDGET SLIDER -->
         <div class="widget widget-default widget-carousel">
             <div class="owl-carousel" id="owl-example">
-                <div>
-                    <div class="widget-title">Total Visitors</div>
-                    <div class="widget-subtitle">27/08/2014 15:23</div>
-                    <div class="widget-int">3,548</div>
-                </div>
-                <div>
-                    <div class="widget-title">Returned</div>
-                    <div class="widget-subtitle">Visitors</div>
-                    <div class="widget-int">1,695</div>
-                </div>
-                <div>
-                    <div class="widget-title">New</div>
-                    <div class="widget-subtitle">Visitors</div>
-                    <div class="widget-int">1,977</div>
-                </div>
+                <?php foreach ($header_daily_report as $key => $value): ?>
+                    <div>
+                        <div class="widget-title"><?= str_replace('_', ' ', $key) ?></div>
+                        <div class="widget-subtitle">Hari ini</div>
+                        <div class="widget-int"><?= $value ?></div>
+                    </div>
+                <?php endforeach; ?>
             </div>
         </div>
         <!-- END WIDGET SLIDER -->

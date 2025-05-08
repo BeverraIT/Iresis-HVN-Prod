@@ -3,7 +3,7 @@
 
 <head>
 	<!-- META SECTION -->
-	<title>dashboard-template</title>
+	<title>BEVERRA - Manajemen Resi</title>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -12,7 +12,9 @@
 	<!-- END META SECTION -->
 
 	<!-- CSS INCLUDE -->
-	<link rel="stylesheet" type="text/css" id="theme" href="assets/css/theme-default.css" />
+	<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+	
+	<link rel="stylesheet" type="text/css" id="theme" href="assets/css/theme-black.css" />
 	<!-- EOF CSS INCLUDE -->
 </head>
 
@@ -25,7 +27,7 @@
 			<!-- START X-NAVIGATION -->
 			<ul class="x-navigation">
 				<li class="xn-logo">
-					<a href="">dashboard-template</a>
+					<a href="">BEVERRA</a>
 					<a href="#" class="x-navigation-control"></a>
 				</li>
 
@@ -38,18 +40,18 @@
 							<img src="assets/img/no-image.jpg" alt="John Doe" />
 						</div>
 						<div class="profile-data">
-							<div class="profile-data-name"><?= $user['name'] ?></div>
-							<div class="profile-data-title"><?= $user['role'] ?></div>
+							<div class="profile-data-name"><?= $user['username'] ?></div>
+							<div class="profile-data-title"><?= $user['akses'] . ' - ' . $user['nama_komputer'] ?></div>
 						</div>
 					</div>
 				</li>
 
 				<li class="xn-title">Navigation</li>
-				
+
 				<li class="active">
 					<a href=""><span class="fa fa-desktop"></span> <span class="xn-text">Dashboard</span></a>
 				</li>
-				
+
 				<?= $html_menu_tree ?>
 			</ul>
 			<!-- END X-NAVIGATION -->
@@ -116,6 +118,15 @@
 	<!-- START PRELOADS -->
 	<audio id="audio-alert" src="assets/audio/alert.mp3" preload="auto"></audio>
 	<audio id="audio-fail" src="assets/audio/fail.mp3" preload="auto"></audio>
+	<audio id="audio-error" src="assets/audio/error.mp3" preload="auto"></audio>
+	<audio id="audio-jnt" src="assets/audio/jnt.mp3" preload="auto"></audio>
+	<audio id="audio-shopee" src="assets/audio/shopee.mp3" preload="auto"></audio>
+	<audio id="audio-lazada" src="assets/audio/lazada.mp3" preload="auto"></audio>
+	<audio id="audio-jne" src="assets/audio/jne.mp3" preload="auto"></audio>
+	<audio id="audio-rekomen" src="assets/audio/rekomen.mp3" preload="auto"></audio>
+	<audio id="audio-sicepat" src="assets/audio/sicepat.mp3" preload="auto"></audio>
+	<audio id="audio-ninja" src="assets/audio/ninja.mp3" preload="auto"></audio>
+	<audio id="audio-instant" src="assets/audio/instant.mp3" preload="auto"></audio>
 	<!-- END PRELOADS -->
 
 	<!-- START PLUGINS -->
@@ -135,6 +146,10 @@
 	<script type="text/javascript" src="assets/js/plugins/blueimp/jquery.blueimp-gallery.min.js"></script>
 	<script type="text/javascript" src="assets/js/plugins/nvd3/lib/d3.v3.js"></script>
 	<script type="text/javascript" src="assets/js/plugins/nvd3/nv.d3.min.js"></script>
+	<script type='text/javascript' src='assets/js/plugins/jquery-validation/jquery.validate.js'></script>
+
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 
 	<script type='text/javascript' src='assets/js/plugins/noty/jquery.noty.js'></script>
 	<script type='text/javascript' src='assets/js/plugins/noty/layouts/center.js'></script>

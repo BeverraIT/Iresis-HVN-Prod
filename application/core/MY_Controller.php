@@ -1,7 +1,8 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
-class MY_Controller extends CI_Controller {
+class MY_Controller extends CI_Controller
+{
 
     protected $data;
 
@@ -32,7 +33,7 @@ class MY_Controller extends CI_Controller {
     public function show($data_content = null)
     {
         echo json_encode(array(
-            'view' => $this->load->view($this->router->class.'_'.$this->router->method, $data_content, TRUE),
+            'view' => $this->load->view($this->router->class . '_' . $this->router->method, $data_content, TRUE),
             'message' => empty($data_content['message']) ? null : $data_content['message'],
         ));
     }
@@ -49,5 +50,21 @@ class MY_Controller extends CI_Controller {
             'message' => $message,
             'type' => $type,
         ));
+    }
+
+    public function make_ajax_response($status_code, $message, $data = [])
+    {
+        set_status_header($status_code);
+
+        $response = array(
+            'message' => $message,
+        );
+
+        if (!empty($data)) {
+            $response['data'] = $data;
+        }
+
+        echo json_encode($response);
+        exit();
     }
 }

@@ -3,7 +3,7 @@
 
 <head>
     <!-- META SECTION -->
-    <title>dashboard-template</title>
+    <title>BEVERRA - Manajemen Resi</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -23,12 +23,13 @@
         <div class="login-box animated fadeInDown">
             <div class="login-body">
                 <div class="login-title"><strong>Welcome</strong>, Please login</div>
-                
-                <?php if (!empty($message)): ?>
+
+                <?php if (!empty($message)) : ?>
                     <div class="login-subtitle"><?= $message ?></div>
                 <?php endif; ?>
-                
+
                 <form action="auth" class="form-horizontal" method="post">
+                    <input type="hidden" name="nama_komputer" value="<?= $machine_name ?>" />
                     <div class="form-group">
                         <div class="col-md-12">
                             <input type="text" name="username" class="form-control" placeholder="Username" />
@@ -47,8 +48,14 @@
                 </form>
             </div>
             <div class="login-footer">
-                <div class="text-center">
-                    &copy; 2020 dashboard-template
+                <div class="pull-left">
+                    &copy; 2024 BEVERRA
+                    <p>
+                        Login dengan scanner <a href="login?machine_name=<?= $machine_name ?>&using_scanner=1">di sini</a>
+                    </p>
+                </div>
+                <div class="pull-right">
+                    Computer: <?= $machine_name ?>
                 </div>
             </div>
         </div>

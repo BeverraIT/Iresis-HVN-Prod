@@ -9,7 +9,7 @@
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Role name</th>
+                            <th>Access name</th>
                             <th class="text-center">Action</th>
                         </tr>
                     </thead>
@@ -17,9 +17,9 @@
                         <?php $i = 1; foreach ($list_role as $role): ?>
                         <tr>
                             <td><?= $i++; ?></td>
-                            <td><?= $role['paramvalue1'] ?></td>
+                            <td><?= $role['akses'] ?></td>
                             <td class="text-center">
-                                <a href="edit-access-<?= $role['id'] ?>" class="btn btn-success link"><i class="fa fa-edit"></i> </a>
+                                <a href="edit-access-<?= $role['id_hakakses'] ?>" class="btn btn-success link"><i class="fa fa-edit"></i> </a>
                             </td>
                         </tr>
                         <?php endforeach; ?>

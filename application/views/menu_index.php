@@ -10,7 +10,7 @@
                 <p>
                     <a href="add-menu" class="btn btn-info link"><i class="fa fa-plus"></i> Add new menu</a>
                 </p>
-                <table class="table table-striped">
+                <table class="table table-striped datatable">
                     <thead>
                         <tr>
                             <th>#</th>

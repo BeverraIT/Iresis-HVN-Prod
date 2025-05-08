@@ -89,8 +89,15 @@ defined('EXIT__AUTO_MAX')      OR define('EXIT__AUTO_MAX', 125); // highest auto
  */
 define('LOGIN_FAILED', 'Invalid username or password');
 
-define('SUCCESS_SAVE_DATA', 'Success save data');
-define('NOTHING_TO_SAVE', 'Nothing to save');
-define('DATA_NOT_FOUND', 'Data not found');
+define('EMPTY_MACHINE_NAME', 'Nama komputer masih kosong. Silakan membuka aplikasi melalui shortcut yang tersedia atau hubungi Administrator');
+
+define('SUCCESS_SAVE_DATA', 'Sukses menambahkan data');
+define('SUCCESS_REMOVE_DATA', 'Sukses menghapus data');
+define('NOTHING_TO_SAVE', 'Tidak ada data yang disimpan');
+define('DATA_NOT_FOUND', 'Data tidak ditemukan');
+define('INVALID_REQUEST_METHOD', 'Metode permintaan tidak valid');
+
+define('PICKING_INSERT_PACKER', '1');
+define('PICKING_UPDATE_PACKER', '2');
 
 define('PARAMGROUP_ROLE', 'ROLE');

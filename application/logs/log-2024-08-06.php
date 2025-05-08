@@ -1,0 +1,12 @@
+<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+
+ERROR - 2024-08-06 11:36:21 --> Query error: Column 'packer_pegawai' cannot be null - Invalid query: INSERT INTO `tblpacking` (`id_resi`, `tanggal_packing`, `packer_pegawai`, `keterangan`) VALUES ('3211161', '2024-08-06 11:36:21', NULL, 'PC-ADMIN')
+ERROR - 2024-08-06 11:36:39 --> Query error: Column 'packer_pegawai' cannot be null - Invalid query: INSERT INTO `tblpacking` (`id_resi`, `tanggal_packing`, `packer_pegawai`, `keterangan`) VALUES ('3211161', '2024-08-06 11:36:39', NULL, 'PC-ADMIN')
+ERROR - 2024-08-06 11:36:59 --> Query error: Column 'packer_pegawai' cannot be null - Invalid query: INSERT INTO `tblpacking` (`id_resi`, `tanggal_packing`, `packer_pegawai`, `keterangan`) VALUES ('3211161', '2024-08-06 11:36:59', NULL, 'PC-ADMIN')
+ERROR - 2024-08-06 11:37:37 --> Query error: Column 'packer_pegawai' cannot be null - Invalid query: INSERT INTO `tblpacking` (`id_resi`, `tanggal_packing`, `packer_pegawai`, `keterangan`) VALUES ('3211161', '2024-08-06 11:37:37', NULL, 'PK-6')
+ERROR - 2024-08-06 11:38:22 --> Query error: Column 'packer_pegawai' cannot be null - Invalid query: INSERT INTO `tblpacking` (`id_resi`, `tanggal_packing`, `packer_pegawai`, `keterangan`) VALUES ('3211161', '2024-08-06 11:38:22', NULL, 'PC-ADMIN')
+ERROR - 2024-08-06 11:39:05 --> Query error: Column 'packer_pegawai' cannot be null - Invalid query: INSERT INTO `tblpacking` (`id_resi`, `tanggal_packing`, `packer_pegawai`, `keterangan`) VALUES ('3211161', '2024-08-06 11:39:05', NULL, 'PK-6')
+ERROR - 2024-08-06 11:54:55 --> Query error: Column 'packer_pegawai' cannot be null - Invalid query: INSERT INTO `tblpacking` (`id_resi`, `tanggal_packing`, `packer_pegawai`, `keterangan`) VALUES ('3211506', '2024-08-06 11:54:55', NULL, 'PK-6')
+ERROR - 2024-08-06 13:09:22 --> Query error: Column 'packer_pegawai' cannot be null - Invalid query: INSERT INTO `tblpacking` (`id_resi`, `tanggal_packing`, `packer_pegawai`, `keterangan`) VALUES ('3210780', '2024-08-06 13:09:22', NULL, 'PC-ADMIN')
+ERROR - 2024-08-06 13:12:20 --> Query error: Column 'packer_pegawai' cannot be null - Invalid query: INSERT INTO `tblpacking` (`id_resi`, `tanggal_packing`, `packer_pegawai`, `keterangan`) VALUES ('3210484', '2024-08-06 13:12:20', NULL, 'PC-ADMIN')
+ERROR - 2024-08-06 13:14:11 --> Query error: Column 'packer_pegawai' cannot be null - Invalid query: INSERT INTO `tblpacking` (`id_resi`, `tanggal_packing`, `packer_pegawai`, `keterangan`) VALUES ('3210401', '2024-08-06 13:14:11', NULL, 'PC-ADMIN')

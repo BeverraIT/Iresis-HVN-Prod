@@ -1,20 +1,16 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
-class Role_fcd extends CI_Model {
+class Role_fcd extends CI_Model
+{
 
     function get_role($role_id = null)
     {
-        $criterias['isactive'] = TRUE;
-        $criterias['paramgroup'] = PARAMGROUP_ROLE;
-
         if (!empty($role_id)) {
-            $criterias['id'] = $role_id;
+            $this->db->where(['id_hakakses' => $role_id]);
         }
 
-        $this->db->where($criterias);
-
-        return $this->db->get('param');
+        return $this->db->get('tblhakakses');
     }
 
     function save($role, $user_id)

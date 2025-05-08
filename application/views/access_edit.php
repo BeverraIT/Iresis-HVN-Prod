@@ -9,12 +9,12 @@
 <div class="row">
     <div class="col-md-12">
         <form action="save-access" class="form-horizontal" method="post">
-            <input type="hidden" name="roleid" value="<?= empty($role) ? '0' : $role['id'] ?>" />
+            <input type="hidden" name="roleid" value="<?= empty($role) ? '0' : $role['id_hakakses'] ?>" />
             <div id="jstree_input"></div>
 
             <div class="panel panel-default">
                 <div class="panel-heading">
-                    <h3 class="panel-title"><strong><?= $action ?></strong> : <?= $role['paramvalue1'] ?></h3>
+                    <h3 class="panel-title"><strong><?= $action ?></strong> : <?= $role['akses'] ?></h3>
                 </div>
 
                 <div class="panel-body">

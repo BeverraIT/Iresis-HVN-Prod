@@ -5,24 +5,22 @@ class Login_fcd extends CI_Model {
 
     function auth($username, $password)
     {
-        $criterias['user.username'] = $username;
-        $criterias['user.password'] = $password;
-        $criterias['user.isactive'] = TRUE;
-        $criterias['param.paramgroup'] = PARAMGROUP_ROLE;
+        $criterias['tbluser.username'] = $username;
+        $criterias['tbluser.isactive'] = TRUE;
 
-        $this->db->select('user.*, param.paramvalue1 role');
+        $this->db->select('tbluser.*, tblhakakses.akses');
         
-        $this->db->join('param', 'param.id = user.roleid');
+        $this->db->join('tblhakakses', 'tblhakakses.id_hakakses = tbluser.hakakses');
 
         $this->db->where($criterias);
         
-        return $this->db->get('user');
+        return $this->db->get('tbluser');
     }
 
-    function update_last_login($user_id)
+    function update_last_login_and_nama_komputer($user_id, $nama_komputer)
     {
-        $this->db->where('id', $user_id);
+        $this->db->where('id_user', $user_id);
         
-        $this->db->update('user', array('lastlogin' => date('Y-m-d H:i:s')));
+        $this->db->update('tbluser', array('lastlogin' => date('Y-m-d H:i:s'), 'nama_komputer' => $nama_komputer));
     }
 }
