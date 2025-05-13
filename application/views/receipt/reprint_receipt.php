@@ -1,6 +1,6 @@
 <div class="row">
   <div class="col-md-8 center-block float-none">
-    <form action="receipt_reprint/save" class="form-horizontal" id="form_scan_resi" enctype="multipart/form-data" autocomplete="off">
+    <form action="receipt/save_reprint_receipt" class="form-horizontal" id="form_scan_resi" enctype="multipart/form-data" autocomplete="off">
       <div class="panel panel-default">
         <div class="panel-heading">
           <h3 class="panel-title"><strong>Print Ulang Resi</strong></h3>

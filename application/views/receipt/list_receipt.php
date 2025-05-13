@@ -43,7 +43,7 @@
         [10, 50, 100, 150, 200]
       ],
       'ajax': {
-        url: 'receipt_list/get_data',
+        url: 'receipt/get_list_receipt_data',
         type: 'POST',
       },
     });

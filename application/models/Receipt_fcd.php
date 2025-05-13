@@ -3,6 +3,26 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class Receipt_fcd extends CI_Model
 {
+    function get_data($data = null) {
+
+        $this->db->join('tblmarketplace t2', 't.id_marketplace = t2.id_marketplace', 'left');
+        $this->db->join('tblkurir t3', 't.id_kurir = t3.id_kurir', 'left');
+        $this->db->join('tbluser t4', 't.admin_pegawai = t4.id_user');
+
+        if (!empty($data['length'])) {
+            $this->db->limit($data['length'], $data['start']);
+        }
+
+        $query = $this->db->get_compiled_select('tblprintresi t');
+        log_message('error', 'Query yang dijalankan: ' . $query);
+        return $this->db->query($query);
+
+        // return $this->db->get('tblprintresi t');
+    }
+
+    function get_total_data($data = null) {
+        return $this->db->count_all('tblprintresi');
+    }
 
     function save($receipt, $id_user)
     {
