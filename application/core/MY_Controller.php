@@ -25,22 +25,21 @@ class MY_Controller extends CI_Controller
             return true;
         }
 
-        if (!array_search($this->router->class, array_column($this->session->userdata('list_menu'), 'uri'))) {
-            redirect('404_override');
-        }
+        $class = $this->router->class;
+        $method = $this->router->method == 'index' ? '' : '/' . $this->router->method; // leave it blank when it is `index` method
     }
 
     public function show($data_content = null)
     {
         echo json_encode(array(
-            'view' => $this->load->view($this->router->class . '_' . $this->router->method, $data_content, TRUE),
+            'view' => $this->load->view($this->router->class . '/' . $this->router->method, $data_content, TRUE),
             'message' => empty($data_content['message']) ? null : $data_content['message'],
         ));
     }
 
-    public function show_index()
+    public function show_index($override_index = null)
     {
-        redirect($this->router->class);
+        redirect($this->router->class . '/' . $override_index ?? null);
     }
 
     public function set_message($title, $message, $type)

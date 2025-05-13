@@ -71,3 +71,6 @@ $route['edit-access-(:num)'] = 'access/edit/$1';
 $route['save-access'] = 'access/save';
 
 $route['logout'] = 'welcome/logout';
+
+$route['receipt/scan_receipt'] = 'receipt/scan_receipt';
+$route['receipt/save_receipt'] = 'receipt/save_receipt';

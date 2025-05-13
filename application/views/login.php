@@ -49,7 +49,7 @@
             </div>
             <div class="login-footer">
                 <div class="pull-left">
-                    &copy; 2024 BEVERRA
+                    &copy; 2025 BEVERRA
                     <p>
                         Login dengan scanner <a href="login?machine_name=<?= $machine_name ?>&using_scanner=1">di sini</a>
                     </p>
