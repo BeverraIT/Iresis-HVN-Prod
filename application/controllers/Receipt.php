@@ -1,6 +1,8 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
+use PhpOffice\PhpSpreadsheet\IOFactory;
+
 class Receipt extends MY_Controller
 {
     function __construct()
@@ -93,7 +95,7 @@ class Receipt extends MY_Controller
             6 => 't.batal',
             7 => 't.keterangan',
             8 => 't3.nama_kurir',
-            9 => 't4.username',
+            9 => 't3.username',
         );
 
         $data['order'] = !isset($data['valid_columns'][$col]) ? null : $data['valid_columns'][$col];
@@ -115,7 +117,7 @@ class Receipt extends MY_Controller
                 $row->batal,
                 $row->keterangan,
                 $row->nama_kurir,
-                $row->username,
+                $row->nama_kurir,
                 // '<a href="receipt_list/detail/' . $row->id_printresi . '" class="btn btn-default link"><i class="fa fa-eye"></i> </a> ' .
                 '<a href="receipt/delete_list_receipt_data/' . $row->id_printresi . '" class="btn btn-danger confirm" onClick="notyConfirm(event);"><i class="fa fa-trash-o"></i> </a>',
             );
@@ -258,5 +260,40 @@ class Receipt extends MY_Controller
         }
 
         return $images;
+    }
+
+    public function upload_receipt()
+    {
+        $this->show();
+    }
+
+    public function upload_receipt_action()
+    {
+        if ($this->input->method() == 'get') {
+            $this->make_ajax_response(400, INVALID_REQUEST_METHOD);
+        }
+
+        // Simulasi loading
+        // sleep(5); // delay 60 detik
+
+        if (!isset($_FILES['receiptFile']) || $_FILES['receiptFile']['error'] != 0) {
+            $this->make_ajax_response(500, FAILED_SAVE_DATA);
+        }
+
+        ini_set('memory_limit', '2048M');
+
+        $user_id = $this->data['user']['id'] ?? null;
+        $file = $_FILES['receiptFile']['tmp_name'];
+
+        // Baca file Excel
+        $reader = IOFactory::createReader('Xlsx');
+        $reader->setReadDataOnly(true);
+        $spreadsheet = $reader->load($file);
+        $sheet = $spreadsheet->getActiveSheet();
+        $data = $sheet->toArray(null, true, true, true);
+
+        // Proses insert
+        $result = $this->receipt_fcd->insert_receipt($data, $user_id);
+        $this->make_ajax_response(201, SUCCESS_SAVE_DATA);
     }
 }

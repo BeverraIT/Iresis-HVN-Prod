@@ -96,6 +96,7 @@ define('SUCCESS_REMOVE_DATA', 'Sukses menghapus data');
 define('NOTHING_TO_SAVE', 'Tidak ada data yang disimpan');
 define('DATA_NOT_FOUND', 'Data tidak ditemukan');
 define('INVALID_REQUEST_METHOD', 'Metode permintaan tidak valid');
+define('FAILED_SAVE_DATA', 'Gagal menyimpan data');
 
 define('PICKING_INSERT_PACKER', '1');
 define('PICKING_UPDATE_PACKER', '2');

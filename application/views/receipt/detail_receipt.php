@@ -7,7 +7,7 @@
 
       <div class="panel-body">
 
-        <form action="receipt_detail" method="post" class="form-horizontal" autocomplete="off">
+        <form action="receipt/detail-receipt" method="post" class="form-horizontal" autocomplete="off">
           <div class="form-group">
             <div class="col-md-12">
               <div class="input-group">

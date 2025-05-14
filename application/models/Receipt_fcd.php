@@ -7,7 +7,7 @@ class Receipt_fcd extends CI_Model
 
         $this->db->join('tblmarketplace t2', 't.id_marketplace = t2.id_marketplace', 'left');
         $this->db->join('tblkurir t3', 't.id_kurir = t3.id_kurir', 'left');
-        $this->db->join('tbluser t4', 't.admin_pegawai = t4.id_user');
+        //$this->db->join('tbluser t4', 't.admin_pegawai = t4.id_user');
 
         if (!empty($data['length'])) {
             $this->db->limit($data['length'], $data['start']);
@@ -966,5 +966,128 @@ class Receipt_fcd extends CI_Model
         $result = $query->row();
 
         return isset($result) ? $result->num : 0;
+    }
+
+    function insert_receipt(array $receiptData, ?string $user_id = null) {
+        if (empty($receiptData)) return;
+
+        $batch_size = 500;
+        $batch_data = [];
+        $total_success_insert = 0;
+        $total_skip_insert = 0;
+
+        // Lookup maps for faster ID resolution
+        $marketplace_map = [];
+        foreach ($this->db->get('tblmarketplace')->result() as $mp) {
+            $marketplace_map[strtolower($mp->nama_marketplace)] = $mp->id_marketplace;
+        }
+
+        $kurir_map = [];
+        foreach ($this->db->get('tblkurir')->result() as $kr) {
+            $kurir_map[strtolower($kr->nama_kurir)] = $kr->id_kurir;
+        }
+
+        // Cache existing data
+        $existing_data = $this->get_existing_receipt_data($receiptData);
+
+        // Convert Excel serial date to PHP date string
+        $excelDateToPhpDate = function ($excelDate) {
+            if (is_numeric($excelDate)) {
+                $unixDate = ($excelDate - 25569) * 86400;
+                return gmdate("d/m/Y", $unixDate);
+            }
+            return $excelDate; // assume it's already in proper format
+        };
+
+        // Convert Excel fractional time to H:i:s
+        $excelTimeToPhpTime = function ($excelTime) {
+            if (is_numeric($excelTime)) {
+                $totalSeconds = (int) round($excelTime * 86400); // 86400 = seconds per day
+                $hours = floor($totalSeconds / 3600);
+                $minutes = floor(($totalSeconds % 3600) / 60);
+                $seconds = $totalSeconds % 60;
+                return sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+            }
+            return $excelTime; // Assume already formatted
+        };
+
+        // Helper to combine date and time
+        $combineDateTime = function ($date, $time) {
+            if (!$date || !$time) return null;
+            $dt = DateTime::createFromFormat('d/m/Y H:i:s', "$date $time");
+            return $dt ? $dt->format('Y-m-d H:i:s') : null;
+        };
+
+        foreach ($receiptData as $row) {
+            $no_pesanan = $row['A'] ?? null;
+            $sku = $row['P'] ?? null;
+
+            if ($no_pesanan === 'NO_PESANAN' || !$no_pesanan || !$sku) continue;
+
+            if (isset($existing_data["$no_pesanan-$sku"])) {
+                $total_skip_insert++;
+                continue;
+            }
+
+            $marketplace = strtolower($row['N'] ?? '');
+            $kurir = strtolower($row['S'] ?? '');
+            $id_marketplace = $marketplace_map[$marketplace] ?? 99;
+            $id_kurir = $kurir_map[$kurir] ?? 99;
+
+            $batch_data[] = [
+                'noresi' => $row['B'] ?? null,
+                'no_pesanan' => $no_pesanan,
+                'id_marketplace' => $id_marketplace,
+                'id_kurir' => $id_kurir,
+                'admin_pegawai' => $user_id,
+                'sku' => $sku,
+                'nama_barang' => $row['W'] ?? null,
+                'jumlah' => $row['Q'] ?? null,
+                'no_rak' => $row['R'] ?? null,
+                'tanggal_printresi' => $combineDateTime($excelDateToPhpDate($row['F'] ?? null), $excelTimeToPhpTime($row['G'] ?? null)),
+                'tanggal_pesan' => $combineDateTime($excelDateToPhpDate($row['D'] ?? null), $excelTimeToPhpTime($row['E'] ?? null)),
+                'tanggal_bataskirim' => $combineDateTime($excelDateToPhpDate($row['H'] ?? null), $excelTimeToPhpTime($row['I'] ?? null)),
+                'tanggal_pengiriman' => $combineDateTime($excelDateToPhpDate($row['J'] ?? null), $excelTimeToPhpTime($row['K'] ?? null)),
+                'tanggal_selesai' => $combineDateTime($excelDateToPhpDate($row['L'] ?? null), $excelTimeToPhpTime($row['M'] ?? null)),
+                'tanggal_retur' => $combineDateTime($excelDateToPhpDate($row['U'] ?? null), $excelTimeToPhpTime($row['V'] ?? null)),
+                'status_pesanan' => $row['T'] ?? null,
+                'batal' => null,
+                'keterangan' => null,
+                'nomorpicklist' => $row['C'] ?? null
+            ];
+
+            if (count($batch_data) >= $batch_size) {
+                $this->db->insert_batch('tblprintresi', $batch_data);
+                $total_success_insert += count($batch_data);
+                $batch_data = [];
+            }
+        }
+
+        // Insert remaining batch
+        if (!empty($batch_data)) {
+            $this->db->insert_batch('tblprintresi', $batch_data);
+            $total_success_insert += count($batch_data);
+        }
+
+        log_message('error', "Total Data Dimasukkan: $total_success_insert | Data Dilewati: $total_skip_insert");
+    }
+
+    private function get_existing_receipt_data(array $dataResi) {
+        $no_pesanan_list = array_unique(array_column($dataResi, 'A'));
+        if (empty($no_pesanan_list)) {
+            return [];
+        }
+
+        // Ambil data yang sudah ada dalam 1 query
+        $this->db->select('no_pesanan, sku');
+        $this->db->where_in('no_pesanan', $no_pesanan_list);
+        $query = $this->db->get('tblprintresi');
+        $existing_data = [];
+
+        foreach ($query->result() as $row) {
+            $existing_data["{$row->no_pesanan}-{$row->sku}"] = true;
+        }
+
+        return $existing_data;
     }
 }

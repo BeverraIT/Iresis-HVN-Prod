@@ -59,14 +59,16 @@ $route['logout'] = 'welcome/logout';
 
 $route['receipt/scan_receipt'] = 'receipt/scan_receipt';
 $route['receipt/save_receipt'] = 'receipt/save_receipt';
-$route['receipt/detail_receipt'] = 'receipt/detail_receipt';
+$route['receipt/detail-receipt'] = 'receipt/detail_receipt';
 $route['receipt/list_receipt'] = 'receipt/list_receipt';
-$route['receipt/get_list_receipt_data'] = 'receipt/get_list_receipt_data';
+$route['receipt/get-list-receipt-data'] = 'receipt/get_list_receipt_data';
 $route['receipt/delete_receipt'] = 'receipt/delete_receipt';
 $route['receipt/delete_receipt_action'] = 'receipt/delete_receipt_action';
 $route['receipt/reprint_receipt'] = 'receipt/reprint_receipt';
 $route['receipt/save_reprint_receipt'] = 'receipt/save_reprint_receipt';
 $route['receipt/upload_reprint_receipt_file'] = 'receipt/upload_reprint_receipt_file';
+$route['receipt/upload-receipt'] = 'receipt/upload_receipt';
+$route['receipt/upload-receipt-action'] = 'receipt/upload_receipt_action';
 
 $route['picker/scan_picker'] = 'picker/scan_picker';
 $route['picker/save_scan_picker'] = 'picker/save_scan_picker';
