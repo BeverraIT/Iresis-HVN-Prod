@@ -1,6 +1,6 @@
 <div class="row">
     <div class="col-md-12">
-        <form action="save-user" class="form-horizontal" method="post">
+        <form action="user/save_user" class="form-horizontal" method="post">
             <input type="hidden" name="id_user" value="<?= empty($user) ? '0' : $user['id_user'] ?>" />
 
             <div class="panel panel-default">

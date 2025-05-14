@@ -1,6 +1,6 @@
 <div class="row">
   <div class="col-md-6 center-block float-none">
-    <form action="picking_pending/save" class="form-horizontal" id="form_scan_pending_picker" autocomplete="off">
+    <form action="picker/save_pending_picker" class="form-horizontal" id="form_scan_pending_picker" autocomplete="off">
       <div class="panel panel-default">
         <div class="panel-heading">
           <h3 class="panel-title"><strong>Scan Pending Picker</strong></h3>

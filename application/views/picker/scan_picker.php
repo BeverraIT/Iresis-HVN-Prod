@@ -1,12 +1,19 @@
 <div class="row">
   <div class="col-md-6 center-block float-none">
-    <form action="picking_update_picker/save" class="form-horizontal" id="form_scan_picker" autocomplete="off">
+    <form action="picker/save_scan_picker" class="form-horizontal" id="form_scan_picker" autocomplete="off">
       <div class="panel panel-default">
         <div class="panel-heading">
-          <h3 class="panel-title"><strong>Update Picker</strong></h3>
+          <h3 class="panel-title"><strong>Scan Picker</strong></h3>
         </div>
 
         <div class="panel-body">
+
+          <div class="form-group">
+            <label class="col-md-3 col-xs-12 control-label">Total scan resi Anda hari ini</label>
+            <div class="col-md-8 col-xs-12">
+              <input type="text" id="total_scan" value="<?= $total_scan ?>" class="form-control" disabled />
+            </div>
+          </div>
 
           <div class="form-group">
             <label class="col-md-3 col-xs-12 control-label">Nama Picker</label>
@@ -44,6 +51,7 @@
 
 <script type="text/javascript">
   $("#noresi").focus();
+  var total_scan = document.getElementById('total_scan');
 
   $('#id_pegawaipicker').on('change', function() {
     $("#noresi").focus();
@@ -76,6 +84,8 @@
         $("#p_latest_receipt_message").text("Nomor resi terakhir yang sudah di-scan Picker");
 
         document.getElementById('audio-alert').play();
+
+        total_scan.value = Number(total_scan.value) + 1;
 
         form.noresi.value = "";
         form.noresi.disabled = false;

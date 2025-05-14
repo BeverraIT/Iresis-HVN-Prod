@@ -55,13 +55,6 @@ $route['translate_uri_dashes'] = FALSE;
 
 $route['auth'] = 'login/auth';
 
-$route['add-user'] = 'user/edit';
-$route['save-user'] = 'user/save';
-$route['edit-user-(:num)'] = 'user/edit/$1';
-$route['gen-pass-user-(:num)'] = 'user/generate_password/$1';
-$route['update-user-password'] = 'user/update_password';
-$route['delete-user-(:num)'] = 'user/delete/$1';
-
 $route['add-menu'] = 'menu/edit';
 $route['save-menu'] = 'menu/save';
 $route['edit-menu-(:num)'] = 'menu/edit/$1';
@@ -82,3 +75,23 @@ $route['receipt/delete_receipt_action'] = 'receipt/delete_receipt_action';
 $route['receipt/reprint_receipt'] = 'receipt/reprint_receipt';
 $route['receipt/save_reprint_receipt'] = 'receipt/save_reprint_receipt';
 $route['receipt/upload_reprint_receipt_file'] = 'receipt/upload_reprint_receipt_file';
+
+$route['picker/scan_picker'] = 'picker/scan_picker';
+$route['picker/save_scan_picker'] = 'picker/save_scan_picker';
+$route['picker/search_picker'] = 'picker/search_picker';
+$route['picker/get_search_picker_data'] = 'picker/get_search_picker_data';
+$route['picker/master_picker'] = 'picker/master_picker';
+$route['picker/save_master_picker'] = 'picker/save_master_picker';
+$route['picker/delete_master_picker'] = 'picker/delete_master_picker';
+$route['picker/pending_picker'] = 'picker/pending_picker';
+$route['picker/save_pending_picker'] = 'picker/save_pending_picker';
+$route['picker/update_picker'] = 'picker/update_picker';
+$route['picker/save_update_picker'] = 'picker/save_update_picker';
+
+$route['user'] = 'user';
+$route['user/add_user'] = 'user/edit_user';
+$route['user/edit_user/(:any)'] = 'user/edit_user/$1';
+$route['user/generate_password_user/(:any)'] = 'user/generate_password_user/$1';
+$route['user/delete_user/(:any)'] = 'user/delete_user/$1';
+$route['user/save_user'] = 'user/save_user';
+$route['user/update_password_user'] = 'user/update_password_user';

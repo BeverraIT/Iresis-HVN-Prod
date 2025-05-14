@@ -20,7 +20,7 @@ class User extends MY_Controller
 		$this->show($data);
 	}
 
-	public function edit($user_id = null)
+	public function edit_user($user_id = null)
 	{
 		$this->load->model('role_fcd');
 
@@ -37,7 +37,7 @@ class User extends MY_Controller
 		$this->show($data);
 	}
 
-	public function save()
+	public function save_user()
 	{
 		if ($this->input->method() == 'get') {
 			redirect('404_override');
@@ -69,7 +69,7 @@ class User extends MY_Controller
 		$this->show_index();
 	}
 
-	public function generate_password($user_id)
+	public function generate_password_user($user_id)
 	{
 		$data['action'] = 'Generate user password';
 		$data['user'] = $this->user_fcd->get_user($user_id)->row_array();
@@ -77,7 +77,7 @@ class User extends MY_Controller
 		$this->show($data);
 	}
 
-	public function update_password()
+	public function update_password_user()
 	{
 		$user['id_user'] =  $this->input->post('id_user');
 		$user['password'] = md5($this->input->post('password'));
@@ -93,7 +93,7 @@ class User extends MY_Controller
 		$this->show_index();
 	}
 
-	public function delete($user_id)
+	public function delete_user($user_id)
 	{
 		$user['id_user'] =  $user_id;
 		$user['isactive'] = FALSE;

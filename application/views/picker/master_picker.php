@@ -1,6 +1,6 @@
 <div class="row">
   <div class="col-md-12">
-    <form action="picking_picker/save" class="form-horizontal" method="post" id="form_picking_picker">
+    <form action="picker/save_master_picker" class="form-horizontal" method="post" id="form_picking_picker">
       <div class="panel panel-default">
         <div class="panel-heading">
           <h3 class="panel-title"><strong>Tambah / Edit Picker</strong></h3>
@@ -62,7 +62,7 @@
                 <td><?= $picker['nama_pegawai'] ?></td>
                 <td><?= $picker['status_aktif'] ?></td>
                 <td>
-                  <a href="picking_picker/delete/<?= $picker['id_namaambilbarang'] ?>" class="btn btn-danger confirm" onClick="notyConfirm(event);"><i class="fa fa-trash-o"></i></a>
+                  <a href="picker/delete_master_picker/<?= $picker['id_namaambilbarang'] ?>" class="btn btn-danger confirm" onClick="notyConfirm(event);"><i class="fa fa-trash-o"></i></a>
                 </td>
               </tr>
             <?php endforeach; ?>

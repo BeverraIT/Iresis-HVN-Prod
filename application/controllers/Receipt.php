@@ -14,11 +14,6 @@ class Receipt extends MY_Controller
         $this->load->model('param_fcd');
     }
 
-    public function index()
-    {
-
-    }
-
     public function scan_receipt()
     {
         $data['list_marketplace'] = $this->marketplace_fcd->get_marketplace()->result_array();

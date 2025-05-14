@@ -6,7 +6,7 @@
             </div>
             <div class="panel-body">
                 <p>
-                    <a href="add-user" class="btn btn-info link"><i class="fa fa-plus"></i> Add new user</a>
+                    <a href="user/add_user" class="btn btn-info link"><i class="fa fa-plus"></i> Add new user</a>
                 </p>
                 <table class="table table-striped datatable">
                     <thead>
@@ -32,9 +32,9 @@
                             <td><?= $user['created'] ?></td>
                             <td class="text-center"><?= $user['bypass'] ? '<i class="fa fa-check"></i>' : null ?></td>
                             <td class="text-center">
-                                <a href="edit-user-<?= $user['id_user'] ?>" class="btn btn-success link"><i class="fa fa-edit"></i> </a>
-                                <a href="gen-pass-user-<?= $user['id_user'] ?>" class="btn btn-default link"><i class="fa fa-gears"></i> </a>
-                                <a href="delete-user-<?= $user['id_user'] ?>" class="btn btn-danger confirm" onClick="notyConfirm(event);"><i class="fa fa-trash-o"></i> </a>
+                                <a href="user/edit_user/<?= $user['id_user'] ?>" class="btn btn-success link"><i class="fa fa-edit"></i> </a>
+                                <a href="user/generate_password_user/<?= $user['id_user'] ?>" class="btn btn-default link"><i class="fa fa-gears"></i> </a>
+                                <a href="user/delete_user/<?= $user['id_user'] ?>" class="btn btn-danger confirm" onClick="notyConfirm(event);"><i class="fa fa-trash-o"></i> </a>
                             </td>
                         </tr>
                         <?php endforeach; ?>

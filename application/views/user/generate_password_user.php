@@ -1,6 +1,6 @@
 <div class="row">
     <div class="col-md-12">
-        <form action="update-user-password" class="form-horizontal" method="post">
+        <form action="user/update_password_user" class="form-horizontal" method="post">
             <input type="hidden" name="id_user" value="<?= empty($user) ? '0' : $user['id_user'] ?>" />
 
             <div class="panel panel-default">
