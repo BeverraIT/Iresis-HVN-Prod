@@ -23,7 +23,7 @@ class Menu extends MY_Controller {
 		$this->show($data);
 	}
 
-	public function edit($menu_id = null)
+	public function edit_menu($menu_id = null)
 	{
 		$data['action'] = 'Add new menu';
 		$data['list_parent'] = $this->menu_fcd->get_parent()->result_array();
@@ -36,7 +36,7 @@ class Menu extends MY_Controller {
 		$this->show($data);
 	}
 
-	public function save()
+	public function save_menu()
 	{
         if ($this->input->method() == 'get') {
             redirect('404_override');
@@ -61,7 +61,7 @@ class Menu extends MY_Controller {
         $this->show_index();
 	}
 
-	public function delete($menu_id)
+	public function delete_menu($menu_id)
 	{
 		$menu['id'] =  $menu_id;
 		$menu['isactive'] = FALSE;

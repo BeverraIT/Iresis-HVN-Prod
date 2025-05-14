@@ -19,7 +19,7 @@
                             <td><?= $i++; ?></td>
                             <td><?= $role['akses'] ?></td>
                             <td class="text-center">
-                                <a href="edit-access-<?= $role['id_hakakses'] ?>" class="btn btn-success link"><i class="fa fa-edit"></i> </a>
+                                <a href="access/edit-access/<?= $role['id_hakakses'] ?>" class="btn btn-success link"><i class="fa fa-edit"></i> </a>
                             </td>
                         </tr>
                         <?php endforeach; ?>

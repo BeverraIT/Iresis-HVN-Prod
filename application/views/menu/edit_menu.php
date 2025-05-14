@@ -1,6 +1,6 @@
 <div class="row">
     <div class="col-md-12">
-        <form action="save-menu" class="form-horizontal" method="post" autocomplete="off">
+        <form action="menu/save-menu" class="form-horizontal" method="post" autocomplete="off">
             <input type="hidden" name="id" value="<?= empty($menu) ? '0' : $menu['id'] ?>" />
 
             <div class="panel panel-default">

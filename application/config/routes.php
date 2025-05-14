@@ -55,14 +55,6 @@ $route['translate_uri_dashes'] = FALSE;
 
 $route['auth'] = 'login/auth';
 
-$route['add-menu'] = 'menu/edit';
-$route['save-menu'] = 'menu/save';
-$route['edit-menu-(:num)'] = 'menu/edit/$1';
-$route['delete-menu-(:num)'] = 'menu/delete/$1';
-
-$route['edit-access-(:num)'] = 'access/edit/$1';
-$route['save-access'] = 'access/save';
-
 $route['logout'] = 'welcome/logout';
 
 $route['receipt/scan_receipt'] = 'receipt/scan_receipt';
@@ -95,3 +87,11 @@ $route['user/generate_password_user/(:any)'] = 'user/generate_password_user/$1';
 $route['user/delete_user/(:any)'] = 'user/delete_user/$1';
 $route['user/save_user'] = 'user/save_user';
 $route['user/update_password_user'] = 'user/update_password_user';
+
+$route['menu/add-menu'] = 'menu/edit_menu';
+$route['menu/edit-menu/(:any)'] = 'menu/edit_menu/$1';
+$route['menu/delete-menu/(:any)'] = 'menu/delete_menu/$1';
+$route['menu/save-menu'] = 'menu/save_menu';
+
+$route['access/save-access'] = 'access/save_access';
+$route['access/edit-access/(:any)'] = 'access/edit_access/$1';

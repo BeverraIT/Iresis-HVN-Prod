@@ -21,7 +21,7 @@ class Access extends MY_Controller
 		$this->show($data);
 	}
 
-	public function edit($role_id)
+	public function edit_access($role_id)
 	{
 		$this->load->helper('menu');
 
@@ -36,7 +36,7 @@ class Access extends MY_Controller
 		$this->show($data);
 	}
 
-	public function save()
+	public function save_access()
 	{
 		if ($this->input->method() == 'get') {
 			redirect('404_override');

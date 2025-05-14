@@ -8,7 +8,7 @@
 
 <div class="row">
     <div class="col-md-12">
-        <form action="save-access" class="form-horizontal" method="post">
+        <form action="access/save-access" class="form-horizontal" method="post">
             <input type="hidden" name="roleid" value="<?= empty($role) ? '0' : $role['id_hakakses'] ?>" />
             <div id="jstree_input"></div>
 

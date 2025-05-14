@@ -8,7 +8,7 @@
             </div>
             <div class="panel-body">
                 <p>
-                    <a href="add-menu" class="btn btn-info link"><i class="fa fa-plus"></i> Add new menu</a>
+                    <a href="menu/add-menu" class="btn btn-info link"><i class="fa fa-plus"></i> Add new menu</a>
                 </p>
                 <table class="table table-striped datatable">
                     <thead>
@@ -30,8 +30,8 @@
                             <td><?= $menu['uri'] ?></td>
                             <td><?= $menu['sortorder'] ?></td>
                             <td class="text-center">
-                                <a href="edit-menu-<?= $menu['id'] ?>" class="btn btn-success link"><i class="fa fa-edit"></i> </a>
-                                <a href="delete-menu-<?= $menu['id'] ?>" class="btn btn-danger confirm"><i class="fa fa-trash-o"></i> </a>
+                                <a href="menu/edit-menu/<?= $menu['id'] ?>" class="btn btn-success link"><i class="fa fa-edit"></i> </a>
+                                <a href="menu/delete-menu/<?= $menu['id'] ?>" class="btn btn-danger confirm"><i class="fa fa-trash-o"></i> </a>
                             </td>
                         </tr>
                         <?php endforeach; ?>
