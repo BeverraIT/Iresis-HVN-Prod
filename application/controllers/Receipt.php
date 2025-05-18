@@ -119,7 +119,7 @@ class Receipt extends MY_Controller
                 $row->nama_kurir,
                 $row->nama_kurir,
                 // '<a href="receipt_list/detail/' . $row->id_printresi . '" class="btn btn-default link"><i class="fa fa-eye"></i> </a> ' .
-                '<a href="receipt/delete_list_receipt_data/' . $row->id_printresi . '" class="btn btn-danger confirm" onClick="notyConfirm(event);"><i class="fa fa-trash-o"></i> </a>',
+                '<a href="receipt/delete-list-receipt-data/' . $row->id_printresi . '" class="btn btn-danger confirm" onClick="notyConfirm(event);"><i class="fa fa-trash-o"></i> </a>',
             );
         }
 
@@ -269,7 +269,7 @@ class Receipt extends MY_Controller
 
     public function upload_receipt_action()
     {
-        if ($this->input->method() == 'get') {
+        if ($this->input->method() !== 'post') {
             $this->make_ajax_response(400, INVALID_REQUEST_METHOD);
         }
 

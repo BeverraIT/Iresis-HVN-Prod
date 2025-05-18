@@ -1079,20 +1079,44 @@ class Receipt_fcd extends CI_Model
     }
 
     private function get_existing_receipt_data(array $dataResi) {
+
+        // Step 1: Extract no_pesanan values from dataResi
         $no_pesanan_list = array_unique(array_column($dataResi, 'A'));
+
         if (empty($no_pesanan_list)) {
             return [];
         }
 
-        // Ambil data yang sudah ada dalam 1 query
-        $this->db->select('no_pesanan, sku');
-        $this->db->where_in('no_pesanan', $no_pesanan_list);
-        $query = $this->db->get('tblprintresi');
-        $existing_data = [];
+        // Step 2: Create temp table & insert values
+        $this->db->trans_start();
 
+        // Create the temp table (if not exists)
+        $this->db->query("CREATE TEMPORARY TABLE IF NOT EXISTS temp_pesanan (no_pesanan VARCHAR(100) PRIMARY KEY)");
+
+        // Empty the temp table (optional safety)
+        $this->db->truncate('temp_pesanan');
+
+        // Prepare batch insert
+        $insert_data = array_map(function ($no_pesanan) {
+            return ['no_pesanan' => $no_pesanan];
+        }, $no_pesanan_list);
+
+        // Insert into temp_pesanan
+        $this->db->insert_batch('temp_pesanan', $insert_data);
+
+        // Step 3: Join with tblprintresi
+        $this->db->select('pr.no_pesanan, pr.sku');
+        $this->db->from('tblprintresi pr');
+        $this->db->join('temp_pesanan tp', 'tp.no_pesanan = pr.no_pesanan');
+
+        $query = $this->db->get();
+
+        $existing_data = [];
         foreach ($query->result() as $row) {
             $existing_data["{$row->no_pesanan}-{$row->sku}"] = true;
         }
+
+        $this->db->trans_complete();
 
         return $existing_data;
     }

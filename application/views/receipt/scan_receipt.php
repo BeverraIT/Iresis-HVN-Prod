@@ -1,6 +1,6 @@
 <div class="row">
   <div class="col-md-6 center-block float-none">
-    <form action="receipt/save_receipt" class="form-horizontal" id="form_scan_resi" autocomplete="off">
+    <form action="receipt/save-receipt" class="form-horizontal" id="form_scan_resi" autocomplete="off">
       <div class="panel panel-default">
         <div class="panel-heading">
           <h3 class="panel-title"><strong>Scan Pertama Resi</strong></h3>
