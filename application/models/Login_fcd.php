@@ -23,4 +23,13 @@ class Login_fcd extends CI_Model {
         
         $this->db->update('tbluser', array('lastlogin' => date('Y-m-d H:i:s'), 'nama_komputer' => $nama_komputer));
     }
+
+    function get_pk($nama_pk = null)
+    {
+        if (!empty($nama_pk)) {
+            $this->db->where(['nama_pk' => $nama_pk]);
+        }
+
+        return $this->db->get('tblpk');
+    }
 }

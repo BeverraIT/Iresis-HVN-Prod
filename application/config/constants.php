@@ -90,6 +90,7 @@ defined('EXIT__AUTO_MAX')      OR define('EXIT__AUTO_MAX', 125); // highest auto
 define('LOGIN_FAILED', 'Invalid username or password');
 
 define('EMPTY_MACHINE_NAME', 'Nama komputer masih kosong. Silakan membuka aplikasi melalui shortcut yang tersedia atau hubungi Administrator');
+define('EMPTY_PK_NAME', 'Nama komputer masih kosong. Silakan pilih komputer pada dropdown list komputer yang tersedia');
 
 define('SUCCESS_SAVE_DATA', 'Sukses menambahkan data');
 define('SUCCESS_REMOVE_DATA', 'Sukses menghapus data');

@@ -8,6 +8,8 @@ class Login extends CI_Controller
     {
         parent::__construct();
 
+        $this->load->model('login_fcd');
+
         if ($this->session->userdata('user')) {
             redirect('welcome');
         }
@@ -18,6 +20,7 @@ class Login extends CI_Controller
         $data = array(
             'message' => $this->session->flashdata('message'),
             'machine_name' => $this->input->get('machine_name'),
+            'list_pk' => $this->login_fcd->get_pk()->result_array()
         );
 
         $using_scanner = $this->input->get('using_scanner');
@@ -35,12 +38,14 @@ class Login extends CI_Controller
 
         $username = $this->input->post('username');
         $password = md5($this->input->post('password'));
-        $nama_komputer = $this->input->post('nama_komputer');
-        $using_scanner = $this->input->post('using_scanner');
+        //$nama_komputer = $this->input->post('nama_komputer');
+        //$using_scanner = $this->input->post('using_scanner');
+        $nama_pk = $this->input->post('nama_pk');
 
-        if (empty($nama_komputer)) {
-            $this->session->set_flashdata('message', EMPTY_MACHINE_NAME);
-            redirect('login?machine_name=' . $nama_komputer . ($using_scanner ? '&using_scanner=1' : null));
+        if (empty($nama_pk)) {
+            $this->session->set_flashdata('message', EMPTY_PK_NAME);
+            redirect('login');
+            return;
         }
 
         $user = $this->login_fcd->auth($username, $password)->row_array();
@@ -49,7 +54,7 @@ class Login extends CI_Controller
             $this->load->model('access_fcd');
             $this->load->helper('menu_helper');
 
-            $this->login_fcd->update_last_login_and_nama_komputer($user['id_user'], $nama_komputer);
+            $this->login_fcd->update_last_login_and_nama_komputer($user['id_user'], $nama_pk);
 
             $list_menu = $this->access_fcd->get_access_menu($user['hakakses'])->result_array();
 
@@ -60,13 +65,14 @@ class Login extends CI_Controller
             $sess_data['list_menu'] = $list_menu;
             $sess_data['list_menu_tree'] = $list_menu_tree;
             $sess_data['html_menu_tree'] = $html_menu_tree;
+            $sess_data['nama_pk'] = $nama_pk;
 
             $this->session->set_userdata($sess_data);
 
             redirect('/');
         } else {
             $this->session->set_flashdata('message', LOGIN_FAILED);
-            redirect('login?machine_name=' . $nama_komputer . ($using_scanner ? '&using_scanner=1' : null));
+            redirect('login');
         }
     }
 }

@@ -36,9 +36,8 @@ class Welcome extends MY_Controller
 
 	public function logout()
 	{
-		$nama_komputer = $this->session->userdata('user')['nama_komputer'];
 		$this->session->unset_userdata('user');
 
-		redirect('login?machine_name=' . $nama_komputer);
+		redirect('login');
 	}
 }

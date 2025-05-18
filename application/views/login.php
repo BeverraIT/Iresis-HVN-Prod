@@ -42,6 +42,21 @@
                     </div>
                     <div class="form-group">
                         <div class="col-md-12">
+                            <select name="nama_pk" id="nama_pk" class="form-control select" data-live-search="true" style="font-weight: bold;">
+                                <option value="" style="font-weight: bold;" selected disabled>-- Select Computer --</option>
+                                <?php foreach ($list_pk as $pk) : ?>
+                                    <option
+                                            value="<?= $pk['nama_pk'] ?>"
+                                            style="font-weight: bold;"
+                                            <?= ($this->input->post('nama_pk') == $pk['nama_pk']) ? 'selected' : '' ?>>
+                                            <?= $pk['nama_pk'] ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-12">
                             <button class="btn btn-info btn-block">Log In</button>
                         </div>
                     </div>
@@ -53,9 +68,6 @@
                     <p>
                         Login dengan scanner <a href="login?machine_name=<?= $machine_name ?>&using_scanner=1">di sini</a>
                     </p>
-                </div>
-                <div class="pull-right">
-                    Computer: <?= $machine_name ?>
                 </div>
             </div>
         </div>

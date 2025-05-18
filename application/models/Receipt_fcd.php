@@ -1030,8 +1030,14 @@ class Receipt_fcd extends CI_Model
             }
 
             $marketplace = strtolower($row['N'] ?? '');
-            $kurir = strtolower($row['S'] ?? '');
             $id_marketplace = $marketplace_map[$marketplace] ?? 99;
+
+            $kurirRaw = $row['S'] ?? '';
+            $kurir = strtolower($kurirRaw);
+
+            if (stripos($kurirRaw, 'SPX') !== false) {
+                $kurir = 'shopee';
+            }
             $id_kurir = $kurir_map[$kurir] ?? 99;
 
             $batch_data[] = [
