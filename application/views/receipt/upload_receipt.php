@@ -33,9 +33,8 @@
 
         <!-- Loading Pop UP -->
         <div id="loadingPopUp" class="custom-popup-overlay" style="display: none;">
-            <div class="custom-popup-box col-md-6 center-block float-none">
-                <h1><strong>Loading!</strong></h1>
-                <p>Data Sedang Di Proses, Siahkan Tunggu...</p>
+            <div style="max-width: 100%; display: -webkit-box; display: -ms-flexbox; display: -webkit-flex; display: flex; justify-content: center; align-items: center;">
+                <img src="assets/img/LoaderIcon.gif" />
             </div>
         </div>
 

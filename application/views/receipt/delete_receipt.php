@@ -1,6 +1,6 @@
 <div class="row">
   <div class="col-md-6 center-block float-none">
-    <form action="receipt_delete/delete" class="form-horizontal" id="form_delete_resi" autocomplete="off">
+    <form action="receipt/delete-receipt-action" class="form-horizontal" id="form_delete_resi" autocomplete="off">
       <div class="panel panel-default">
         <div class="panel-heading">
           <h3 class="panel-title"><strong>Hapus Resi</strong></h3>

@@ -55,7 +55,7 @@ class Receipt_fcd extends CI_Model
         $this->db->select('t.noresi, t.tanggal_printresi, t2.nama_marketplace, t3.tanggal_resiambilbarang
             , t4.nama_pegawai picker, t5.tanggal_packing, t6.nama_pegawai packer
             , t5.keterangan komputer_packer_no, t7.nama_kurir, t8.tanggal_cetak
-            , t8.tanggal_resikeluar');
+            , t8.tanggal_resikeluar, t.status_pesanan, t.sku, t.tanggal_retur, t.tanggal_bataskirim');
 
         $this->db->join('tblmarketplace t2', 't2.id_marketplace = t.id_marketplace', 'left');
         $this->db->join('tblresiambilbarang t3', 't3.id_resi = t.id_printresi', 'left');
@@ -517,10 +517,30 @@ class Receipt_fcd extends CI_Model
             return $receipt;
         }
 
-        $receipt['admin_pegawai_hapus'] = $id_user;
-        $receipt['tanggal_printresi_hapus'] = date('Y-m-d H:i:s');
+        //$receipt['admin_pegawai_hapus'] = $id_user;
+        //$receipt['tanggal_printresi_hapus'] = date('Y-m-d H:i:s');
 
-        $this->db->insert('tblprintresihapus', $receipt);
+        $data = [
+            'id_printresi' => $receipt['id_printresi'],
+            'tanggal_printresi' => $receipt['tanggal_printresi'],
+            'id_marketplace' => $receipt['id_marketplace'],
+            'noresi' => $receipt['noresi'],
+            'nomorpicklist' => $receipt['nomorpicklist'],
+            'batal' => $receipt['batal'],
+            'keterangan' => $receipt['keterangan'],
+            'id_kurir' => $receipt['id_kurir'],
+            'admin_pegawai' => $receipt['admin_pegawai'],
+            'admin_pegawai_hapus' => $id_user,
+            'tanggal_printresi_hapus' => date('Y-m-d H:i:s')
+        ];
+
+        foreach ($data as $key => $value) {
+            if (is_null($value)) {
+                $data[$key] = '';
+            }
+        }
+
+        $this->db->insert('tblprintresihapus', $data);
 
         $this->db->delete('tblprintresi', ['id_printresi' => $id_printresi]);
 
@@ -536,7 +556,7 @@ class Receipt_fcd extends CI_Model
             return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi tidak ditemukan'];
         }
 
-        return $this->destroy($receipt['id_printresi'], $user['id_user']);
+        return $this->destroy($receipt['id_printresi'], $user);
     }
 
     function get_data_receipt_tab0($data, $start_date, $end_date)
