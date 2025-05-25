@@ -55,7 +55,9 @@ class Receipt_fcd extends CI_Model
         $this->db->select('t.noresi, t.tanggal_printresi, t2.nama_marketplace, t3.tanggal_resiambilbarang
             , t4.nama_pegawai picker, t5.tanggal_packing, t6.nama_pegawai packer
             , t5.keterangan komputer_packer_no, t7.nama_kurir, t8.tanggal_cetak
-            , t8.tanggal_resikeluar, t.status_pesanan, t.sku, t.tanggal_retur, t.tanggal_bataskirim');
+            , t8.tanggal_resikeluar, t.status_pesanan, t.sku, t.tanggal_retur, t.tanggal_bataskirim
+            , t.jumlah, t.no_pesanan'
+        );
 
         $this->db->join('tblmarketplace t2', 't2.id_marketplace = t.id_marketplace', 'left');
         $this->db->join('tblresiambilbarang t3', 't3.id_resi = t.id_printresi', 'left');
@@ -1041,23 +1043,81 @@ class Receipt_fcd extends CI_Model
         foreach ($receiptData as $row) {
             $no_pesanan = $row['A'] ?? null;
             $sku = $row['P'] ?? null;
+            $status_pesanan = strtolower($row['T']); // Optional usage
+
+            $key = "$no_pesanan-$sku";
 
             if ($no_pesanan === 'NO_PESANAN' || !$no_pesanan || !$sku) continue;
 
-            if (isset($existing_data["$no_pesanan-$sku"])) {
-                $total_skip_insert++;
-                continue;
+            if (isset($existing_data[$key])) {
+                $db_status = strtolower($existing_data[$key]);
+
+                if ($db_status === 'completed' || $db_status === 'canceled') {
+                    $total_skip_insert++;
+                    continue; // skip if DB already has completed/canceled
+                }
             }
 
             $marketplace = strtolower($row['N'] ?? '');
             $id_marketplace = $marketplace_map[$marketplace] ?? 99;
 
             $kurirRaw = $row['S'] ?? '';
-            $kurir = strtolower($kurirRaw);
+            $kurirDiantarOleh = '';
 
-            if (stripos($kurirRaw, 'SPX') !== false) {
-                $kurir = 'shopee';
+            // Try to extract courier from "Diantar oleh:" first
+            if (stripos($kurirRaw, 'Diantar oleh:') !== false) {
+                $parts = explode('Diantar oleh:', $kurirRaw);
+                $kurirDiantarOleh = strtolower(trim($parts[1]));
             }
+            // If not found, try "Delivery:"
+            elseif (stripos($kurirRaw, 'Delivery:') !== false) {
+                $parts = explode('Delivery:', $kurirRaw);
+                $kurirDiantarOleh = strtolower(trim($parts[1]));
+            }
+
+            $kurir = '';
+
+            // Check courier from extracted part first
+            if ($kurirDiantarOleh !== '') {
+                if (stripos($kurirDiantarOleh, 'jne') !== false) {
+                    $kurir = 'jne';
+                } elseif (stripos($kurirDiantarOleh, 'j&t') !== false) {
+                    $kurir = 'jnt';
+                } elseif (stripos($kurirDiantarOleh, 'ninja') !== false) {
+                    $kurir = 'ninja';
+                } elseif (stripos($kurirDiantarOleh, 'sicepat') !== false) {
+                    $kurir = 'sicepat';
+                } elseif (stripos($kurirDiantarOleh, 'spx') !== false) {
+                    $kurir = 'shopee';
+                }
+            }
+
+            // If not found in extracted part, search the whole raw string
+            if ($kurir === '') {
+                if (stripos($kurirRaw, 'baraka') !== false) {
+                    $kurir = 'baraka';
+                } elseif (stripos($kurirRaw, 'goto') !== false) {
+                    $kurir = 'goto';
+                } elseif (stripos($kurirRaw, 'instant') !== false) {
+                    $kurir = 'instant/sameday';
+                } elseif (stripos($kurirRaw, 'jne') !== false) {
+                    $kurir = 'jne';
+                } elseif (stripos($kurirRaw, 'j&t') !== false) {
+                    $kurir = 'jnt';
+                } elseif (stripos($kurirRaw, 'kargo') !== false) {
+                    $kurir = 'central cargo';
+                } elseif (stripos($kurirRaw, 'ninja') !== false) {
+                    $kurir = 'ninja';
+                } elseif (stripos($kurirRaw, 'sicepat') !== false) {
+                    $kurir = 'sicepat';
+                } elseif (stripos($kurirRaw, 'spx') !== false) {
+                    $kurir = 'shopee';
+                } elseif (stripos($kurirRaw, 'wahana') !== false) {
+                    $kurir = 'wahana';
+                }
+            }
+
+            // Default fallback
             $id_kurir = $kurir_map[$kurir] ?? 99;
 
             $batch_data[] = [
@@ -1079,7 +1139,9 @@ class Receipt_fcd extends CI_Model
                 'status_pesanan' => $row['T'] ?? null,
                 'batal' => null,
                 'keterangan' => null,
-                'nomorpicklist' => $row['C'] ?? null
+                'nomorpicklist' => $row['C'] ?? null,
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $user_id
             ];
 
             if (count($batch_data) >= $batch_size) {
@@ -1102,8 +1164,9 @@ class Receipt_fcd extends CI_Model
 
         // Step 1: Extract no_pesanan values from dataResi
         $no_pesanan_list = array_unique(array_column($dataResi, 'A'));
+        $sku_list = array_unique(array_column($dataResi, 'P'));
 
-        if (empty($no_pesanan_list)) {
+        if (empty($no_pesanan_list) || empty($sku_list)) {
             return [];
         }
 
@@ -1112,28 +1175,32 @@ class Receipt_fcd extends CI_Model
 
         // Create the temp table (if not exists)
         $this->db->query("CREATE TEMPORARY TABLE IF NOT EXISTS temp_pesanan (no_pesanan VARCHAR(100) PRIMARY KEY)");
+        $this->db->query("CREATE TEMPORARY TABLE IF NOT EXISTS temp_sku (sku VARCHAR(100) PRIMARY KEY)");
 
         // Empty the temp table (optional safety)
         $this->db->truncate('temp_pesanan');
+        $this->db->truncate('temp_sku');
 
         // Prepare batch insert
-        $insert_data = array_map(function ($no_pesanan) {
-            return ['no_pesanan' => $no_pesanan];
-        }, $no_pesanan_list);
+        $insert_pesanan = array_map(fn($no) => ['no_pesanan' => $no], $no_pesanan_list);
+        $insert_sku = array_map(fn($sku) => ['sku' => $sku], $sku_list);
 
         // Insert into temp_pesanan
-        $this->db->insert_batch('temp_pesanan', $insert_data);
+        $this->db->insert_batch('temp_pesanan', $insert_pesanan);
+        $this->db->insert_batch('temp_sku', $insert_sku);
 
         // Step 3: Join with tblprintresi
-        $this->db->select('pr.no_pesanan, pr.sku');
+        $this->db->select('pr.no_pesanan, pr.sku, pr.status_pesanan');
         $this->db->from('tblprintresi pr');
         $this->db->join('temp_pesanan tp', 'tp.no_pesanan = pr.no_pesanan');
+        $this->db->join('temp_sku ts', 'ts.sku = pr.sku');
 
         $query = $this->db->get();
 
         $existing_data = [];
         foreach ($query->result() as $row) {
-            $existing_data["{$row->no_pesanan}-{$row->sku}"] = true;
+            $key = "{$row->no_pesanan}-{$row->sku}";
+            $existing_data[$key] = strtolower($row->status_pesanan);
         }
 
         $this->db->trans_complete();

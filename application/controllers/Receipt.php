@@ -282,7 +282,7 @@ class Receipt extends MY_Controller
 
         ini_set('memory_limit', '2048M');
 
-        $user_id = $this->data['user']['id'] ?? null;
+        $user_id = $this->data['user']['id_user'] ?? null;
         $file = $_FILES['receiptFile']['tmp_name'];
 
         // Baca file Excel
@@ -290,10 +290,12 @@ class Receipt extends MY_Controller
         $reader->setReadDataOnly(true);
         $spreadsheet = $reader->load($file);
         $sheet = $spreadsheet->getActiveSheet();
-        $data = $sheet->toArray(null, true, true, true);
+
+        // Get all rows with Excel-style column keys (A, B, C, etc.)
+        $dataRaw = $sheet->toArray(null, true, true, true);
 
         // Proses insert
-        $result = $this->receipt_fcd->insert_receipt($data, $user_id);
+        $result = $this->receipt_fcd->insert_receipt($dataRaw, $user_id);
         $this->make_ajax_response(201, SUCCESS_SAVE_DATA);
     }
 }

@@ -33,54 +33,8 @@
               <table class="table table-striped">
                 <tbody>
                   <tr>
-                    <td align="right">Tanggal Proses Resi :</td>
-                    <td><strong><?= $receipt['tanggal_printresi'] ?></strong></td>
-                  </tr>
-                  <tr>
-                    <td align="right">Marketplace :</td>
-                    <td><strong><?= $receipt['nama_marketplace'] ?></strong></td>
-                  </tr>
-                  <tr>
-                    <td align="right">Tanggal Picker :</td>
-                    <td><strong><?= $receipt['tanggal_resiambilbarang'] ?></strong></td>
-                  </tr>
-                  <tr>
-                    <td align="right">Nama Picker :</td>
-                    <td><strong><?= $receipt['picker'] ?></strong></td>
-                  </tr>
-                  <tr>
-                    <td align="right">Tanggal Packing :</td>
-                    <td><strong><?= $receipt['tanggal_packing'] ?></strong></td>
-                  </tr>
-                  <tr>
-                      <td align="right">Nama Packer :</td>
-                      <td><strong><?= $receipt['packer'] ?></strong></td>
-                  </tr>
-                  <tr>
-                      <td align="right">Tanggal Retur :</td>
-                      <td><strong><?= $receipt['tanggal_retur'] ?></strong></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="col-md-6">
-              <table class="table table-striped">
-                <tbody>
-                  <tr>
-                    <td align="right">Komp Packer NO :</td>
-                    <td><strong><?= $receipt['komputer_packer_no'] ?></strong></td>
-                  </tr>
-                  <tr>
-                    <td align="right">Kurir / Ekspedisi :</td>
-                    <td><strong><?= $receipt['nama_kurir'] ?></strong></td>
-                  </tr>
-                  <tr>
-                    <td align="right">Tanggal Scan Jadi :</td>
-                    <td><strong><?= $receipt['tanggal_cetak'] ?></strong></td>
-                  </tr>
-                  <tr>
-                    <td align="right">Tanggal Serah :</td>
-                    <td><strong><?= $receipt['tanggal_resikeluar'] ?></strong></td>
+                      <td align="right">Nomor Pesanan :</td>
+                      <td><strong><?= $receipt['no_pesanan'] ?></strong></td>
                   </tr>
                   <tr>
                       <td align="right">Status Pesanan :</td>
@@ -91,8 +45,62 @@
                       <td><strong><?= $receipt['sku'] ?></strong></td>
                   </tr>
                   <tr>
+                      <td align="right">Kuantitas :</td>
+                      <td><strong><?= $receipt['jumlah'] ?></strong></td>
+                  </tr>
+                  <tr>
+                      <td align="right">Marketplace :</td>
+                      <td><strong><?= $receipt['nama_marketplace'] ?></strong></td>
+                  </tr>
+                  <tr>
+                      <td align="right">Kurir / Ekspedisi :</td>
+                      <td><strong><?= $receipt['nama_kurir'] ?></strong></td>
+                  </tr>
+                  <tr>
+                      <td align="right">Tanggal Proses Resi :</td>
+                      <td><strong><?= $receipt['tanggal_printresi'] ?></strong></td>
+                  </tr>
+                  <tr>
                       <td align="right">Tanggal Batas Kirim :</td>
                       <td><strong><?= $receipt['tanggal_bataskirim'] ?></strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <table class="table table-striped">
+                <tbody>
+                  <tr>
+                      <td align="right">Nama Picker :</td>
+                      <td><strong><?= $receipt['picker'] ?></strong></td>
+                  </tr>
+                  <tr>
+                      <td align="right">Tanggal Picker :</td>
+                      <td><strong><?= $receipt['tanggal_resiambilbarang'] ?></strong></td>
+                  </tr>
+                  <tr>
+                      <td align="right">Nama Packer :</td>
+                      <td><strong><?= $receipt['packer'] ?></strong></td>
+                  </tr>
+                  <tr>
+                      <td align="right">Tanggal Packing :</td>
+                      <td><strong><?= $receipt['tanggal_packing'] ?></strong></td>
+                  </tr>
+                  <tr>
+                      <td align="right">Nomor Komputer Packer :</td>
+                      <td><strong><?= $receipt['komputer_packer_no'] ?></strong></td>
+                  </tr>
+                  <tr>
+                    <td align="right">Tanggal Serah :</td>
+                    <td><strong><?= $receipt['tanggal_resikeluar'] ?></strong></td>
+                  </tr>
+                  <tr>
+                      <td align="right">Tanggal Scan Jadi :</td>
+                      <td><strong><?= $receipt['tanggal_cetak'] ?></strong></td>
+                  </tr>
+                  <tr>
+                      <td align="right">Tanggal Retur :</td>
+                      <td><strong><?= $receipt['tanggal_retur'] ?></strong></td>
                   </tr>
                 </tbody>
               </table>
