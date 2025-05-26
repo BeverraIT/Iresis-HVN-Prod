@@ -16,6 +16,43 @@ class Receipt extends MY_Controller
         $this->load->model('param_fcd');
     }
 
+    public function upload_receipt()
+    {
+        $this->show();
+    }
+
+    public function upload_receipt_action()
+    {
+        if ($this->input->method() !== 'post') {
+            $this->make_ajax_response(400, INVALID_REQUEST_METHOD);
+        }
+
+        // Simulasi loading
+        // sleep(5); // delay 60 detik
+
+        if (!isset($_FILES['receiptFile']) || $_FILES['receiptFile']['error'] != 0) {
+            $this->make_ajax_response(500, FAILED_SAVE_DATA);
+        }
+
+        ini_set('memory_limit', '2048M');
+
+        $user_id = $this->data['user']['id_user'] ?? null;
+        $file = $_FILES['receiptFile']['tmp_name'];
+
+        // Baca file Excel
+        $reader = IOFactory::createReader('Xlsx');
+        $reader->setReadDataOnly(true);
+        $spreadsheet = $reader->load($file);
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Get all rows with Excel-style column keys (A, B, C, etc.)
+        $dataRaw = $sheet->toArray(null, true, true, true);
+
+        // Proses insert
+        $result = $this->receipt_fcd->insert_receipt($dataRaw, $user_id);
+        $this->make_ajax_response(201, SUCCESS_SAVE_DATA);
+    }
+
     public function scan_receipt()
     {
         $data['list_marketplace'] = $this->marketplace_fcd->get_marketplace()->result_array();
@@ -37,8 +74,16 @@ class Receipt extends MY_Controller
 
         $save = $this->receipt_fcd->save($receipt, $this->data['user']['id_user']);
 
+        if (isset($save['error'])) {
+            $this->make_ajax_response(500, FAILED_SAVE_DATA);
+        }
+
         if ($save['affected_rows'] > 0) {
             $this->make_ajax_response(201, SUCCESS_SAVE_DATA);
+        }
+
+        if (!empty($save['existing_data'])) {
+            $this->make_ajax_response(409, DATA_ALREADY_EXISTS);
         }
 
         $this->make_ajax_response(200, NOTHING_TO_SAVE);
@@ -260,42 +305,5 @@ class Receipt extends MY_Controller
         }
 
         return $images;
-    }
-
-    public function upload_receipt()
-    {
-        $this->show();
-    }
-
-    public function upload_receipt_action()
-    {
-        if ($this->input->method() !== 'post') {
-            $this->make_ajax_response(400, INVALID_REQUEST_METHOD);
-        }
-
-        // Simulasi loading
-        // sleep(5); // delay 60 detik
-
-        if (!isset($_FILES['receiptFile']) || $_FILES['receiptFile']['error'] != 0) {
-            $this->make_ajax_response(500, FAILED_SAVE_DATA);
-        }
-
-        ini_set('memory_limit', '2048M');
-
-        $user_id = $this->data['user']['id_user'] ?? null;
-        $file = $_FILES['receiptFile']['tmp_name'];
-
-        // Baca file Excel
-        $reader = IOFactory::createReader('Xlsx');
-        $reader->setReadDataOnly(true);
-        $spreadsheet = $reader->load($file);
-        $sheet = $spreadsheet->getActiveSheet();
-
-        // Get all rows with Excel-style column keys (A, B, C, etc.)
-        $dataRaw = $sheet->toArray(null, true, true, true);
-
-        // Proses insert
-        $result = $this->receipt_fcd->insert_receipt($dataRaw, $user_id);
-        $this->make_ajax_response(201, SUCCESS_SAVE_DATA);
     }
 }

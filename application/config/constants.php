@@ -95,6 +95,7 @@ define('EMPTY_PK_NAME', 'Nama komputer masih kosong. Silakan pilih komputer pada
 define('SUCCESS_SAVE_DATA', 'Sukses menambahkan data');
 define('SUCCESS_REMOVE_DATA', 'Sukses menghapus data');
 define('NOTHING_TO_SAVE', 'Tidak ada data yang disimpan');
+define('DATA_ALREADY_EXISTS', 'Data sudah ada sebelumnya');
 define('DATA_NOT_FOUND', 'Data tidak ditemukan');
 define('INVALID_REQUEST_METHOD', 'Metode permintaan tidak valid');
 define('FAILED_SAVE_DATA', 'Gagal menyimpan data');
