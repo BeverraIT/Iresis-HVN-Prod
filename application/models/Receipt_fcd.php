@@ -5,19 +5,30 @@ class Receipt_fcd extends CI_Model
 {
     function get_data($data = null) {
 
+        // Step 1: Build subquery for latest created_at per no_pesanan + sku
+        $this->db->select('no_pesanan, sku, MAX(created_at) AS latest_created_at');
+        $this->db->from('tblprintresi');
+        $this->db->group_by(['no_pesanan', 'sku']);
+        $subquery = $this->db->get_compiled_select();
+
+        // Step 2: Main query using subquery join
+        $this->db->select('t.*, t2.nama_marketplace, t3.nama_kurir');
+        $this->db->from('tblprintresi t');
         $this->db->join('tblmarketplace t2', 't.id_marketplace = t2.id_marketplace', 'left');
         $this->db->join('tblkurir t3', 't.id_kurir = t3.id_kurir', 'left');
-        //$this->db->join('tbluser t4', 't.admin_pegawai = t4.id_user');
+        $this->db->join("($subquery) latest",
+            't.no_pesanan = latest.no_pesanan AND t.sku = latest.sku AND t.created_at = latest.latest_created_at',
+            'inner');
+
+        $this->db->order_by('t.created_at', 'DESC');
 
         if (!empty($data['length'])) {
             $this->db->limit($data['length'], $data['start']);
         }
 
-        $query = $this->db->get_compiled_select('tblprintresi t');
-        log_message('error', 'Query yang dijalankan: ' . $query);
-        return $this->db->query($query);
-
-        // return $this->db->get('tblprintresi t');
+        $query = $this->db->get();
+        log_message('error', 'Query yang dijalankan: ' . $this->db->last_query());
+        return $query;
     }
 
     function get_total_data($data = null) {
@@ -68,6 +79,8 @@ class Receipt_fcd extends CI_Model
         $this->db->join('tblresikeluar t8', 't8.id_resi = t.id_printresi', 'left');
 
         $this->db->where(['t.noresi' => $noresi]);
+        $this->db->order_by('t.created_at', 'DESC');
+        $this->db->limit(1);
 
         return $this->db->get('tblprintresi t');
     }
@@ -116,6 +129,9 @@ class Receipt_fcd extends CI_Model
             t3.nama_marketplace,
             t.tanggal_printresi,
             t.noresi,
+            t.no_pesanan,
+            t.sku,
+            t.status_pesanan,
             t4.nama_kurir,
             t.nomorpicklist
         ');
@@ -1157,7 +1173,10 @@ class Receipt_fcd extends CI_Model
             $total_success_insert += count($batch_data);
         }
 
-        log_message('error', "Total Data Dimasukkan: $total_success_insert | Data Dilewati: $total_skip_insert");
+        $message = "Total Data Terinput: $total_success_insert | Dilewati: $total_skip_insert";
+        log_message('error', $message);
+
+        return $message;
     }
 
     private function get_existing_receipt_data(array $dataResi) {

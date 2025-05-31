@@ -1,6 +1,6 @@
 <div class="row">
   <div class="col-md-6 center-block float-none">
-    <form action="handover_scan/save" class="form-horizontal" id="form_scan_handover" autocomplete="off">
+    <form action="handover/save-handover" class="form-horizontal" id="form_scan_handover" autocomplete="off">
       <div class="panel panel-default">
         <div class="panel-heading">
           <h3 class="panel-title"><strong>Scan Resi Keluar</strong></h3>

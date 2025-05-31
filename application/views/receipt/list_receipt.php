@@ -12,11 +12,11 @@
               <th>#</th>
               <th>No. Resi</th>
               <th>Tanggal Scan Resi</th>
-              <th>Jam Scan Resi</th>
+              <th>No. Pesanan</th>
+              <th>SKU</th>
               <th>Market Place</th>
               <th>Nomor Picklist</th>
-              <th>Batal</th>
-              <th>Keterangan</th>
+              <th>Status Pesanan</th>
               <th>Kurir</th>
               <th>Pegawai</th>
               <th>Aksi</th>

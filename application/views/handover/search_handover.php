@@ -2,19 +2,20 @@
   <div class="col-md-12">
     <div class="panel panel-default">
       <div class="panel-heading">
-        <h3 class="panel-title"><strong>Cari Resi Packer</strong></h3>
+        <h3 class="panel-title"><strong>Cari Resi Keluar</strong></h3>
       </div>
 
       <div class="panel-body">
-        <table class="table table-striped datatable-packer">
+        <table class="table table-striped datatable-handover">
           <thead>
             <tr>
               <th>#</th>
               <th>No. Resi</th>
-              <th>Packer</th>
-              <th>Tanggal Packing</th>
-              <th>Jam Packing</th>
-              <th>Keterangan</th>
+              <th>Pegawai</th>
+              <th>Tanggal Resi Keluar</th>
+              <th>Jam Resi Keluar</th>
+              <th>Sudah Dicetak</th>
+              <th>Tanggal Cetak</th>
             </tr>
           </thead>
         </table>
@@ -25,7 +26,7 @@
 
 <script type="text/javascript">
   $(document).ready(function() {
-    $('.datatable-packer').DataTable({
+    $('.datatable-handover').DataTable({
       'scrollX': true,
       'pageLength': 10,
       'processing': true,
@@ -38,7 +39,7 @@
         [10, 50, 100, 150, 200]
       ],
       'ajax': {
-        url: 'packer_search/get_data',
+        url: 'handover/get-data-handover',
         type: 'POST',
       },
     });

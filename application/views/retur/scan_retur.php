@@ -1,6 +1,6 @@
 <div class="row">
   <div class="col-md-6 center-block float-none">
-    <form action="retur_scan/save" class="form-horizontal" id="form_scan_resi_retur" autocomplete="off">
+    <form action="retur/save-retur" class="form-horizontal" id="form_scan_resi_retur" autocomplete="off">
       <div class="panel panel-default">
         <div class="panel-heading">
           <h3 class="panel-title"><strong>Scan Resi Retur</strong></h3>

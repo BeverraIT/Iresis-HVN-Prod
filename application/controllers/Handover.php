@@ -1,7 +1,7 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
-class Handover_scan extends MY_Controller
+class Handover extends MY_Controller
 {
 
 	function __construct()
@@ -12,7 +12,7 @@ class Handover_scan extends MY_Controller
 		$this->load->model('courrier_fcd');
 	}
 
-	public function index()
+	public function scan_handover()
 	{
 		$data['nama_komputer'] = $this->data['user']['nama_komputer'];
 		$data['total_scan'] = $this->handover_fcd->get_total_scan_user($this->data['user']['id_pegawai'])->row()->total_scan;
@@ -21,7 +21,7 @@ class Handover_scan extends MY_Controller
 	}
 
 	// request by ajax
-	public function save()
+	public function save_handover()
 	{
 		if ($this->input->method() == 'get') {
 			$this->make_ajax_response(400, INVALID_REQUEST_METHOD);
@@ -41,6 +41,71 @@ class Handover_scan extends MY_Controller
 
 		$this->make_ajax_response(200, NOTHING_TO_SAVE);
 	}
+
+    public function search_handover()
+    {
+        $this->show();
+    }
+
+    public function get_data_handover()
+    {
+        $draw = intval($this->input->post('draw'));
+        $order = $this->input->post('order');
+
+        $data['start'] = intval($this->input->post('start'));
+        $data['length'] = intval($this->input->post('length'));
+        $data['search'] = $this->input->post('search')['value'];
+
+        $col = 0;
+        $dir = '';
+        if (!empty($order)) {
+            foreach ($order as $o) {
+                $col = $o['column'];
+                $dir = $o['dir'];
+            }
+        }
+
+        $data['dir'] = $dir;
+
+        $data['valid_columns'] = array(
+            0 => null,
+            1 => 't2.noresi',
+            2 => 't3.nama_pegawai',
+            3 => 't.tanggal_resikeluar',
+            4 => 't.tanggal_resikeluar',
+            5 => 't.sudah_cetak',
+            5 => 't.tanggal_cetak',
+        );
+
+        $data['order'] = !isset($data['valid_columns'][$col]) ? null : $data['valid_columns'][$col];
+
+        $list_resi = $this->handover_fcd->get_data($data);
+
+        $total = $this->handover_fcd->get_total_data($data);
+
+        $i = $data['start'] + 1;
+        $data = array();
+        foreach ($list_resi->result() as $row) {
+            $data[] = array(
+                $i++ . '.',
+                $row->noresi,
+                $row->pegawai,
+                date('Y-m-d', strtotime($row->tanggal_resikeluar)),
+                date('H:i:s', strtotime($row->tanggal_resikeluar)),
+                $row->sudah_cetak,
+                $row->tanggal_cetak,
+            );
+        }
+
+        $output = array(
+            "draw" => $draw,
+            "recordsTotal" => $total,
+            "recordsFiltered" => $total,
+            "data" => $data
+        );
+        echo json_encode($output);
+        exit();
+    }
 
 	public function print()
 	{

@@ -40,7 +40,7 @@
         [10, 50, 100, 150, 200]
       ],
       'ajax': {
-        url: 'retur_search/get_data',
+        url: 'retur/get-data-retur',
         type: 'POST',
       },
     });

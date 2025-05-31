@@ -76,6 +76,15 @@ $route['picker/save_pending_picker'] = 'picker/save_pending_picker';
 $route['picker/update_picker'] = 'picker/update_picker';
 $route['picker/save_update_picker'] = 'picker/save_update_picker';
 
+$route['packer/save-packer'] = 'packer/save_packer';
+$route['packer/get-data-packer'] = 'packer/get_data_packer';
+
+$route['handover/save-handover'] = 'handover/save_handover';
+$route['handover/get-data-handover'] = 'handover/get_data_handover';
+
+$route['retur/save-retur'] = 'retur/save_retur';
+$route['retur/get-data-retur'] = 'retur/get_data_retur';
+
 $route['user'] = 'user';
 $route['user/add_user'] = 'user/edit_user';
 $route['user/edit_user/(:any)'] = 'user/edit_user/$1';

@@ -1,6 +1,6 @@
 <div class="row">
   <div class="col-md-6 center-block float-none">
-    <form action="packer_scan/save" class="form-horizontal" id="form_scan_packer" autocomplete="off">
+    <form action="packer/save-packer" class="form-horizontal" id="form_scan_packer" autocomplete="off">
       <div class="panel panel-default">
         <div class="panel-heading">
           <h3 class="panel-title"><strong>Scan Packer</strong></h3>
