@@ -37,6 +37,11 @@ class Receipt_fcd extends CI_Model
 
     function save($receipt, $id_user)
     {
+        $existing_data = $this->get_existing_receipt_data_scan($receipt);
+        if ($existing_data) {
+            return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi sudah completed'];
+        }
+
         $receipt['tanggal_printresi'] = date('Y-m-d H:i:s');
         $receipt['admin_pegawai'] = $id_user;
 
@@ -1223,6 +1228,30 @@ class Receipt_fcd extends CI_Model
         }
 
         $this->db->trans_complete();
+
+        return $existing_data;
+    }
+
+    private function get_existing_receipt_data_scan(array $receipt) {
+
+        $noresi = $receipt['noresi'] ?? null;
+
+        if (empty($noresi)) {
+            return [];
+        }
+
+        $this->db->select('noresi, status_pesanan');
+        $this->db->from('tblprintresi');
+        $this->db->where('noresi', $noresi);
+
+        $query = $this->db->get();
+
+        $existing_data = [];
+        foreach ($query->result() as $row) {
+            if (strtolower($row->status_pesanan) === 'completed') {
+                $existing_data[] = $row->noresi;
+            }
+        }
 
         return $existing_data;
     }
