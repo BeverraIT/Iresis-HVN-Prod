@@ -32,8 +32,8 @@ class Receipt extends MY_Controller
 
         $receipt['id_marketplace'] = $this->input->post('id_marketplace');
         $receipt['id_kurir'] = $this->input->post('id_kurir');
-        $receipt['nomorpicklist'] = $this->input->post('nomorpicklist');
-        $receipt['noresi'] = $this->input->post('noresi');
+        $receipt['nomorpicklist'] = trim($this->input->post('nomorpicklist'));
+        $receipt['noresi'] = trim($this->input->post('noresi'));
 
         $save = $this->receipt_fcd->save($receipt, $this->data['user']['id_user']);
 
@@ -89,7 +89,7 @@ class Receipt extends MY_Controller
             0 => null,
             1 => 't.noresi',
             2 => 't.tanggal_printresi',
-            3 => 't.tanggal_printresi',
+            3 => 't.no_pesanan',
             4 => 't2.nama_marketplace',
             5 => 't.nomorpicklist',
             6 => 't.batal',
@@ -110,12 +110,12 @@ class Receipt extends MY_Controller
             $data[] = array(
                 $i++ . '.',
                 $row->noresi,
-                date('Y-m-d', strtotime($row->tanggal_printresi)),
-                date('H:i:s', strtotime($row->tanggal_printresi)),
+                date('Y-m-d H:i:s', strtotime($row->tanggal_printresi)),
+                $row->no_pesanan,
+                $row->sku,
                 $row->nama_marketplace,
                 $row->nomorpicklist,
-                $row->batal,
-                $row->keterangan,
+                $row->status_pesanan,
                 $row->nama_kurir,
                 $row->nama_kurir,
                 // '<a href="receipt_list/detail/' . $row->id_printresi . '" class="btn btn-default link"><i class="fa fa-eye"></i> </a> ' .
@@ -296,6 +296,6 @@ class Receipt extends MY_Controller
 
         // Proses insert
         $result = $this->receipt_fcd->insert_receipt($dataRaw, $user_id);
-        $this->make_ajax_response(201, SUCCESS_SAVE_DATA);
+        $this->make_ajax_response(201, $result);
     }
 }
