@@ -35,6 +35,62 @@ class Receipt_fcd extends CI_Model
         return $this->db->count_all('tblprintresi');
     }
 
+    function get_detail_receipt($noresi) {
+
+        $this->db->where(['tblprintresi.noresi' => $noresi]);
+        return $this->db->get('tblprintresi');
+    }
+
+    function get_receipt_for_packer($data, $noresi) {
+        // Step 1: Build subquery to get latest created_at per noresi + sku
+        $this->db->select('noresi, sku, MAX(created_at) AS latest_created_at');
+        $this->db->from('tblprintresi');
+        $this->db->group_by(['noresi', 'sku']);
+        $subquery = $this->db->get_compiled_select();
+
+        // Step 2: Main query
+        $this->db->select('t.*');
+        $this->db->from('tblprintresi t');
+        $this->db->join('tblpacking t2', 't.id_printresi = t2.id_resi', 'left');
+        $this->db->join("($subquery) latest",
+            't.noresi = latest.noresi AND t.sku = latest.sku AND t.created_at = latest.latest_created_at',
+            'inner');
+        $this->db->where('t.noresi', $noresi);
+        $this->db->where('t2.id_resi IS NULL');
+
+        // Optional: pagination
+        if (!empty($data['length'])) {
+            $this->db->limit($data['length'], $data['start']);
+        }
+
+        // Order by latest
+        $this->db->order_by('t.created_at', 'DESC');
+
+        // Execute
+        $query = $this->db->get();
+
+        // Debug log
+        log_message('error', 'Query get_receipt_for_packer: ' . $this->db->last_query());
+
+        return $query->result();
+    }
+
+
+    function get_total_receipt_for_packer($noresi) {
+        // Step 1: Build query with joins and filters
+        $this->db->from('tblprintresi t');
+        $this->db->join('tblprintresifinance t1', 't.id_printresi = t1.id_printresi', 'inner');
+        $this->db->join('tblpacking t2', 't.id_printresi = t2.id_resi', 'left'); // Only include if not packed
+        $this->db->where('t.noresi', $noresi);
+        $this->db->where('t2.id_resi IS NULL'); // Only those not yet packed
+
+        // Optional: log query before counting
+        log_message('error', 'Query get_total_resi_for_packer: ' . $this->db->get_compiled_select());
+
+        // Step 2: Return count of matched rows
+        return $this->db->count_all_results();
+    }
+
     function save($receipt, $id_user)
     {
         $existing_data = $this->get_existing_receipt_data_scan($receipt);

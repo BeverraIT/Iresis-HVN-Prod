@@ -10,16 +10,114 @@ class Packer extends MY_Controller
 
 		$this->load->model('employee_fcd');
 		$this->load->model('packer_fcd');
+        $this->load->model('receipt_fcd');
+        $this->load->model('problemtype_fcd');
 	}
 
 	public function scan_packer()
 	{
-		$data['packer'] = $this->employee_fcd->get_employee($this->data['user']['id_pegawai'])->row_array();
-		$data['nama_komputer'] = $this->data['user']['nama_komputer'];
-		$data['total_scan'] = $this->packer_fcd->get_total_scan_user($this->data['user']['id_pegawai'])->row()->total_scan;
+        $data = [];
 
-		$this->show($data);
+        if ($this->input->method() == 'post') {
+            $noresi = $this->input->post('noresi');
+
+            $receipt= $this->receipt_fcd->get_detail_receipt($noresi)->row();
+
+            if(!empty($receipt)) {
+                $data['noresi'] = $noresi;
+                $data['list_type_masalah'] = $this->problemtype_fcd->get_list();
+                $data['sku'] = $receipt->sku;
+                $data['qty'] = $receipt->jumlah;
+                $data['id_printresi'] = $receipt->id_printresi;
+            } else {
+                $data['noresi'] = $noresi;
+            }
+        }
+
+        $this->show($data);
 	}
+
+    public function get_scan_packer_data($noresi)
+    {
+        $draw = intval($this->input->post('draw'));
+        $order = $this->input->post('order');
+
+        $data['start'] = intval($this->input->post('start'));
+        $data['length'] = intval($this->input->post('length'));
+        $data['search'] = $this->input->post('search')['value'];
+
+        $col = 0;
+        $dir = '';
+        if (!empty($order)) {
+            foreach ($order as $o) {
+                $col = $o['column'];
+                $dir = $o['dir'];
+            }
+        }
+
+        $data['dir'] = $dir;
+        // pastikan valid_columns diset, atau tambahkan ini jika belum
+        $data['valid_columns'] = [
+            0 => 'noresi',
+            1 => 'sku',
+            2 => 'qty'
+        ];
+        $data['order'] = isset($data['valid_columns'][$col]) ? $data['valid_columns'][$col] : null;
+
+        $data_resi = $this->receipt_fcd->get_receipt_for_packer($data, $noresi);
+        // log_message('error', 'ini resi return bos : ' . json_encode($data_resi));
+
+        $total_data_resi = $this->receipt_fcd->get_total_receipt_for_packer($noresi);
+
+        $table_number = $data['start'] + 1;
+        $data_masalah_picker = array();
+
+        foreach ($data_resi as $row_masalah) {
+            // log_message('error', 'masuk looping : ' . json_encode($row_masalah->noresi));
+
+            $data_masalah_picker[] = array(
+                $table_number++ . '.',
+                '<button 
+					class="btn btn-info lihat-foto" 
+					data-foto="' . htmlspecialchars($row_masalah->jumlah, ENT_QUOTES, 'UTF-8') . '">
+				Lihat Foto</button>',
+                $row_masalah->nama_barang,
+                $row_masalah->sku,
+                $row_masalah->jumlah,
+                '<div class="text-center">
+					<button 
+						style="margin-bottom: 2px; widht: 50px"
+						class="btn btn-info saveMasalahPicker" 
+						data-id="' . htmlspecialchars($row_masalah->id_printresi, ENT_QUOTES, 'UTF-8') . '"
+						data-noresi="' . htmlspecialchars($row_masalah->noresi, ENT_QUOTES, 'UTF-8') . '"
+						data-sku="' . htmlspecialchars($row_masalah->sku, ENT_QUOTES, 'UTF-8') . '"
+						data-qty="' . htmlspecialchars($row_masalah->jumlah, ENT_QUOTES, 'UTF-8') . '"
+					>MP</button><br>
+					<button 
+						style="margin-top: 2px; width: 50px;"
+						class="btn btn-warning editRefund" 
+						data-id="' . htmlspecialchars($row_masalah->id_printresi, ENT_QUOTES, 'UTF-8') . '"
+						data-noresi="' . htmlspecialchars($row_masalah->noresi, ENT_QUOTES, 'UTF-8') . '"
+						data-sku="' . htmlspecialchars($row_masalah->sku, ENT_QUOTES, 'UTF-8') . '"
+						data-qty="' . htmlspecialchars($row_masalah->jumlah, ENT_QUOTES, 'UTF-8') . '"
+					>Edit</button>
+				</div>',
+                '<input type="checkbox" class="row-select" value="' . htmlspecialchars($row_masalah->id_printresi, ENT_QUOTES, 'UTF-8') . '">' // kolom 5: Checkbox
+            );
+        }
+
+        // log_message('error', 'result : ' . json_encode($data_masalah_picker));
+
+        $output = array(
+            "draw" => $draw,
+            "recordsTotal" => $total_data_resi,
+            "recordsFiltered" => $total_data_resi,
+            "data" => $data_masalah_picker
+        );
+
+        echo json_encode($output);
+        exit();
+    }
 
 	// request by ajax
 	public function save_packer()

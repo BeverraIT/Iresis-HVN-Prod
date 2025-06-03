@@ -76,8 +76,10 @@ $route['picker/save_pending_picker'] = 'picker/save_pending_picker';
 $route['picker/update_picker'] = 'picker/update_picker';
 $route['picker/save_update_picker'] = 'picker/save_update_picker';
 
+$route['packer/scan-packer'] = 'packer/scan_packer';
 $route['packer/save-packer'] = 'packer/save_packer';
 $route['packer/get-data-packer'] = 'packer/get_data_packer';
+$route['packer/get-scan-packer-data/(:any)'] = 'packer/get_scan_packer_data/$1';
 
 $route['handover/save-handover'] = 'handover/save_handover';
 $route['handover/get-data-handover'] = 'handover/get_data_handover';
