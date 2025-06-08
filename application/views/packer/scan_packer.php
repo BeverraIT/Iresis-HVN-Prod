@@ -34,10 +34,10 @@
           <thead>
             <tr>
               <th>#</th>
-              <th>Foto</th>
               <th>Nama Barang</th>
               <th>SKU</th>
               <th>Quantity</th>
+              <th>Foto</th>
               <th>Aksi</th>
               <th><input type="checkbox" id="select-all"></th> <!-- Ini tambahan -->
             </tr>

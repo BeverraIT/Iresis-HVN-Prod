@@ -77,13 +77,13 @@ class Packer extends MY_Controller
 
             $data_masalah_picker[] = array(
                 $table_number++ . '.',
+                $row_masalah->nama_barang,
+                $row_masalah->sku,
+                $row_masalah->jumlah,
                 '<button 
 					class="btn btn-info lihat-foto" 
 					data-foto="' . htmlspecialchars($row_masalah->jumlah, ENT_QUOTES, 'UTF-8') . '">
 				Lihat Foto</button>',
-                $row_masalah->nama_barang,
-                $row_masalah->sku,
-                $row_masalah->jumlah,
                 '<div class="text-center">
 					<button 
 						style="margin-bottom: 2px; widht: 50px"
