@@ -138,12 +138,20 @@ class Receipt extends MY_Controller
         $save = $this->receipt_fcd->destroy($id_printresi, $this->data['user']['id_user']);
 
         if ($save['affected_rows'] > 0) {
-            $this->set_message('Success', SUCCESS_REMOVE_DATA, 'information');
+            $this->session->set_flashdata('noty_message', [
+                'text' => 'Data berhasil dihapus.',
+                'type' => 'success' // Noty supports: alert, success, error, warning, info
+            ]);
+            //$this->set_message('Success', SUCCESS_REMOVE_DATA, 'information');
         } else {
-            $this->set_message('Warning', NOTHING_TO_SAVE, 'warning');
+            $this->session->set_flashdata('noty_message', [
+                'text' => 'Tidak ada data yang dihapus.',
+                'type' => 'warning'
+            ]);
+            //$this->set_message('Warning', NOTHING_TO_SAVE, 'warning');
         }
 
-        $this->show_index();
+        redirect('receipt/list_receipt');
     }
 
     public function delete_receipt()

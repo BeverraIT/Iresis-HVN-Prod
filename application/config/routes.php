@@ -60,6 +60,7 @@ $route['logout'] = 'welcome/logout';
 $route['receipt/save-receipt'] = 'receipt/save_receipt';
 $route['receipt/detail-receipt'] = 'receipt/detail_receipt';
 $route['receipt/get-list-receipt-data'] = 'receipt/get_list_receipt_data';
+$route['receipt/delete-list-receipt-data/(:any)'] = 'receipt/delete_list_receipt_data/$1';
 $route['receipt/delete-receipt-action'] = 'receipt/delete_receipt_action';
 $route['receipt/save-reprint-receipt'] = 'receipt/save_reprint_receipt';
 $route['receipt/upload-receipt-action'] = 'receipt/upload_receipt_action';

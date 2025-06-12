@@ -49,3 +49,18 @@
     });
   });
 </script>
+
+<?php if ($this->session->flashdata('noty_message')):
+    $msg = $this->session->flashdata('noty_message');
+    ?>
+    <script>
+        $(document).ready(function() {
+            noty({
+                text: "<?= htmlspecialchars($msg['text'], ENT_QUOTES) ?>",
+                layout: 'topRight',
+                type: "<?= $msg['type'] ?>",
+                timeout: 3000
+            });
+        });
+    </script>
+<?php endif; ?>
