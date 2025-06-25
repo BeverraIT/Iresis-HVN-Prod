@@ -23,7 +23,7 @@
                     <button type="submit" class="btn btn-info">Submit</button>
                     <button type="reset" class="btn btn-primary">Reset</button>
 
-                    <a href="courrier" type="reset" class="btn btn-default pull-right link">Cancel</a>
+                    <a href="" type="reset" class="btn btn-default pull-right link">Cancel</a>
                 </div>
             </div>
         </form>

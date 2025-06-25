@@ -36,7 +36,6 @@ class Receipt_fcd extends CI_Model
     }
 
     function get_detail_receipt($noresi) {
-
         $this->db->where(['tblprintresi.noresi' => $noresi]);
         return $this->db->get('tblprintresi');
     }
@@ -49,12 +48,14 @@ class Receipt_fcd extends CI_Model
         $subquery = $this->db->get_compiled_select();
 
         // Step 2: Main query
-        $this->db->select('t.*');
+        $this->db->select('t.*, t3.link_foto');
         $this->db->from('tblprintresi t');
         $this->db->join('tblpacking t2', 't.id_printresi = t2.id_resi', 'left');
         $this->db->join("($subquery) latest",
             't.noresi = latest.noresi AND t.sku = latest.sku AND t.created_at = latest.latest_created_at',
             'inner');
+        $this->db->join('tblsku t3', 't.sku = t3.id_sku', 'left');
+
         $this->db->where('t.noresi', $noresi);
         $this->db->where('t2.id_resi IS NULL');
 
@@ -74,7 +75,6 @@ class Receipt_fcd extends CI_Model
 
         return $query->result();
     }
-
 
     function get_total_receipt_for_packer($noresi) {
         // Step 1: Build query with joins and filters
@@ -1117,6 +1117,8 @@ class Receipt_fcd extends CI_Model
             return $dt ? $dt->format('Y-m-d H:i:s') : null;
         };
 
+        $batch_data_map = [];
+
         foreach ($receiptData as $row) {
             $no_pesanan = $row['A'] ?? null;
             $sku = $row['P'] ?? null;
@@ -1197,41 +1199,46 @@ class Receipt_fcd extends CI_Model
             // Default fallback
             $id_kurir = $kurir_map[$kurir] ?? 99;
 
-            $batch_data[] = [
-                'noresi' => $row['B'] ?? null,
-                'no_pesanan' => $no_pesanan,
-                'id_marketplace' => $id_marketplace,
-                'id_kurir' => $id_kurir,
-                'admin_pegawai' => $user_id,
-                'sku' => $sku,
-                'nama_barang' => $row['W'] ?? null,
-                'jumlah' => $row['Q'] ?? null,
-                'no_rak' => $row['R'] ?? null,
-                'tanggal_printresi' => $combineDateTime($excelDateToPhpDate($row['F'] ?? null), $excelTimeToPhpTime($row['G'] ?? null)),
-                'tanggal_pesan' => $combineDateTime($excelDateToPhpDate($row['D'] ?? null), $excelTimeToPhpTime($row['E'] ?? null)),
-                'tanggal_bataskirim' => $combineDateTime($excelDateToPhpDate($row['H'] ?? null), $excelTimeToPhpTime($row['I'] ?? null)),
-                'tanggal_pengiriman' => $combineDateTime($excelDateToPhpDate($row['J'] ?? null), $excelTimeToPhpTime($row['K'] ?? null)),
-                'tanggal_selesai' => $combineDateTime($excelDateToPhpDate($row['L'] ?? null), $excelTimeToPhpTime($row['M'] ?? null)),
-                'tanggal_retur' => $combineDateTime($excelDateToPhpDate($row['U'] ?? null), $excelTimeToPhpTime($row['V'] ?? null)),
-                'status_pesanan' => $row['T'] ?? null,
-                'batal' => null,
-                'keterangan' => null,
-                'nomorpicklist' => $row['C'] ?? null,
-                'created_at' => date('Y-m-d H:i:s'),
-                'created_by' => $user_id
-            ];
+            if (!isset($batch_data_map[$key])) {
+                $batch_data_map[$key] = [
+                    'noresi' => $row['B'] ?? null,
+                    'no_pesanan' => $no_pesanan,
+                    'id_marketplace' => $id_marketplace,
+                    'id_kurir' => $id_kurir,
+                    'admin_pegawai' => $user_id,
+                    'sku' => $sku,
+                    'nama_barang' => $row['W'] ?? null,
+                    'jumlah' => $row['Q'] ?? null,
+                    'no_rak' => $row['R'] ?? null,
+                    'tanggal_printresi' => $combineDateTime($excelDateToPhpDate($row['F'] ?? null), $excelTimeToPhpTime($row['G'] ?? null)),
+                    'tanggal_pesan' => $combineDateTime($excelDateToPhpDate($row['D'] ?? null), $excelTimeToPhpTime($row['E'] ?? null)),
+                    'tanggal_bataskirim' => $combineDateTime($excelDateToPhpDate($row['H'] ?? null), $excelTimeToPhpTime($row['I'] ?? null)),
+                    'tanggal_pengiriman' => $combineDateTime($excelDateToPhpDate($row['J'] ?? null), $excelTimeToPhpTime($row['K'] ?? null)),
+                    'tanggal_selesai' => $combineDateTime($excelDateToPhpDate($row['L'] ?? null), $excelTimeToPhpTime($row['M'] ?? null)),
+                    'tanggal_retur' => $combineDateTime($excelDateToPhpDate($row['U'] ?? null), $excelTimeToPhpTime($row['V'] ?? null)),
+                    'status_pesanan' => $row['T'] ?? null,
+                    'batal' => null,
+                    'keterangan' => null,
+                    'nomorpicklist' => $row['C'] ?? null,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'created_by' => $user_id
+                ];
+            } else {
+                // Sum the quantity
+                $batch_data_map[$key]['jumlah'] += (int) ($row['Q'] ?? 0);
+            }
 
-            if (count($batch_data) >= $batch_size) {
-                $this->db->insert_batch('tblprintresi', $batch_data);
-                $total_success_insert += count($batch_data);
-                $batch_data = [];
+            if (count($batch_data_map) >= $batch_size) {
+                $this->db->insert_batch('tblprintresi', array_values($batch_data_map));
+                $total_success_insert += count($batch_data_map);
+                $batch_data_map = [];
             }
         }
 
         // Insert remaining batch
-        if (!empty($batch_data)) {
-            $this->db->insert_batch('tblprintresi', $batch_data);
-            $total_success_insert += count($batch_data);
+        if (!empty($batch_data_map)) {
+            $this->db->insert_batch('tblprintresi', array_values($batch_data_map));
+            $total_success_insert += count($batch_data_map);
         }
 
         $message = "Total Data Terinput: $total_success_insert | Dilewati: $total_skip_insert";

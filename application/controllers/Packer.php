@@ -22,6 +22,8 @@ class Packer extends MY_Controller
             $noresi = $this->input->post('noresi');
 
             $receipt= $this->receipt_fcd->get_detail_receipt($noresi)->row();
+            $packer_scan= $this->packer_fcd->get_total_scan_user($this->data['user']['id_user'])->row();
+            $picker_detail= $this->packer_fcd->get_picker_detail_for_packer($noresi);
 
             if(!empty($receipt)) {
                 $data['noresi'] = $noresi;
@@ -29,6 +31,9 @@ class Packer extends MY_Controller
                 $data['sku'] = $receipt->sku;
                 $data['qty'] = $receipt->jumlah;
                 $data['id_printresi'] = $receipt->id_printresi;
+                $data['total_scan'] = $packer_scan->total_scan;
+                $data['nama_picker'] = $picker_detail->nama_pegawai;
+                $data['komputer_picker'] = $picker_detail->nama_komputer;
             } else {
                 $data['noresi'] = $noresi;
             }
@@ -80,10 +85,7 @@ class Packer extends MY_Controller
                 $row_masalah->nama_barang,
                 $row_masalah->sku,
                 $row_masalah->jumlah,
-                '<button 
-					class="btn btn-info lihat-foto" 
-					data-foto="' . htmlspecialchars($row_masalah->jumlah, ENT_QUOTES, 'UTF-8') . '">
-				Lihat Foto</button>',
+                '<button class="btn btn-info lihat-foto" data-foto="' . htmlspecialchars($row_masalah->link_foto, ENT_QUOTES, 'UTF-8') . '">Lihat Foto</button>',
                 '<div class="text-center">
 					<button 
 						style="margin-bottom: 2px; widht: 50px"
@@ -93,16 +95,7 @@ class Packer extends MY_Controller
 						data-sku="' . htmlspecialchars($row_masalah->sku, ENT_QUOTES, 'UTF-8') . '"
 						data-qty="' . htmlspecialchars($row_masalah->jumlah, ENT_QUOTES, 'UTF-8') . '"
 					>MP</button><br>
-					<button 
-						style="margin-top: 2px; width: 50px;"
-						class="btn btn-warning editRefund" 
-						data-id="' . htmlspecialchars($row_masalah->id_printresi, ENT_QUOTES, 'UTF-8') . '"
-						data-noresi="' . htmlspecialchars($row_masalah->noresi, ENT_QUOTES, 'UTF-8') . '"
-						data-sku="' . htmlspecialchars($row_masalah->sku, ENT_QUOTES, 'UTF-8') . '"
-						data-qty="' . htmlspecialchars($row_masalah->jumlah, ENT_QUOTES, 'UTF-8') . '"
-					>Edit</button>
-				</div>',
-                '<input type="checkbox" class="row-select" value="' . htmlspecialchars($row_masalah->id_printresi, ENT_QUOTES, 'UTF-8') . '">' // kolom 5: Checkbox
+				</div>'
             );
         }
 
@@ -128,7 +121,7 @@ class Packer extends MY_Controller
 
 		$packer['noresi'] = $this->input->post('noresi');
 
-		$save = $this->packer_fcd->save($packer, $this->data['user']);
+		$save = $this->packer_fcd->save($packer, $this->data['user']['id_user']);
 
 		if (isset($save['error'])) {
 			$this->make_ajax_response($save['code'], $save['message']);

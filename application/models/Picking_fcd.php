@@ -25,44 +25,53 @@ class Picking_fcd extends CI_Model
 
     function save($picking, $user, $mode = PICKING_INSERT_PACKER)
     {
-        /**
-         * 1. check does noresi exist in tblprintresi
-         * 1. throw if doest not exist
-         * 2. check does id_resi exist in tblresiamblibarang
-         * 3. throw if exist
-         * 4. save into tblresiambilbarang
-         */
-        $receipt = $this->db->get_where('tblprintresi', ['noresi' => $picking['noresi']])->row_array();
+        // 1. Check if noresi exists
+        $receipt = $this->db->get_where('tblprintresi', ['noresi' => $picking['noresi']])->result_array();
         if (empty($receipt)) {
             return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi tidak ditemukan'];
         }
 
         unset($picking['noresi']);
 
-        $picking_exist = $this->db->get_where('tblresiambilbarang', ['id_resi' => $receipt['id_printresi']]);
+        $id_resi_list = array_column($receipt, 'id_printresi');
 
-        $picking['id_resi'] = $receipt['id_printresi'];
-        $picking['tanggal_resiambilbarang'] = date('Y-m-d H:i:s');
-        $picking['admin_pegawai'] = $user['id_user'];
-        $picking['nama_komputer'] = $user['nama_komputer'];
+        // 2. Check if id_resi exists in tblresiambilbarang
+        $this->db->where_in('id_resi', $id_resi_list);
+        $picking_exist = $this->db->get('tblresiambilbarang')->result_array();
 
         if ($mode == PICKING_INSERT_PACKER) {
-            if ($picking_exist->num_rows() > 0) {
+            if (count($picking_exist) > 0) {
                 return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi sudah diambil. Silakan Cek data'];
             }
 
-            $this->db->insert('tblresiambilbarang', $picking);
+            foreach ($receipt as $row) {
+                $insert_batch_data[] = [
+                    'id_resi' => $row['id_printresi'],
+                    'tanggal_resiambilbarang' => date('Y-m-d H:i:s'),
+                    'admin_pegawai' => $user['id_user'],
+                    'nama_komputer' => $user['nama_komputer']
+                ];
+            }
+
+            $this->db->insert_batch('tblresiambilbarang', $insert_batch_data);
+            $picking['affected_rows'] = count($insert_batch_data);
         } else if ($mode == PICKING_UPDATE_PACKER) {
-            if ($picking_exist->num_rows() == 0) {
+            if (count($picking_exist) == 0) {
                 return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor Resi belum di-picker. Silakan Cek data'];
             }
-            
-            $this->db->where(array('id_resiambilbarang' => $picking_exist->row_array()['id_resiambilbarang']));
-            $this->db->update('tblresiambilbarang', $picking);
-        }
 
-        $picking['id_resiambilbarang'] = $this->db->insert_id();
-        $picking['affected_rows'] = 1;
+            foreach ($picking_exist as $row) {
+                $update_batch_data[] = [
+                    'id_resiambilbarang' => $row['id_resiambilbarang'],
+                    'tanggal_resiambilbarang' => date('Y-m-d H:i:s'),
+                    'admin_pegawai' => $user['id_user'],
+                    'nama_komputer' => $user['nama_komputer']
+                ];
+            }
+
+            $this->db->update_batch('tblresiambilbarang', $update_batch_data, 'id_resiambilbarang');
+            $picking['affected_rows'] = count($update_batch_data);
+        }
 
         return $picking;
     }

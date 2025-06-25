@@ -66,7 +66,7 @@ $route['receipt/save-reprint-receipt'] = 'receipt/save_reprint_receipt';
 $route['receipt/upload-receipt-action'] = 'receipt/upload_receipt_action';
 
 $route['picker/scan_picker'] = 'picker/scan_picker';
-$route['picker/save_scan_picker'] = 'picker/save_scan_picker';
+$route['picker/save-scan-picker'] = 'picker/save_scan_picker';
 $route['picker/search_picker'] = 'picker/search_picker';
 $route['picker/get_search_picker_data'] = 'picker/get_search_picker_data';
 $route['picker/master_picker'] = 'picker/master_picker';

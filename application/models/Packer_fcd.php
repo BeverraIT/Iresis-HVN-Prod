@@ -13,36 +13,48 @@ class Packer_fcd extends CI_Model
          * 3. throw if exist
          * 4. save into tblresiambilbarang
          */
-        $receipt = $this->db->get_where('tblprintresi', ['noresi' => $packer['noresi']])->row_array();
+        $receipt = $this->db->get_where('tblprintresi', ['noresi' => $packer['noresi']])->result_array();
         if (empty($receipt)) {
             return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi tidak ditemukan'];
         }
 
-        $picking_exist = $this->db->get_where('tblresiambilbarang', ['id_resi' => $receipt['id_printresi']]);
-        if ($picking_exist->num_rows() == 0) {
+        unset($packer['noresi']);
+
+        $id_resi_list = array_column($receipt, 'id_printresi');
+
+        $this->db->where_in('id_resi', $id_resi_list);
+        $picking_exist = $this->db->get('tblresiambilbarang')->result_array();
+        if (count($picking_exist) == 0) {
             return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor Resi belum di-picker. Silakan Cek data'];
         }
 
-        $packer_exist = $this->db->get_where('tblpacking', ['id_resi' => $receipt['id_printresi']])->num_rows();
-        if ($packer_exist > 0) {
+        $this->db->where_in('id_resi', $id_resi_list);
+        $packer_exist = $this->db->get('tblpacking')->result_array();
+        if (count($packer_exist) > 0) {
             return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi sudah di-packing. Silakan Cek data'];
         }
 
-        unset($packer['noresi']);
+        foreach ($receipt as $row) {
+            $insert_batch_data[] = [
+                'id_resi' => $row['id_printresi'],
+                'tanggal_packing' => date('Y-m-d H:i:s'),
+                'packer_pegawai' => $user['id_user'],
+                'keterangan' => $user['nama_komputer']
+            ];
+        }
 
-        $packer['id_resi'] = $receipt['id_printresi'];
-        $packer['tanggal_packing'] = date('Y-m-d H:i:s');
-        $packer['packer_pegawai'] = $user['id_pegawai'];
-        $packer['keterangan'] = $user['nama_komputer'];
-
-        $this->db->insert('tblpacking', $packer);
-
-        $packer['id_packing'] = $this->db->insert_id();
-        $packer['affected_rows'] = 1;
+        $this->db->insert_batch('tblpacking', $insert_batch_data);
 
         // update tblresiambilbarang to reset pending to ''
-        $this->db->where(array('id_resiambilbarang' => $picking_exist->row_array()['id_resiambilbarang']));
-        $this->db->update('tblresiambilbarang', ['pending' => '']);
+        foreach ($picking_exist as $row) {
+            $update_batch_data[] = [
+                'id_resiambilbarang' => $row['id_resiambilbarang'],
+                'pending' => ''
+            ];
+        }
+        $this->db->update_batch('tblresiambilbarang', $update_batch_data, 'id_resiambilbarang');
+
+        $picking['affected_rows'] = count($insert_batch_data);
 
         return $packer;
     }
@@ -134,5 +146,16 @@ class Packer_fcd extends CI_Model
         $this->db->where($criterias);
 
         return $this->db->get_where('tblpacking');
+    }
+
+    function get_picker_detail_for_packer($noresi) {
+        $this->db->select('t.nama_komputer, t3.nama_pegawai');
+        $this->db->from('tblresiambilbarang t');
+        $this->db->join('tblprintresi t2', 't.id_resi = t2.id_printresi');
+        $this->db->join('tblpegawai t3', 't3.kode_pegawai = t.admin_pegawai');
+        $this->db->where('t2.noresi', $noresi);
+
+        $query = $this->db->get();
+        return $query->row();
     }
 }

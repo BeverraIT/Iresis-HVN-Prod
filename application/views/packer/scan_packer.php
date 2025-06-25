@@ -12,10 +12,26 @@
           <div class="form-group">
             <div class="col-md-12">
               <div class="input-group">
-                <input type="text" class="form-control" name="noresi" id="noresi" placeholder="Nomor resi" />
-                <span class="input-group-btn">
-                  <button class="btn btn-default" type="submit"><i class="fa fa-search"></i> Cari</button>
-                </span>
+                <input
+                  type="text"
+                  class="form-control"
+                  name="noresi"
+                  id="noresi"
+                  placeholder="Nomor resi"
+                  value="<?= isset($noresi) ? htmlspecialchars($noresi) : '' ?>"
+                  <?= isset($noresi) && $noresi !== '' ? 'disabled' : '' ?>
+                />
+                  <span class="input-group-btn" id="button-group">
+                    <?php if (isset($noresi) && $noresi !== ''): ?>
+                        <button type="button" id="btn-reset" class="btn btn-warning">
+                          <i class="fa fa-refresh"></i> Reset
+                        </button>
+                    <?php else: ?>
+                        <button class="btn btn-default" type="submit">
+                          <i class="fa fa-search"></i> Cari
+                        </button>
+                    <?php endif; ?>
+                  </span>
               </div>
             </div>
           </div>
@@ -23,13 +39,30 @@
       </div>
 
       <!-- table untuk data resi -->
-      <div class="panel-body">
-        <?php if (!empty($noresi)) : ?>
-        <button
-          id="submit-selected"
-          class="btn btn-success mb-2"
-          style="margin-bottom: 10px;"
-        ><Strong>Submit</Strong></button>
+      <?php if (!empty($noresi)) : ?>
+
+
+          <div class="col-md-12" id="result-info">
+              <div id="button-footer">
+                  <div class="text-left" style="margin-top: 10px;">
+                      <button id="submit-selected" class="btn btn-success mb-2" style="margin-bottom: 10px;">
+                          <strong>Submit</strong>
+                      </button>
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-4 text-center" style="border-right: 1px solid #ccc;">
+                      <div><strong><?= $total_scan ?></strong></div>
+                  </div>
+                  <div class="col-md-4 text-center" style="border-right: 1px solid #ccc;">
+                      <div><strong><?= $nama_picker ?></strong></div>
+                  </div>
+                  <div class="col-md-4 text-center">
+                      <div><strong><?= $komputer_picker ?></strong></div>
+                  </div>
+              </div>
+          </div>
+      <div class="panel-body" id="table-scan-packer">
         <table class="table table-striped datatable-masalah-picker">
           <thead>
             <tr>
@@ -39,12 +72,11 @@
               <th>Quantity</th>
               <th>Foto</th>
               <th>Aksi</th>
-              <th><input type="checkbox" id="select-all"></th> <!-- Ini tambahan -->
             </tr>
           </thead>
         </table>
-        <?php endif; ?>
       </div>
+      <?php endif; ?>
 
       <!-- modal pop up untuk masalah picker -->
       <div id="masalahPickerModal" class="custom-popup-overlay" style="display: none;">
@@ -139,6 +171,7 @@
   var sku;
   var qty;
   var row;
+  var sku_lihat_foto;
 
   $().ready(function() {
 
@@ -171,9 +204,7 @@
           { width: '10%', targets: 3 },
           { width: '10%', targets: 4 },
           { width: '10%', targets: 5 },
-          { width: '10%', targets: 6 },
-          { className: 'text-center', targets: [0, 1, 2, 3, 4, 5, 6] },
-          { orderable: false, targets: [6] }, // Biar kolom Checkbox gak bisa di-sort
+          { className: 'text-center', targets: [0, 1, 2, 3, 4, 5] }
         ],
         'ajax': {
           url: 'packer/get-scan-packer-data/' + noresiTbl,
@@ -278,8 +309,13 @@
     // event ketika klik button lihat foto
     $(document).on('click', '.lihat-foto', function() {
       var fotoUrl = $(this).data('foto');
-      $('#previewFoto').attr('src', fotoUrl);
-      $('#fotoModal').show();
+
+        if (fotoUrl && fotoUrl.trim() !== '') {
+            $('#previewFoto').attr('src', fotoUrl);   // ✅ Set the image source
+            $('#fotoModal').fadeIn();                 // ✅ Show the modal
+        } else {
+            alert('Foto tidak tersedia!');
+        }
     });
 
     // Tombol close
@@ -309,36 +345,60 @@
 
     // Handle submit selected, simpan ke tblpacking
     $('#submit-selected').on('click', function() {
-      const selectedIds = $('.row-select:checked').map(function() {
-        return $(this).val();
-      }).get();
+      const noresi = $('#noresi').val();
 
-      if (selectedIds.length === 0) {
-        alert("Pilih minimal satu data dulu!");
-        return;
+      if (!noresi || noresi.trim() === '') {
+          alert("Nomor resi tidak boleh kosong!");
+          return;
       }
 
-      // console.log(selectedIds);
       // Kirim pakai Ajax
       $.ajax({
-        url: 'packer/scan-resi-packer-save', // Ganti sesuai route kamu
+        url: 'packer/save-packer', // Ganti sesuai route kamu
         method: 'POST',
-        data: { ids: selectedIds },
+        data: { noresi: noresi },
         success: function(response) {
           alert("Data berhasil disubmit!");
           table.ajax.reload(null, false); // reload data tanpa reset page
-          $('#select-all').prop('checked', false);
         },
         error: function(xhr, status, error) {
           alert(xhr.responseText);
-          // console.log("XHR:", xhr.responseText);
-          // console.log("Status:", status);
-          // console.log("Error:", error);
         }
       });
     });
 
+    const $noresi = $('#noresi');
+    const $buttonGroup = $('#button-group');
+    const $resultInfo = $('#result-info');
+    const $table = $('#table-scan-packer');
+    const $footer = $('#button-footer');
+    $('#btn-reset').on('click', function () {
+        // Enable the input
+        $noresi.prop('disabled', false);
+        // Remove the hidden input if it exists
+        $('#hidden-noresi').remove()
+        // Change button to "Cari"
+        updateToCariButton();
+        // Hide the result info section
+        $resultInfo.hide();
+        $table.hide();
+        $footer.hide();
+    });
 
+    // Optional: also check if the field becomes enabled manually
+    $noresi.on('input propertychange change', function () {
+        if (!$noresi.prop('disabled')) {
+            updateToCariButton();
+        }
+    });
+
+    function updateToCariButton() {
+        $buttonGroup.html(`
+      <button class="btn btn-default" type="submit">
+        <i class="fa fa-search"></i> Cari
+      </button>
+    `);
+    }
   })
 
 </script>
@@ -412,5 +472,9 @@
 
   .close-button:hover {
     color: red;
+  }
+
+  #result-info {
+      display: <?= empty($noresi) ? 'none' : 'block' ?>;
   }
 </style>
