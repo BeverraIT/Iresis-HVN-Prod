@@ -39,7 +39,7 @@
         [10, 50, 100, 150, 200]
       ],
       'ajax': {
-        url: 'picker/get_search_picker_data',
+        url: 'picker/get-search-picker-data',
         type: 'POST',
       },
     });

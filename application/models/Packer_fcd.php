@@ -54,7 +54,7 @@ class Packer_fcd extends CI_Model
         }
         $this->db->update_batch('tblresiambilbarang', $update_batch_data, 'id_resiambilbarang');
 
-        $picking['affected_rows'] = count($insert_batch_data);
+        $packer['affected_rows'] = count($insert_batch_data);
 
         return $packer;
     }
@@ -67,9 +67,7 @@ class Packer_fcd extends CI_Model
 
         if (!empty($data['search'])) {
             $x = 0;
-
             $this->db->group_start();
-
             foreach ($data['valid_columns'] as $sterm) {
                 if (empty($sterm)) continue;
 
@@ -94,9 +92,8 @@ class Packer_fcd extends CI_Model
         ');
 
         $this->db->join('tblprintresi t2', 't2.id_printresi = t.id_resi');
-
         $this->db->join('tblpegawai t3', 't3.kode_pegawai = t.packer_pegawai', 'left');
-
+        $this->db->group_by('t2.noresi');
         $this->db->limit($data['length'], $data['start']);
 
         return $this->db->get('tblpacking t');

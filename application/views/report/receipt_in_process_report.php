@@ -9,13 +9,13 @@
       </ul>
       <div class="panel-body tab-content">
         <div class="tab-pane active" id="tab0">
-          <?php $this->load->view('report_receipt_process_tab0') ?>
+          <?php $this->load->view('report/receipt_in_process_tab0') ?>
         </div>
         <div class="tab-pane" id="tab1">
-          <?php $this->load->view('report_receipt_process_tab1') ?>
+          <?php $this->load->view('report/receipt_in_process_tab1') ?>
         </div>
         <div class="tab-pane" id="tab2">
-          <?php $this->load->view('report_receipt_process_tab2') ?>
+          <?php $this->load->view('report/receipt_in_process_tab2') ?>
         </div>
       </div>
     </div>

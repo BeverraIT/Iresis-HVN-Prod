@@ -117,7 +117,7 @@ class Receipt extends MY_Controller
                 $row->nomorpicklist,
                 $row->status_pesanan,
                 $row->nama_kurir,
-                $row->nama_kurir,
+                $row->name,
                 // '<a href="receipt_list/detail/' . $row->id_printresi . '" class="btn btn-default link"><i class="fa fa-eye"></i> </a> ' .
                 '<a href="receipt/delete-list-receipt-data/' . $row->id_printresi . '" class="btn btn-danger confirm" onClick="notyConfirm(event);"><i class="fa fa-trash-o"></i> </a>',
             );

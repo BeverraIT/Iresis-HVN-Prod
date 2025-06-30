@@ -1,23 +1,23 @@
-<form action="report_receipt_process/export_to_excel_tab1" class="form-horizontal nojs" method="post" target="_blank">
+<form action="report/export-to-excel-receipt-in-process-tab0" class="form-horizontal nojs" method="post" target="_blank">
   <div class="form-group">
     <label class="col-md-3 col-xs-12 control-label">Rentang waktu</label>
     <div class="col-md-3 col-xs-12">
-      <input type="text" name="reportrange" id="reportrange-receipt-process-tab1" class="form-control" />
+      <input type="text" name="reportrange" id="reportrange-receipt-process-tab0" class="form-control" />
     </div>
   </div>
 
   <div class="form-group">
     <label class="col-md-3 col-xs-12 control-label"></label>
     <div class="col-md-2 col-xs-12">
-      <button type="button" class="btn btn-info" id="btn-search-receipt-process-tab1">Tampilkan</button>
-      <button type="submit" class="btn btn-primary" id="btn-export-excel-receipt-process-tab1"><i class="fa fa-download"></i> Ekspor ke Excel</button>
+      <button type="button" class="btn btn-info" id="btn-search-receipt-process-tab0">Tampilkan</button>
+      <button type="submit" class="btn btn-primary" id="btn-export-excel-receipt-process-tab0"><i class="fa fa-download"></i> Ekspor ke Excel</button>
     </div>
   </div>
 </form>
 
 <hr>
 
-<table class="table table-striped" id="datatable-receipt-process-tab1">
+<table class="table table-striped" id="datatable-receipt-process-tab0">
   <thead>
     <tr>
       <th>#</th>
@@ -27,15 +27,12 @@
       <th>Nomor Resi</th>
       <th>Kurir</th>
       <th>Nomor Pick List</th>
-      <th>Tanggal Pick</th>
-      <th>Jam Pick</th>
-      <th>Picker</th>
     </tr>
   </thead>
 </table>
 
 <script type="text/javascript">
-  $('#reportrange-receipt-process-tab1').daterangepicker({
+  $('#reportrange-receipt-process-tab0').daterangepicker({
     timePicker: true,
     timePicker24Hour: true,
     startDate: moment().startOf('day'),
@@ -53,13 +50,13 @@
   });
 
   // init for the first time
-  var table_receipt_process_tab1 = $('#datatable-receipt-process-tab1').DataTable({
-    'dom': '<if<t>lp>',
+  var table_receipt_process_tab0 = $('#datatable-receipt-process-tab0').DataTable({
+    dom: '<if<t>lp>',
     'destroy': true,
   });
-  $('#btn-search-receipt-process-tab1').on('click', function() {
-    table_receipt_process_tab1 = $('#datatable-receipt-process-tab1').DataTable({
-      'dom': '<if<t>lp>',
+  $('#btn-search-receipt-process-tab0').on('click', function() {
+    table_receipt_process_tab0 = $('#datatable-receipt-process-tab0').DataTable({
+      dom: '<if<t>lp>',
       'destroy': true,
       'pageLength': 10,
       'processing': true,
@@ -72,11 +69,11 @@
         [10, 50, 100, 150, 200]
       ],
       'ajax': {
-        url: 'report_receipt_process/get_data_receipt_process_tab1',
+        url: 'report/get-receipt-in-process-data-tab0',
         type: 'POST',
         data: function(d) {
-          d.start_date = $('#reportrange-receipt-process-tab1').val().split(" - ")[0];
-          d.end_date = $('#reportrange-receipt-process-tab1').val().split(" - ")[1];
+          d.start_date = $('#reportrange-receipt-process-tab0').val().split(" - ")[0];
+          d.end_date = $('#reportrange-receipt-process-tab0').val().split(" - ")[1];
         }
       },
     });

@@ -6,7 +6,7 @@
       </div>
 
       <div class="panel-body">
-        <form action="report_receipt_per_day" class="form-horizontal" method="post" id="form-report-receipt-per-day">
+        <form action="report/receipt-per-day-report" class="form-horizontal" method="post" id="form-report-receipt-per-day">
           <div class="form-group">
             <label class="col-md-3 col-xs-12 control-label">Rentang waktu</label>
             <div class="col-md-3 col-xs-12">
@@ -86,7 +86,7 @@
       [10, 50, 100, 150, 200]
     ],
     'ajax': {
-      url: 'report_receipt_per_day/get_data',
+      url: 'report/get-per-day-receipt-report-data',
       type: 'POST',
       data: function(d) {
         d.start_date = $('#reportrange').val().split(" - ")[0];
@@ -98,12 +98,12 @@
   $('#btn-search').on('click', function() {
     $('#form-report-receipt-per-day').removeAttr("target");
     $('#form-report-receipt-per-day').removeClass('nojs');
-    $('#form-report-receipt-per-day').attr('action', 'report_receipt_per_day');
+    $('#form-report-receipt-per-day').attr('action', 'report/per-day-receipt-report');
   })
 
   $('#btn-export-excel').on('click', function() {
     $('#form-report-receipt-per-day').attr("target", "_blank");
     $('#form-report-receipt-per-day').addClass('nojs');
-    $('#form-report-receipt-per-day').attr('action', 'report_receipt_per_day/export_to_excel');
+    $('#form-report-receipt-per-day').attr('action', 'report/export-to-excel-per-day-receipt-report');
   });
 </script>

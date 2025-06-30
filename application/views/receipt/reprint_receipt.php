@@ -79,8 +79,10 @@
 
       $.ajax({
         url: form.action,
-        type: 'post',
-        data: Object.fromEntries(formData),
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
         success: function(data) {},
         error: function(data) {},
       }).done(function(response) {

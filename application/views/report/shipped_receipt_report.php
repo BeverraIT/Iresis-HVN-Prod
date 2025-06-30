@@ -6,7 +6,7 @@
       </div>
 
       <div class="panel-body">
-        <form action="report_receipt_shipped" class="form-horizontal" method="post" id="form-report-receipt-shipped">
+        <form action="report/shipped-receipt-report" class="form-horizontal" method="post" id="form-report-receipt-shipped">
           <div class="form-group">
             <label class="col-md-3 col-xs-12 control-label">Rentang waktu</label>
             <div class="col-md-3 col-xs-12">
@@ -79,7 +79,7 @@
       [10, 50, 100, 150, 200]
     ],
     'ajax': {
-      url: 'report_receipt_shipped/get_data',
+      url: 'report/get-shipped-receipt-report-data',
       type: 'POST',
       data: function(d) {
         d.start_date = $('#reportrange').val().split(" - ")[0];
@@ -91,12 +91,12 @@
   $('#btn-search').on('click', function() {
     $('#form-report-receipt-shipped').removeAttr("target");
     $('#form-report-receipt-shipped').removeClass('nojs');
-    $('#form-report-receipt-shipped').attr('action', 'report_receipt_shipped');
+    $('#form-report-receipt-shipped').attr('action', 'report/shipped-receipt-report');
   })
 
   $('#btn-export-excel').on('click', function() {
     $('#form-report-receipt-shipped').attr("target", "_blank");
     $('#form-report-receipt-shipped').addClass('nojs');
-    $('#form-report-receipt-shipped').attr('action', 'report_receipt_shipped/export_to_excel');
+    $('#form-report-receipt-shipped').attr('action', 'report/export-to-excel-shipped-receipt-report');
   });
 </script>

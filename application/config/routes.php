@@ -65,15 +65,15 @@ $route['receipt/delete-receipt-action'] = 'receipt/delete_receipt_action';
 $route['receipt/save-reprint-receipt'] = 'receipt/save_reprint_receipt';
 $route['receipt/upload-receipt-action'] = 'receipt/upload_receipt_action';
 
-$route['picker/scan_picker'] = 'picker/scan_picker';
+$route['picker/scan-picker'] = 'picker/scan_picker';
 $route['picker/save-scan-picker'] = 'picker/save_scan_picker';
 $route['picker/search_picker'] = 'picker/search_picker';
-$route['picker/get_search_picker_data'] = 'picker/get_search_picker_data';
+$route['picker/get-search-picker-data'] = 'picker/get_search_picker_data';
 $route['picker/master_picker'] = 'picker/master_picker';
-$route['picker/save_master_picker'] = 'picker/save_master_picker';
+$route['picker/save-master-picker'] = 'picker/save_master_picker';
 $route['picker/delete_master_picker'] = 'picker/delete_master_picker';
 $route['picker/pending_picker'] = 'picker/pending_picker';
-$route['picker/save_pending_picker'] = 'picker/save_pending_picker';
+$route['picker/save-pending-picker'] = 'picker/save_pending_picker';
 $route['picker/update_picker'] = 'picker/update_picker';
 $route['picker/save_update_picker'] = 'picker/save_update_picker';
 
@@ -87,6 +87,29 @@ $route['handover/get-data-handover'] = 'handover/get_data_handover';
 
 $route['retur/save-retur'] = 'retur/save_retur';
 $route['retur/get-data-retur'] = 'retur/get_data_retur';
+
+$route['report/get-receipt-in-process-data-tab0'] = 'report/get_receipt_in_process_data_tab0';
+$route['report/get-receipt-in-process-data-tab1'] = 'report/get_receipt_in_process_data_tab1';
+$route['report/get-receipt-in-process-data-tab2'] = 'report/get_receipt_in_process_data_tab2';
+$route['report/export-to-excel-receipt-in-process-tab0'] = 'report/export_to_excel_receipt_in_process_tab0';
+$route['report/export-to-excel-receipt-in-process-tab1'] = 'report/export_to_excel_receipt_in_process_tab1';
+$route['report/export-to-excel-receipt-in-process-tab2'] = 'report/export_to_excel_receipt_in_process_tab2';
+$route['report/daily-receipt-report'] = 'report/daily_receipt_report';
+$route['report/get-daily-receipt-report-data'] = 'report/get_daily_receipt_report_data';
+$route['report/export-to-excel-daily-receipt-report'] = 'report/export_to_excel_daily_receipt_report';
+$route['report/per-day-receipt-report'] = 'report/per_day_receipt_report';
+$route['report/get-per-day-receipt-report-data'] = 'report/get_per_day_receipt_report_data';
+$route['report/export-to-excel-per-day-receipt-report'] = 'report/export_to_excel_per_day_receipt_report';
+$route['report/get-receipt-report-data-tab0'] = 'report/get_receipt_report_data_tab0';
+$route['report/get-receipt-report-data-tab1'] = 'report/get_receipt_report_data_tab1';
+$route['report/export-to-excel-receipt-report-tab0'] = 'report/export_to_excel_receipt_report_tab0';
+$route['report/export-to-excel-receipt-report-tab1'] = 'report/export_to_excel_receipt_report_tab1';
+$route['report/shipped-receipt-report'] = 'report/shipped_receipt_report';
+$route['report/get-shipped-receipt-report-data'] = 'report/get_shipped_receipt_report_data';
+$route['report/export-to-excel-shipped-receipt-report'] = 'report/export_to_excel_shipped_receipt_report';
+$route['report/shipping-report'] = 'report/shipping_report';
+$route['report/export-to-excel-shipping-report'] = 'report/export_to_excel_shipping_report';
+
 
 $route['user'] = 'user';
 $route['user/add_user'] = 'user/edit_user';

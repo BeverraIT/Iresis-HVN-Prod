@@ -1,6 +1,6 @@
 <div class="row">
   <div class="col-md-12">
-    <form action="picker/save_master_picker" class="form-horizontal" method="post" id="form_picking_picker">
+    <form action="picker/save-master-picker" class="form-horizontal" method="post" id="form_picking_picker">
       <div class="panel panel-default">
         <div class="panel-heading">
           <h3 class="panel-title"><strong>Tambah / Edit Picker</strong></h3>

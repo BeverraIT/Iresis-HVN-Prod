@@ -30,6 +30,7 @@ class Packer extends MY_Controller
                 $data['list_type_masalah'] = $this->problemtype_fcd->get_list();
                 $data['sku'] = $receipt->sku;
                 $data['qty'] = $receipt->jumlah;
+                $data['no_rak'] = $receipt->no_rak;
                 $data['id_printresi'] = $receipt->id_printresi;
                 $data['total_scan'] = $packer_scan->total_scan;
                 $data['nama_picker'] = $picker_detail->nama_pegawai;
@@ -94,7 +95,9 @@ class Packer extends MY_Controller
 						data-noresi="' . htmlspecialchars($row_masalah->noresi, ENT_QUOTES, 'UTF-8') . '"
 						data-sku="' . htmlspecialchars($row_masalah->sku, ENT_QUOTES, 'UTF-8') . '"
 						data-qty="' . htmlspecialchars($row_masalah->jumlah, ENT_QUOTES, 'UTF-8') . '"
-					>MP</button><br>
+						data-nama-picker="' . htmlspecialchars($row_masalah->yangambil_pegawai, ENT_QUOTES, 'UTF-8') . '"
+						data-no-rak="' . htmlspecialchars($row_masalah->no_rak, ENT_QUOTES, 'UTF-8') . '"
+					>Masalah Picker</button><br>
 				</div>'
             );
         }
@@ -121,7 +124,7 @@ class Packer extends MY_Controller
 
 		$packer['noresi'] = $this->input->post('noresi');
 
-		$save = $this->packer_fcd->save($packer, $this->data['user']['id_user']);
+		$save = $this->packer_fcd->save($packer, $this->data['user']);
 
 		if (isset($save['error'])) {
 			$this->make_ajax_response($save['code'], $save['message']);

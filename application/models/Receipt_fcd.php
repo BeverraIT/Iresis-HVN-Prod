@@ -12,10 +12,11 @@ class Receipt_fcd extends CI_Model
         $subquery = $this->db->get_compiled_select();
 
         // Step 2: Main query using subquery join
-        $this->db->select('t.*, t2.nama_marketplace, t3.nama_kurir');
+        $this->db->select('t.*, t2.nama_marketplace, t3.nama_kurir, t4.name');
         $this->db->from('tblprintresi t');
         $this->db->join('tblmarketplace t2', 't.id_marketplace = t2.id_marketplace', 'left');
         $this->db->join('tblkurir t3', 't.id_kurir = t3.id_kurir', 'left');
+        $this->db->join('tbluser t4', 't.created_by = t4.id_user', 'left');
         $this->db->join("($subquery) latest",
             't.no_pesanan = latest.no_pesanan AND t.sku = latest.sku AND t.created_at = latest.latest_created_at',
             'inner');
@@ -48,13 +49,14 @@ class Receipt_fcd extends CI_Model
         $subquery = $this->db->get_compiled_select();
 
         // Step 2: Main query
-        $this->db->select('t.*, t3.link_foto');
+        $this->db->select('t.*, t3.link_foto, t4.yangambil_pegawai');
         $this->db->from('tblprintresi t');
         $this->db->join('tblpacking t2', 't.id_printresi = t2.id_resi', 'left');
         $this->db->join("($subquery) latest",
             't.noresi = latest.noresi AND t.sku = latest.sku AND t.created_at = latest.latest_created_at',
             'inner');
         $this->db->join('tblsku t3', 't.sku = t3.id_sku', 'left');
+        $this->db->join('tblresiambilbarang t4', 't.id_printresi = t4.id_resi', 'left');
 
         $this->db->where('t.noresi', $noresi);
         $this->db->where('t2.id_resi IS NULL');
@@ -190,19 +192,14 @@ class Receipt_fcd extends CI_Model
             t3.nama_marketplace,
             t.tanggal_printresi,
             t.noresi,
-            t.no_pesanan,
-            t.sku,
-            t.status_pesanan,
             t4.nama_kurir,
             t.nomorpicklist
         ');
 
+        $this->db->distinct();
         $this->db->join('tblresiambilbarang t2', 't2.id_resi = t.id_printresi', 'left');
-
         $this->db->join('tblmarketplace t3', 't3.id_marketplace = t.id_marketplace', 'left');
-
         $this->db->join('tblkurir t4', 't4.id_kurir = t.id_kurir', 'left');
-
         $this->db->where('t.tanggal_printresi >=', $start_date);
         $this->db->where('t.tanggal_printresi <=', $end_date);
         $this->db->where('t2.id_resiambilbarang is null');
@@ -237,16 +234,13 @@ class Receipt_fcd extends CI_Model
         }
 
         $this->db->join('tblresiambilbarang t2', 't2.id_resi = t.id_printresi', 'left');
-
         $this->db->join('tblmarketplace t3', 't3.id_marketplace = t.id_marketplace', 'left');
-
         $this->db->join('tblkurir t4', 't4.id_kurir = t.id_kurir', 'left');
-
         $this->db->where('t.tanggal_printresi >=', $start_date);
         $this->db->where('t.tanggal_printresi <=', $end_date);
         $this->db->where('t2.id_resiambilbarang is null');
 
-        $query = $this->db->select("count(1) as num")->get("tblprintresi t");
+        $query = $this->db->select("COUNT(DISTINCT t.noresi) AS num")->get("tblprintresi t");
         $result = $query->row();
 
         return isset($result) ? $result->num : 0;
@@ -288,14 +282,11 @@ class Receipt_fcd extends CI_Model
             t5.nama_pegawai picker
         ');
 
+        $this->db->distinct();
         $this->db->join('tblprintresi t2', 't2.id_printresi = t.id_resi', 'left');
-
         $this->db->join('tblmarketplace t3', 't3.id_marketplace = t2.id_marketplace', 'left');
-
         $this->db->join('tblkurir t4', 't4.id_kurir = t2.id_kurir', 'left');
-
         $this->db->join('tblpegawai t5', 't5.kode_pegawai = t.yangambil_pegawai', 'left');
-
         $this->db->join('tblpacking t6', 't6.id_resi = t.id_resi', 'left');
 
         $this->db->where('t2.tanggal_printresi >=', $start_date);
@@ -332,20 +323,15 @@ class Receipt_fcd extends CI_Model
         }
 
         $this->db->join('tblprintresi t2', 't2.id_printresi = t.id_resi', 'left');
-
         $this->db->join('tblmarketplace t3', 't3.id_marketplace = t2.id_marketplace', 'left');
-
         $this->db->join('tblkurir t4', 't4.id_kurir = t2.id_kurir', 'left');
-
         $this->db->join('tblpegawai t5', 't5.kode_pegawai = t.yangambil_pegawai', 'left');
-
         $this->db->join('tblpacking t6', 't6.id_resi = t.id_resi', 'left');
-
         $this->db->where('t2.tanggal_printresi >=', $start_date);
         $this->db->where('t2.tanggal_printresi <=', $end_date);
         $this->db->where('t6.id_packing is null');
 
-        $query = $this->db->select("count(1) as num")->get("tblresiambilbarang t");
+        $query = $this->db->select("COUNT(DISTINCT t2.noresi) AS num")->get("tblresiambilbarang t");
         $result = $query->row();
 
         return isset($result) ? $result->num : 0;
@@ -378,29 +364,24 @@ class Receipt_fcd extends CI_Model
         }
 
         $this->db->select('
-            t3.nama_marketplace,
+            t4.nama_marketplace,
             t2.tanggal_printresi,
             t2.noresi,
-            t4.nama_kurir,
+            t5.nama_kurir,
             t2.nomorpicklist,
-            t.tanggal_resiambilbarang,
-            t5.nama_pegawai picker,
-            t7.nama_pegawai packer
+            t3.tanggal_resiambilbarang,
+            t6.nama_pegawai picker,
+            t7.name packer
         ');
 
+        $this->db->distinct();
         $this->db->join('tblprintresi t2', 't2.id_printresi = t.id_resi', 'left');
-
-        $this->db->join('tblmarketplace t3', 't3.id_marketplace = t2.id_marketplace', 'left');
-
-        $this->db->join('tblkurir t4', 't4.id_kurir = t2.id_kurir', 'left');
-
-        $this->db->join('tblpegawai t5', 't5.kode_pegawai = t.yangambil_pegawai', 'left');
-
-        $this->db->join('tblpacking t6', 't6.id_resi = t.id_resi', 'left');
-
-        $this->db->join('tblpegawai t7', 't7.kode_pegawai = t6.packer_pegawai', 'left');
-
-        $this->db->join('tblresikeluar t8', 't8.id_resi = t.id_resi', 'left');
+        $this->db->join('tblresiambilbarang t3', 't3.id_resi = t2.id_printresi', 'left');
+        $this->db->join('tblmarketplace t4', 't4.id_marketplace = t2.id_marketplace', 'left');
+        $this->db->join('tblkurir t5', 't5.id_kurir = t2.id_kurir', 'left');
+        $this->db->join('tblpegawai t6', 't6.kode_pegawai = t3.yangambil_pegawai', 'left');
+        $this->db->join('tbluser t7', 't7.id_user = t.packer_pegawai', 'left');
+        $this->db->join('tblresikeluar t8', 't8.id_resi = t2.id_printresi', 'left');
 
         $this->db->where('t2.tanggal_printresi >=', $start_date);
         $this->db->where('t2.tanggal_printresi <=', $end_date);
@@ -410,7 +391,7 @@ class Receipt_fcd extends CI_Model
             $this->db->limit($data['length'], $data['start']);
         }
 
-        return $this->db->get('tblresiambilbarang t');
+        return $this->db->get('tblpacking t');
     }
 
     function get_total_data_receipt_process_tab2($data, $start_date, $end_date)
@@ -436,24 +417,18 @@ class Receipt_fcd extends CI_Model
         }
 
         $this->db->join('tblprintresi t2', 't2.id_printresi = t.id_resi', 'left');
-
-        $this->db->join('tblmarketplace t3', 't3.id_marketplace = t2.id_marketplace', 'left');
-
-        $this->db->join('tblkurir t4', 't4.id_kurir = t2.id_kurir', 'left');
-
-        $this->db->join('tblpegawai t5', 't5.kode_pegawai = t.yangambil_pegawai', 'left');
-
-        $this->db->join('tblpacking t6', 't6.id_resi = t.id_resi', 'left');
-
-        $this->db->join('tblpegawai t7', 't7.kode_pegawai = t6.packer_pegawai', 'left');
-
-        $this->db->join('tblresikeluar t8', 't8.id_resi = t.id_resi', 'left');
+        $this->db->join('tblresiambilbarang t3', 't3.id_resi = t2.id_printresi', 'left');
+        $this->db->join('tblmarketplace t4', 't4.id_marketplace = t2.id_marketplace', 'left');
+        $this->db->join('tblkurir t5', 't5.id_kurir = t2.id_kurir', 'left');
+        $this->db->join('tblpegawai t6', 't6.kode_pegawai = t3.yangambil_pegawai', 'left');
+        $this->db->join('tbluser t7', 't7.id_user = t.packer_pegawai', 'left');
+        $this->db->join('tblresikeluar t8', 't8.id_resi = t2.id_printresi', 'left');
 
         $this->db->where('t2.tanggal_printresi >=', $start_date);
         $this->db->where('t2.tanggal_printresi <=', $end_date);
         $this->db->where('t8.id_resikeluar is null');
 
-        $query = $this->db->select("count(1) as num")->get("tblresiambilbarang t");
+        $query = $this->db->select("COUNT(DISTINCT t2.noresi) AS num")->get("tblpacking t");
         $result = $query->row();
 
         return isset($result) ? $result->num : 0;
@@ -500,6 +475,7 @@ class Receipt_fcd extends CI_Model
             , t4.nama_pegawai admin_ho
         ');
 
+        $this->db->distinct();
         $this->db->join('tblresiambilbarang b', 'a.id_printresi = b.id_resi', 'left');
         $this->db->join('tblpacking c', 'a.id_printresi = c.id_resi', 'left');
         $this->db->join('tblresikeluar d', 'a.id_printresi = d.id_resi', 'left');
@@ -555,7 +531,7 @@ class Receipt_fcd extends CI_Model
         $this->db->where('a.tanggal_printresi >=', $start_date);
         $this->db->where('a.tanggal_printresi <=', $end_date);
 
-        $query = $this->db->select("count(1) as num")->get("tblprintresi a");
+        $query = $this->db->select("COUNT(DISTINCT a.noresi) AS num")->get("tblprintresi a");
         $result = $query->row();
 
         return isset($result) ? $result->num : 0;
@@ -564,10 +540,10 @@ class Receipt_fcd extends CI_Model
     function get_header_daily_report($start_date, $end_date)
     {
         $this->db->select('
-            count(case when a.tanggal_printresi is not null THEN 1 END) total_scan_resi
-            , count(case when b.tanggal_resiambilbarang is not null THEN 1 END) total_pick_resi
-            , count(case when c.tanggal_packing is not null THEN 1 END) total_pack_resi
-            , count(case when d.tanggal_resikeluar is not null THEN 1 END) total_ho_resi
+            count(DISTINCT case when a.tanggal_printresi is not null THEN a.noresi END) total_scan_resi
+            , count(DISTINCT case when b.tanggal_resiambilbarang is not null THEN a.noresi END) total_pick_resi
+            , count(DISTINCT case when c.tanggal_packing is not null THEN a.noresi END) total_pack_resi
+            , count(DISTINCT case when d.tanggal_resikeluar is not null THEN a.noresi END) total_ho_resi
         ');
 
         $this->db->join('tblresiambilbarang b', 'a.id_printresi = b.id_resi', 'left');
@@ -675,20 +651,14 @@ class Receipt_fcd extends CI_Model
             t8.nama_pegawai as packer
         ');
 
+        $this->db->distinct();
         $this->db->join('tblresiambilbarang t2', 't2.id_resi = t.id_printresi', 'left');
-
         $this->db->join('tblmarketplace t3', 't3.id_marketplace = t.id_marketplace', 'left');
-
         $this->db->join('tblkurir t4', 't4.id_kurir = t.id_kurir', 'left');
-
         $this->db->join('tblpacking t5', 't5.id_resi = t.id_printresi', 'left');
-
         $this->db->join('tblresikeluar t6', 't6.id_resi = t.id_printresi', 'left');
-
         $this->db->join('tblpegawai t7', 't7.kode_pegawai = t2.yangambil_pegawai', 'left');
-
         $this->db->join('tblpegawai t8', 't8.kode_pegawai = t6.id_pegawai', 'left');
-
         $this->db->where('t.tanggal_printresi >=', $start_date);
         $this->db->where('t.tanggal_printresi <=', $end_date);
 
@@ -722,23 +692,17 @@ class Receipt_fcd extends CI_Model
         }
 
         $this->db->join('tblresiambilbarang t2', 't2.id_resi = t.id_printresi', 'left');
-
         $this->db->join('tblmarketplace t3', 't3.id_marketplace = t.id_marketplace', 'left');
-
         $this->db->join('tblkurir t4', 't4.id_kurir = t.id_kurir', 'left');
-
         $this->db->join('tblpacking t5', 't5.id_resi = t.id_printresi', 'left');
-
         $this->db->join('tblresikeluar t6', 't6.id_resi = t.id_printresi', 'left');
-
         $this->db->join('tblpegawai t7', 't7.kode_pegawai = t2.yangambil_pegawai', 'left');
-
         $this->db->join('tblpegawai t8', 't8.kode_pegawai = t6.id_pegawai', 'left');
 
         $this->db->where('t.tanggal_printresi >=', $start_date);
         $this->db->where('t.tanggal_printresi <=', $end_date);
 
-        $query = $this->db->select("count(1) as num")->get("tblprintresi t");
+        $query = $this->db->select("COUNT(DISTINCT t.noresi) AS num")->get("tblprintresi t");
         $result = $query->row();
 
         return isset($result) ? $result->num : 0;
@@ -886,8 +850,8 @@ class Receipt_fcd extends CI_Model
             , t2.tanggal_cetak
         ');
 
+        $this->db->distinct();
         $this->db->join('tblresikeluar t2', 't2.id_resi = t.id_printresi');
-
         $this->db->join('tblkurir t3', 't3.id_kurir = t.id_kurir', 'left');
 
         $this->db->where('t.tanggal_printresi >=', $start_date);
@@ -929,7 +893,7 @@ class Receipt_fcd extends CI_Model
         $this->db->where('t.tanggal_printresi >=', $start_date);
         $this->db->where('t.tanggal_printresi <=', $end_date);
 
-        $query = $this->db->select("count(1) as num")->get("tblprintresi t");
+        $query = $this->db->select("COUNT(DISTINCT t.noresi) AS num")->get("tblprintresi t");
         $result = $query->row();
 
         return isset($result) ? $result->num : 0;
@@ -1004,6 +968,7 @@ class Receipt_fcd extends CI_Model
             , t4.tanggal_resikeluar
         ');
 
+        $this->db->distinct();
         $this->db->join('tblresiambilbarang t2', 't.id_printresi = t2.id_resi', 'left');
         $this->db->join('tblpacking t3', 't.id_printresi = t3.id_resi', 'left');
         $this->db->join('tblresikeluar t4', 't.id_printresi = t4.id_resi', 'left');
@@ -1061,7 +1026,7 @@ class Receipt_fcd extends CI_Model
             ->or_where('t4.id_resikeluar', null);
         $this->db->group_end();
 
-        $query = $this->db->select("count(1) as num")->get("tblprintresi t");
+        $query = $this->db->select("COUNT(DISTINCT t.noresi) as num")->get("tblprintresi t");
         $result = $query->row();
 
         return isset($result) ? $result->num : 0;
@@ -1137,12 +1102,20 @@ class Receipt_fcd extends CI_Model
                 }
             }
 
-            $marketplace = strtolower($row['N'] ?? '');
+            $marketplace = '';
+            $marketplaceRaw = strtolower($row['N'] ?? '');
+            if (stripos($marketplaceRaw, 'tokopedia') !== false) {
+                $marketplace = 'tokopedia';
+            }
+            elseif (stripos($marketplaceRaw, 'internal') !== false) {
+                $marketplace = 'reseller';
+            }
+            else $marketplace = $marketplaceRaw;
             $id_marketplace = $marketplace_map[$marketplace] ?? 99;
 
+            $kurir = '';
             $kurirRaw = $row['S'] ?? '';
             $kurirDiantarOleh = '';
-
             // Try to extract courier from "Diantar oleh:" first
             if (stripos($kurirRaw, 'Diantar oleh:') !== false) {
                 $parts = explode('Diantar oleh:', $kurirRaw);
@@ -1153,14 +1126,11 @@ class Receipt_fcd extends CI_Model
                 $parts = explode('Delivery:', $kurirRaw);
                 $kurirDiantarOleh = strtolower(trim($parts[1]));
             }
-
-            $kurir = '';
-
             // Check courier from extracted part first
             if ($kurirDiantarOleh !== '') {
                 if (stripos($kurirDiantarOleh, 'jne') !== false) {
                     $kurir = 'jne';
-                } elseif (stripos($kurirDiantarOleh, 'j&t') !== false) {
+                } elseif (stripos($kurirDiantarOleh, 'j&t') !== false || stripos($kurirDiantarOleh, 'jnt') !== false) {
                     $kurir = 'jnt';
                 } elseif (stripos($kurirDiantarOleh, 'ninja') !== false) {
                     $kurir = 'ninja';
@@ -1168,34 +1138,46 @@ class Receipt_fcd extends CI_Model
                     $kurir = 'sicepat';
                 } elseif (stripos($kurirDiantarOleh, 'spx') !== false) {
                     $kurir = 'shopee';
+                } elseif (stripos($kurirDiantarOleh, 'lex id') !== false) {
+                    $kurir = 'lazada';
                 }
             }
-
             // If not found in extracted part, search the whole raw string
             if ($kurir === '') {
-                if (stripos($kurirRaw, 'baraka') !== false) {
+                if (stripos($kurirRaw, 'anteraja') !== false) {
+                    $kurir = 'anteraja';
+                } elseif (stripos($kurirRaw, 'baraka') !== false) {
                     $kurir = 'baraka';
                 } elseif (stripos($kurirRaw, 'goto') !== false) {
                     $kurir = 'goto';
-                } elseif (stripos($kurirRaw, 'instant') !== false) {
+                } elseif (stripos($kurirRaw, 'id express') !== false) {
+                    $kurir = 'id express';
+                } elseif (stripos($kurirRaw, 'instant') !== false || stripos($kurirRaw, 'gosend') !== false || stripos($kurirRaw, 'grab') !== false) {
                     $kurir = 'instant/sameday';
+                } elseif (stripos($kurirRaw, 'jemput sendiri') !== false) {
+                    $kurir = 'jemput sendiri';
                 } elseif (stripos($kurirRaw, 'jne') !== false) {
                     $kurir = 'jne';
-                } elseif (stripos($kurirRaw, 'j&t') !== false) {
+                } elseif (stripos($kurirRaw, 'j&t') !== false || stripos($kurirRaw, 'jnt') !== false) {
                     $kurir = 'jnt';
                 } elseif (stripos($kurirRaw, 'kargo') !== false) {
                     $kurir = 'central cargo';
+                } elseif (stripos($kurirRaw, 'lazada') !== false || stripos($kurirRaw, 'lex id') !== false) {
+                    $kurir = 'lazada';
                 } elseif (stripos($kurirRaw, 'ninja') !== false) {
                     $kurir = 'ninja';
                 } elseif (stripos($kurirRaw, 'sicepat') !== false) {
                     $kurir = 'sicepat';
-                } elseif (stripos($kurirRaw, 'spx') !== false) {
+                } elseif (stripos($kurirRaw, 'sicepat rekom') !== false || stripos($kurirRaw, 'rekomendasi') !== false) {
+                    $kurir = 'sicepat - rekom';
+                } elseif (stripos($kurirRaw, 'spx') !== false || stripos($kurirRaw, 'shopee') !== false) {
                     $kurir = 'shopee';
+                } elseif (stripos($kurirRaw, 'spax') !== false) {
+                    $kurir = 'spax';
                 } elseif (stripos($kurirRaw, 'wahana') !== false) {
                     $kurir = 'wahana';
                 }
             }
-
             // Default fallback
             $id_kurir = $kurir_map[$kurir] ?? 99;
 

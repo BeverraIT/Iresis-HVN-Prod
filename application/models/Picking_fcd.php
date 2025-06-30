@@ -49,7 +49,9 @@ class Picking_fcd extends CI_Model
                     'id_resi' => $row['id_printresi'],
                     'tanggal_resiambilbarang' => date('Y-m-d H:i:s'),
                     'admin_pegawai' => $user['id_user'],
-                    'nama_komputer' => $user['nama_komputer']
+                    'yangambil_pegawai' => $picking['yangambil_pegawai'],
+                    'nama_komputer' => $user['nama_komputer'],
+                    'pending' => $picking['pending'],
                 ];
             }
 
@@ -65,6 +67,7 @@ class Picking_fcd extends CI_Model
                     'id_resiambilbarang' => $row['id_resiambilbarang'],
                     'tanggal_resiambilbarang' => date('Y-m-d H:i:s'),
                     'admin_pegawai' => $user['id_user'],
+                    'yangambil_pegawai' => $picking['yangambil_pegawai'],
                     'nama_komputer' => $user['nama_komputer']
                 ];
             }
@@ -99,9 +102,7 @@ class Picking_fcd extends CI_Model
 
         if (!empty($data['search'])) {
             $x = 0;
-
             $this->db->group_start();
-
             foreach ($data['valid_columns'] as $sterm) {
                 if (empty($sterm)) continue;
 
@@ -113,7 +114,6 @@ class Picking_fcd extends CI_Model
 
                 $x++;
             }
-
             $this->db->group_end();
         }
 
@@ -122,16 +122,14 @@ class Picking_fcd extends CI_Model
             t2.noresi,
             t3.nama_pegawai packer,
             t.tanggal_resiambilbarang,
-            t4.username admin,
+            t4.name admin,
             t.nama_komputer
         ');
 
         $this->db->join('tblprintresi t2', 't2.id_printresi = t.id_resi');
-
         $this->db->join('tblpegawai t3', 't3.kode_pegawai = t.yangambil_pegawai', 'left');
-
         $this->db->join('tbluser t4', 't4.id_user = t.admin_pegawai', 'left');
-
+        $this->db->group_by('t2.noresi');
         $this->db->limit($data['length'], $data['start']);
 
         return $this->db->get('tblresiambilbarang t');

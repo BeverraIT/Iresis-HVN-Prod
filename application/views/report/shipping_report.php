@@ -6,7 +6,7 @@
       </div>
 
       <div class="panel-body">
-        <form action="report_shipping" class="form-horizontal" method="post" id="form-report-receipt-shipping">
+        <form action="report/shipping-report" class="form-horizontal" method="post" id="form-report-receipt-shipping">
           <div class="form-group">
             <label class="col-md-3 col-xs-12 control-label">Rentang waktu</label>
             <div class="col-md-3 col-xs-12">
@@ -86,12 +86,12 @@
   $('#btn-search').on('click', function() {
     $('#form-report-receipt-shipping').removeAttr("target");
     $('#form-report-receipt-shipping').removeClass('nojs');
-    $('#form-report-receipt-shipping').attr('action', 'report_shipping');
+    $('#form-report-receipt-shipping').attr('action', 'report/shipping-report');
   })
 
   $('#btn-export-excel').on('click', function() {
     $('#form-report-receipt-shipping').attr("target", "_blank");
     $('#form-report-receipt-shipping').addClass('nojs');
-    $('#form-report-receipt-shipping').attr('action', 'report_shipping/export_to_excel');
+    $('#form-report-receipt-shipping').attr('action', 'report/export-to-excel-shipping-report');
   });
 </script>

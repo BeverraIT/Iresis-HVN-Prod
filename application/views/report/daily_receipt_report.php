@@ -2,11 +2,11 @@
   <div class="col-md-12">
     <div class="panel panel-default">
       <div class="panel-heading">
-        <h3 class="panel-title"><strong>Laporan resi harian</strong></h3>
+        <h3 class="panel-title"><strong>Laporan Resi Harian</strong></h3>
       </div>
 
       <div class="panel-body">
-        <form action="report_receipt_daily" class="form-horizontal" method="post" id="form-report-receipt-daily">
+        <form action="report/receipt-daily-report" class="form-horizontal" method="post" id="form-report-receipt-daily">
           <div class="form-group">
             <label class="col-md-3 col-xs-12 control-label">Rentang waktu</label>
             <div class="col-md-3 col-xs-12">
@@ -148,7 +148,7 @@
       [10, 50, 100, 150, 200]
     ],
     'ajax': {
-      url: 'report_receipt_daily/get_data',
+      url: 'report/get-daily-receipt-report-data',
       type: 'POST',
       data: function(d) {
         d.start_date = $('#reportrange').val().split(" - ")[0];
@@ -160,12 +160,12 @@
   $('#btn-search').on('click', function() {
     $('#form-report-receipt-daily').removeAttr("target");
     $('#form-report-receipt-daily').removeClass('nojs');
-    $('#form-report-receipt-daily').attr('action', 'report_receipt_daily');
+    $('#form-report-receipt-daily').attr('action', 'report/daily-receipt-report');
   })
   
   $('#btn-export-excel').on('click', function() {
     $('#form-report-receipt-daily').attr("target", "_blank");
     $('#form-report-receipt-daily').addClass('nojs');
-    $('#form-report-receipt-daily').attr('action', 'report_receipt_daily/export_to_excel');
+    $('#form-report-receipt-daily').attr('action', 'report/export-to-excel-daily-receipt-report');
   });
 </script>

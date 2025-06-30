@@ -17,38 +17,49 @@ class Handover_fcd extends CI_Model
          * 8. throw if not exist
          * 9. save into tblresikeluar
          */
-        $receipt = $this->db->get_where('tblprintresi', ['noresi' => $handover['noresi']])->row_array();
+        $receipt = $this->db->get_where('tblprintresi', ['noresi' => $handover['noresi']])->result_array();
         if (empty($receipt)) {
             return ['error' => TRUE, 'code' => 404, 'message' => 'Nomor resi tidak ditemukan', 'data' => ['EXCEPTION_CODE' => 'NOT_FOUND']];
         }
 
-        $handover_exist = $this->db->get_where('tblresikeluar', ['id_resi' => $receipt['id_printresi']])->num_rows();
-        if ($handover_exist > 0) {
-            return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi sudah dikirim. Silakan cek data', 'data' => ['EXCEPTION_CODE' => 'ALREADY_HANDOVER']];
-        }
-
-        $picking_exist = $this->db->get_where('tblresiambilbarang', ['id_resi' => $receipt['id_printresi']])->num_rows();
-        if ($picking_exist < 1) {
-            return ['error' => TRUE, 'code' => 401, 'message' => 'Nomor Resi belum di-picker. Silakan Cek data', 'data' => ['EXCEPTION_CODE' => 'NOT_PICKED']];
-        }
-
-        $packer_exist = $this->db->get_where('tblpacking', ['id_resi' => $receipt['id_printresi']])->num_rows();
-        if ($packer_exist < 1) {
-            return ['error' => TRUE, 'code' => 402, 'message' => 'Nomor Resi belum di-packing. Silakan Cek data', 'data' => ['EXCEPTION_CODE' => 'NOT_PACKED']];
-        }
-
         unset($handover['noresi']);
 
-        $handover['tanggal_resikeluar'] = date('Y-m-d H:i:s');
-        $handover['sudah_cetak'] = '-';
-        $handover['tanggal_cetak'] = '';
-        $handover['id_resi'] = $receipt['id_printresi'];
-        $handover['id_pegawai'] = $user['id_pegawai'];
+        $id_resi_list = array_column($receipt, 'id_printresi');
 
-        $this->db->insert('tblresikeluar', $handover);
+        $this->db->where_in('id_resi', $id_resi_list);
+        $picking_exist = $this->db->get('tblresiambilbarang')->result_array();
+        if (count($picking_exist) == 0) {
+            return ['error' => TRUE, 'code' => 402, 'message' => 'Nomor Resi belum di-picker. Silakan Cek data'];
+        }
+
+        $this->db->where_in('id_resi', $id_resi_list);
+        $packer_exist = $this->db->get('tblpacking')->result_array();
+        if (count($packer_exist) == 0) {
+            return ['error' => TRUE, 'code' => 402, 'message' => 'Nomor resi belum di-packing. Silakan Cek data'];
+        }
+
+        $this->db->where_in('id_resi', $id_resi_list);
+        $handover_exist = $this->db->get('tblresikeluar')->result_array();
+        if (count($handover_exist) > 0) {
+            return ['error' => TRUE, 'code' => 402, 'message' => 'Nomor resi sudah dikirim. Silakan cek data'];
+        }
+
+        foreach ($receipt as $row) {
+            $insert_batch_data[] = [
+                'id_resi' => $row['id_printresi'],
+                'tanggal_resikeluar' => date('Y-m-d H:i:s'),
+                'sudah_cetak' => '-',
+                'tanggal_cetak' => '',
+                'id_pegawai' => $user['id_user']
+            ];
+        }
+
+        //$handover['id_pegawai'] = $user['id_pegawai'];
+
+        $this->db->insert_batch('tblresikeluar', $insert_batch_data);
 
         $handover['id_resikeluar'] = $this->db->insert_id();
-        $handover['affected_rows'] = 1;
+        $handover['affected_rows'] = count($insert_batch_data);
 
         return $handover;
     }
@@ -61,9 +72,7 @@ class Handover_fcd extends CI_Model
 
         if (!empty($data['search'])) {
             $x = 0;
-
             $this->db->group_start();
-
             foreach ($data['valid_columns'] as $sterm) {
                 if (empty($sterm)) continue;
 
@@ -89,9 +98,8 @@ class Handover_fcd extends CI_Model
         ');
 
         $this->db->join('tblprintresi t2', 't2.id_printresi = t.id_resi');
-
         $this->db->join('tblpegawai t3', 't3.kode_pegawai = t.id_pegawai', 'left');
-
+        $this->db->group_by('t2.noresi');
         $this->db->limit($data['length'], $data['start']);
 
         return $this->db->get('tblresikeluar t');

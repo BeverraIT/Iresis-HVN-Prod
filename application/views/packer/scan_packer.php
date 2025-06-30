@@ -85,11 +85,28 @@
             <div class="panel panel-default">
               <div class="panel-heading">
                 <h3 class="panel-title">
-                  <strong>Save Masalah Picker</strong>
+                  <strong>Submit Masalah Picker</strong>
                 </h3>
               </div>
 
               <div class="panel-body">
+
+                  <div class="form-group">
+                      <div class="row">
+                          <div class="col-md-3 text-center" style="border-right: 1px solid #ccc;">
+                              <div><strong id="modal_nama_picker"></strong></div>
+                          </div>
+                          <div class="col-md-3 text-center" style="border-right: 1px solid #ccc;">
+                              <div><strong id="modal_sku"></strong></div>
+                          </div>
+                          <div class="col-md-3 text-center" style="border-right: 1px solid #ccc;">
+                              <div><strong id="modal_qty"></strong></div>
+                          </div>
+                          <div class="col-md-3 text-center">
+                              <div><strong id="modal_no_rak"></strong></div>
+                          </div>
+                      </div>
+                  </div>
 
                 <div class="form-group">
                   <label class="col-md-3 col-xs-12 control-label">Action</label>
@@ -105,12 +122,8 @@
                 <div class="form-group">
                   <label class="col-md-3 col-xs-12 control-label">Quantity Bermasalah</label>
                   <div class="col-md-8 col-xs-12">
-                    <select name="qty_bermasalah" id="qty_bermasalah" class="form-control select" data-live-search="true">
-                      <?php for ($number = 1; $number <= 30; $number++) : ?>
-                        <option value=<?= $number ?>>
-                          <?= $number ?>
-                        </option>
-                      <?php endfor; ?>
+                    <select name="qty_bermasalah" id="qty_bermasalah" class="form-control selectpicker" data-live-search="true">
+
                     </select>
                   </div>
                 </div>
@@ -134,12 +147,10 @@
                   <p><small id="p_latest_receipt_message">Nomor SKU terakhir yang sudah di-scan</small></p>
                 </div>
 
-              </div>
-
-              <div class="panel-footer">
                 <button type="submit" class="btn btn-info btn-submit-popup">Submit</button>
                 <button type="reset" class="btn btn-primary">Reset</button>
                 <button type="button" class="btn btn-default btn-cancel-popup">Cancel</button>
+
               </div>
             </div>
           </form>
@@ -165,13 +176,8 @@
 
 <script type="text/javascript">
   var table;
-  var hargajualpcs;
   var idPrintResi;
   var noresi;
-  var sku;
-  var qty;
-  var row;
-  var sku_lihat_foto;
 
   $().ready(function() {
 
@@ -217,6 +223,10 @@
 
     // tampilkan modal masalah picker
     $(document).on('click', '.saveMasalahPicker', function() {
+      alert('Fitur ini belum bisa digunakan');
+    });
+
+    $(document).on('click', '.saveMasalahPickera', function() {
 
       event.preventDefault();
 
@@ -225,9 +235,26 @@
       hargajualpcs = $(this).data("hargajualpcs");
       idPrintResi = $(this).data("id");
       noresi = $(this).data("noresi");
-      sku = $(this).data("sku");
-      qty = $(this).data("qty");
-      row = $(this).closest("tr");
+
+      // Get values from data attributes
+      const namapicker = $(this).data("nama-picker");
+      const sku = $(this).data("sku");
+      const qty = $(this).data("qty");
+      const noRak = $(this).data("no-rak");
+
+      $('#modal_nama_picker').text(namapicker);
+      $('#modal_sku').text(sku);
+      $('#modal_qty').text(qty);
+      $('#modal_no_rak').text(noRak);
+
+      // Update qty_bermasalah dropdown
+      const $qtyDropdown = $('#qty_bermasalah');
+      $qtyDropdown.empty();
+      for (let i = 1; i <= parseInt(qty); i++) {
+          $qtyDropdown.append(`<option value="${i}">${i}</option>`);
+      }
+
+      $qtyDropdown.selectpicker('refresh');
 
       // supaya bisa cari dengan ketik
       $('.selectpicker').selectpicker('render');
