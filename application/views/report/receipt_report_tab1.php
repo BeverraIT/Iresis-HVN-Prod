@@ -1,4 +1,4 @@
-<form action="report_receipt/export_to_excel_tab1" class="form-horizontal nojs" method="post" target="_blank">
+<form action="report/export-to-excel-receipt-report-tab1" class="form-horizontal nojs" method="post" target="_blank">
   <div class="form-group">
     <label class="col-md-3 col-xs-12 control-label">Rentang waktu</label>
     <div class="col-md-3 col-xs-12">
@@ -70,7 +70,7 @@
         [10, 50, 100, 150, 200]
       ],
       'ajax': {
-        url: 'report_receipt/get_data_receipt_tab1',
+        url: 'report/get-receipt-report-data-tab1',
         type: 'POST',
         data: function(d) {
           d.start_date = $('#reportrange-receipt-process-tab1').val().split(" - ")[0];
