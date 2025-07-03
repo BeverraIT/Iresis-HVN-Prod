@@ -793,7 +793,7 @@ class Report extends MY_Controller
         header("Content-type: application/vnd-ms-excel");
         header("Content-Disposition: attachment; filename=Laporan_Resi_Dikirim.xls");
 
-        $this->load->view('report/shipped_receipt_report', $data);
+        $this->load->view('template_report/shipped_receipt_report', $data);
     }
 
     public function shipping_report()
@@ -834,6 +834,104 @@ class Report extends MY_Controller
         header("Content-type: application/vnd-ms-excel");
         header("Content-Disposition: attachment; filename=Laporan_Total_Pengiriman_Paket.xls");
 
-        $this->load->view('report/shipping_report', $data);
+        $this->load->view('template_report/shipping_report', $data);
+    }
+
+    public function retur_receipt_report()
+    {
+        $data['message'] = $this->session->flashdata('message');
+
+        if ($this->input->method() == 'post') {
+            $data['reportrange'] = $this->input->post('reportrange');
+        }
+
+        $this->show($data);
+    }
+
+    public function get_retur_receipt_report_data()
+    {
+        $start_date = $this->input->post('start_date');
+        $end_date = $this->input->post('end_date');
+
+        $draw = intval($this->input->post('draw'));
+        $order = $this->input->post('order');
+
+        $data['start'] = intval($this->input->post('start'));
+        $data['length'] = intval($this->input->post('length'));
+        $data['search'] = $this->input->post('search')['value'];
+
+        $col = 0;
+        $dir = '';
+        if (!empty($order)) {
+            foreach ($order as $o) {
+                $col = $o['column'];
+                $dir = $o['dir'];
+            }
+        }
+
+        $data['dir'] = $dir;
+
+        $data['valid_columns'] = array(
+            0 => null,
+            1 => 't2.noresi',
+            2 => 't3.nama_marketplace',
+            3 => 't4.nama_kurir',
+            4 => 't2.nomorpicklist',
+            5 => 't2.tanggal_printresi',
+            6 => 't2.tanggal_printresi',
+            7 => 't.tanggal_resiretur',
+            8 => 't.tanggal_resiretur',
+        );
+
+        $data['order'] = !isset($data['valid_columns'][$col]) ? null : $data['valid_columns'][$col];
+
+        $list_resi = $this->receipt_fcd->get_data_retur_receipt_report($data, $start_date, $end_date);
+
+        $total = $this->receipt_fcd->get_total_data_retur_receipt_report($data, $start_date, $end_date);
+
+        $i = $data['start'] + 1;
+        $data = array();
+        foreach ($list_resi->result() as $row) {
+            $data[] = array(
+                $i++ . '.',
+                $row->noresi,
+                $row->nama_marketplace,
+                $row->nama_kurir,
+                $row->nomorpicklist,
+                empty($row->tanggal_printresi) ? null : date('Y-m-d', strtotime($row->tanggal_printresi)),
+                empty($row->tanggal_printresi) ? null : date('H:i', strtotime($row->tanggal_printresi)),
+                empty($row->tanggal_resiretur) ? null : date('Y-m-d', strtotime($row->tanggal_resiretur)),
+                empty($row->tanggal_resiretur) ? null : date('H:i', strtotime($row->tanggal_resiretur))
+            );
+        }
+
+        $output = array(
+            "draw" => $draw,
+            "recordsTotal" => $total,
+            "recordsFiltered" => $total,
+            "data" => $data
+        );
+        echo json_encode($output);
+        exit();
+    }
+
+    public function export_to_excel_retur_receipt_report()
+    {
+        ini_set('memory_limit', '-1');
+        $reportrange = date('Y-m-d 00:00:00') . ' - ' . date('Y-m-d H:i:s');
+        if ($this->input->method() == 'post') {
+            $reportrange = $this->input->post('reportrange');
+        }
+
+        $start_date = explode(" - ", $reportrange)[0];
+        $end_date = explode(" - ", $reportrange)[1];
+
+        $data['reportrange'] = $reportrange;
+        $data['list_data'] = $this->receipt_fcd->get_data_retur_receipt_report([], $start_date, $end_date)->result_array();
+
+        header("Content-type: application/vnd-ms-excel");
+        header("Content-Disposition: attachment; filename=Laporan_Total_Resi_Retur.xls");
+
+        $this->load->view('template_report/retur_receipt_report', $data);
     }
 }

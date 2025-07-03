@@ -6,7 +6,7 @@
       </div>
 
       <div class="panel-body">
-        <form action="report/receipt-per-day-report" class="form-horizontal" method="post" id="form-report-receipt-per-day">
+        <form action="report/per-day-receipt-report" class="form-horizontal" method="post" id="form-report-receipt-per-day">
           <div class="form-group">
             <label class="col-md-3 col-xs-12 control-label">Rentang waktu</label>
             <div class="col-md-3 col-xs-12">

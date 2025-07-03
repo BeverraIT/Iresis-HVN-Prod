@@ -1300,4 +1300,89 @@ class Receipt_fcd extends CI_Model
 
         return $existing_data;
     }
+
+    function get_data_retur_receipt_report($data, $start_date, $end_date)
+    {
+        if (!empty($data) && $data['order'] != null) {
+            $this->db->order_by($data['order'], $data['dir'], FALSE);
+        }
+
+        if (!empty($data['search'])) {
+            $x = 0;
+
+            $this->db->group_start();
+
+            foreach ($data['valid_columns'] as $sterm) {
+                if (empty($sterm)) continue;
+
+                if ($x == 0) {
+                    $this->db->like($sterm, $data['search']);
+                } else {
+                    $this->db->or_like($sterm, $data['search']);
+                }
+
+                $x++;
+            }
+
+            $this->db->group_end();
+        }
+
+        $this->db->select('
+            t2.noresi
+            , t3.nama_marketplace
+            , t4.nama_kurir
+            , t2.nomorpicklist
+            , t2.tanggal_printresi
+            , t.tanggal_resiretur
+        ');
+
+        $this->db->distinct();
+        $this->db->join('tblprintresi t2' , 't2.id_printresi = t.id_resi', 'left');
+        $this->db->join('tblmarketplace t3', 't3.id_marketplace = t.id_marketplace', 'left');
+        $this->db->join('tblkurir t4', 't4.id_kurir = t.id_kurir', 'left');
+
+        $this->db->where('t2.tanggal_printresi >=', $start_date);
+        $this->db->where('t2.tanggal_printresi <=', $end_date);
+
+        if (!empty($data['length'])) {
+            $this->db->limit($data['length'], $data['start']);
+        }
+
+        return $this->db->get('tblresiretur t');
+    }
+
+    function get_total_data_retur_receipt_report($data, $start_date, $end_date)
+    {
+        if (!empty($data['search'])) {
+            $x = 0;
+
+            $this->db->group_start();
+
+            foreach ($data['valid_columns'] as $sterm) {
+                if (empty($sterm)) continue;
+
+                if ($x == 0) {
+                    $this->db->like($sterm, $data['search']);
+                } else {
+                    $this->db->or_like($sterm, $data['search']);
+                }
+
+                $x++;
+            }
+
+            $this->db->group_end();
+        }
+
+        $this->db->join('tblprintresi t2' , 't2.id_printresi = t.id_resi', 'left');
+        $this->db->join('tblmarketplace t3', 't3.id_marketplace = t.id_marketplace', 'left');
+        $this->db->join('tblkurir t4', 't4.id_kurir = t.id_kurir', 'left');
+
+        $this->db->where('t2.tanggal_printresi >=', $start_date);
+        $this->db->where('t2.tanggal_printresi <=', $end_date);
+
+        $query = $this->db->select("COUNT(DISTINCT t.id_resi) as num")->get("tblresiretur t");
+        $result = $query->row();
+
+        return isset($result) ? $result->num : 0;
+    }
 }

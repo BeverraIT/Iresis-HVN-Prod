@@ -109,6 +109,9 @@ $route['report/get-shipped-receipt-report-data'] = 'report/get_shipped_receipt_r
 $route['report/export-to-excel-shipped-receipt-report'] = 'report/export_to_excel_shipped_receipt_report';
 $route['report/shipping-report'] = 'report/shipping_report';
 $route['report/export-to-excel-shipping-report'] = 'report/export_to_excel_shipping_report';
+$route['report/retur-receipt-report'] = 'report/retur_receipt_report';
+$route['report/get-retur-receipt-report-data'] = 'report/get_retur_receipt_report_data';
+$route['report/export-to-excel-retur-receipt-report'] = 'report/export_to_excel_retur_receipt_report';
 
 
 $route['user'] = 'user';
