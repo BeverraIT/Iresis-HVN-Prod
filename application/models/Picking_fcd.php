@@ -26,7 +26,10 @@ class Picking_fcd extends CI_Model
     function save($picking, $user, $mode = PICKING_INSERT_PACKER)
     {
         // 1. Check if noresi exists
-        $receipt = $this->db->get_where('tblprintresi', ['noresi' => $picking['noresi']])->result_array();
+        $receipt = $this->db
+            ->select('id_printresi')
+            ->get_where('tblprintresi', ['noresi' => $picking['noresi']])
+            ->result_array();
         if (empty($receipt)) {
             return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi tidak ditemukan'];
         }
@@ -129,7 +132,7 @@ class Picking_fcd extends CI_Model
         $this->db->join('tblprintresi t2', 't2.id_printresi = t.id_resi');
         $this->db->join('tblpegawai t3', 't3.kode_pegawai = t.yangambil_pegawai', 'left');
         $this->db->join('tbluser t4', 't4.id_user = t.admin_pegawai', 'left');
-        $this->db->group_by('t2.noresi');
+        //$this->db->group_by('t2.noresi');
         $this->db->limit($data['length'], $data['start']);
 
         return $this->db->get('tblresiambilbarang t');

@@ -1166,6 +1166,8 @@ class Receipt_fcd extends CI_Model
                     $kurir = 'lazada';
                 } elseif (stripos($kurirRaw, 'ninja') !== false) {
                     $kurir = 'ninja';
+                } elseif (stripos($kurirRaw, 'rex') !== false) {
+                    $kurir = 'rex';
                 } elseif (stripos($kurirRaw, 'sicepat') !== false) {
                     $kurir = 'sicepat';
                 } elseif (stripos($kurirRaw, 'sicepat rekom') !== false || stripos($kurirRaw, 'rekomendasi') !== false) {
@@ -1384,5 +1386,177 @@ class Receipt_fcd extends CI_Model
         $result = $query->row();
 
         return isset($result) ? $result->num : 0;
+    }
+
+    function get_data_production_team_tab0($data, $start_date, $end_date)
+    {
+        if (!empty($data) && $data['order'] != null) {
+            foreach ($data['order'] as $order) {
+                $this->db->order_by($data['valid_columns'][$order['column']]['col'], $order['dir'], FALSE);
+            }
+        } else {
+            $this->db->order_by('CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai)', 'asc', FALSE);
+            $this->db->order_by('date(a.tanggal_resiambilbarang)', 'asc', FALSE);
+        }
+
+        if (!empty($data['search'])) {
+            $x = 0;
+
+            $this->db->group_start();
+
+            foreach ($data['valid_columns'] as $sterm) {
+                if (empty($sterm) || !$sterm['searchable']) continue;
+
+                if ($x == 0) {
+                    $this->db->like($sterm['col'], $data['search']);
+                } else {
+                    $this->db->or_like($sterm['col'], $data['search']);
+                }
+
+                $x++;
+            }
+
+            $this->db->group_end();
+        }
+
+        $this->db->select('
+            min(a.tanggal_resiambilbarang) tanggal_resiambilbarang,
+            CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai) pegawai,
+            count(1) as total
+        ');
+
+        $this->db->join('tblpegawai b', 'b.kode_pegawai = a.yangambil_pegawai');
+
+        $this->db->where('a.tanggal_resiambilbarang >=', $start_date);
+        $this->db->where('a.tanggal_resiambilbarang <=', $end_date);
+
+        if (!empty($data['length'])) {
+            $this->db->limit($data['length'], $data['start']);
+        }
+
+        $this->db->group_by('date(a.tanggal_resiambilbarang), CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai)');
+
+        return $this->db->get('tblresiambilbarang a');
+    }
+
+    function get_total_data_production_team_tab0($data, $start_date, $end_date)
+    {
+        if (!empty($data['search'])) {
+            $x = 0;
+
+            $this->db->group_start();
+
+            foreach ($data['valid_columns'] as $sterm) {
+                if (empty($sterm) || !$sterm['searchable']) continue;
+
+                if ($x == 0) {
+                    $this->db->like($sterm['col'], $data['search']);
+                } else {
+                    $this->db->or_like($sterm['col'], $data['search']);
+                }
+
+                $x++;
+            }
+
+            $this->db->group_end();
+        }
+
+        $this->db->join('tblpegawai b', 'b.kode_pegawai = a.yangambil_pegawai');
+
+        $this->db->where('a.tanggal_resiambilbarang >=', $start_date);
+        $this->db->where('a.tanggal_resiambilbarang <=', $end_date);
+
+        $this->db->group_by('date(a.tanggal_resiambilbarang), CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai)');
+
+        $query = $this->db->select("count(1) as num")->get("tblresiambilbarang a");
+        $result = $query->num_rows();
+
+        return isset($result) ? $result : 0;
+    }
+
+    function get_data_production_team_tab1($data, $start_date, $end_date)
+    {
+        if (!empty($data) && $data['order'] != null) {
+            foreach ($data['order'] as $order) {
+                $this->db->order_by($data['valid_columns'][$order['column']]['col'], $order['dir'], FALSE);
+            }
+        } else {
+            $this->db->order_by('CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai)', 'asc', FALSE);
+            $this->db->order_by('date(a.tanggal_packing)', 'asc', FALSE);
+        }
+
+        if (!empty($data['search'])) {
+            $x = 0;
+
+            $this->db->group_start();
+
+            foreach ($data['valid_columns'] as $sterm) {
+                if (empty($sterm) || !$sterm['searchable']) continue;
+
+                if ($x == 0) {
+                    $this->db->like($sterm['col'], $data['search']);
+                } else {
+                    $this->db->or_like($sterm['col'], $data['search']);
+                }
+
+                $x++;
+            }
+
+            $this->db->group_end();
+        }
+
+        $this->db->select('
+            min(a.tanggal_packing) tanggal_packing,
+            CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai) pegawai,
+            count(1) as total
+        ');
+
+        $this->db->join('tblpegawai b', 'b.kode_pegawai = a.packer_pegawai');
+
+        $this->db->where('a.tanggal_packing >=', $start_date);
+        $this->db->where('a.tanggal_packing <=', $end_date);
+
+        if (!empty($data['length'])) {
+            $this->db->limit($data['length'], $data['start']);
+        }
+
+        $this->db->group_by('date(a.tanggal_packing), CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai)');
+
+        return $this->db->get('tblpacking a');
+    }
+
+    function get_total_data_production_team_tab1($data, $start_date, $end_date)
+    {
+        if (!empty($data['search'])) {
+            $x = 0;
+
+            $this->db->group_start();
+
+            foreach ($data['valid_columns'] as $sterm) {
+                if (empty($sterm) || !$sterm['searchable']) continue;
+
+                if ($x == 0) {
+                    $this->db->like($sterm['col'], $data['search']);
+                } else {
+                    $this->db->or_like($sterm['col'], $data['search']);
+                }
+
+                $x++;
+            }
+
+            $this->db->group_end();
+        }
+
+        $this->db->join('tblpegawai b', 'b.kode_pegawai = a.packer_pegawai');
+
+        $this->db->where('a.tanggal_packing >=', $start_date);
+        $this->db->where('a.tanggal_packing <=', $end_date);
+
+        $this->db->group_by('date(a.tanggal_packing), CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai)');
+
+        $query = $this->db->select("count(1) as num")->get("tblpacking a");
+        $result = $query->num_rows();
+
+        return isset($result) ? $result : 0;
     }
 }

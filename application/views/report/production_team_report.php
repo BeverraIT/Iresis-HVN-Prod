@@ -8,10 +8,10 @@
       </ul>
       <div class="panel-body tab-content">
         <div class="tab-pane active" id="tab0">
-          <?php $this->load->view('report_production_team_tab0') ?>
+          <?php $this->load->view('report/production_team_report_tab0') ?>
         </div>
         <div class="tab-pane" id="tab1">
-          <?php $this->load->view('report_production_team_tab1') ?>
+          <?php $this->load->view('report/production_team_report_tab1') ?>
         </div>
       </div>
     </div>

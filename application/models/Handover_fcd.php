@@ -17,7 +17,10 @@ class Handover_fcd extends CI_Model
          * 8. throw if not exist
          * 9. save into tblresikeluar
          */
-        $receipt = $this->db->get_where('tblprintresi', ['noresi' => $handover['noresi']])->result_array();
+        $receipt = $this->db
+            ->select('id_printresi')
+            ->get_where('tblprintresi', ['noresi' => $handover['noresi']])
+            ->result_array();
         if (empty($receipt)) {
             return ['error' => TRUE, 'code' => 404, 'message' => 'Nomor resi tidak ditemukan', 'data' => ['EXCEPTION_CODE' => 'NOT_FOUND']];
         }
@@ -99,7 +102,7 @@ class Handover_fcd extends CI_Model
 
         $this->db->join('tblprintresi t2', 't2.id_printresi = t.id_resi');
         $this->db->join('tblpegawai t3', 't3.kode_pegawai = t.id_pegawai', 'left');
-        $this->db->group_by('t2.noresi');
+        //$this->db->group_by('t2.noresi');
         $this->db->limit($data['length'], $data['start']);
 
         return $this->db->get('tblresikeluar t');

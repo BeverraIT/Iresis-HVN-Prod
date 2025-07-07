@@ -6,7 +6,10 @@ class Retur_fcd extends CI_Model
 
     function save($retur, $user)
     {
-        $receipt = $this->db->get_where('tblprintresi', ['noresi' => $retur['noresi']])->result_array();
+        $receipt = $this->db
+            ->select('id_printresi')
+            ->get_where('tblprintresi', ['noresi' => $retur['noresi']])
+            ->result_array();
         if (empty($receipt)) {
             return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi tidak ditemukan'];
         }

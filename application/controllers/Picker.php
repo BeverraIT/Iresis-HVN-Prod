@@ -26,6 +26,7 @@ class Picker extends MY_Controller
 
         $picking['noresi'] = $this->input->post('noresi');
         $picking['yangambil_pegawai'] = $this->input->post('id_pegawaipicker');
+        $picking['pending'] = '';
 
         $save = $this->picking_fcd->save($picking, $this->data['user']);
 

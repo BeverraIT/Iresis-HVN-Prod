@@ -112,6 +112,10 @@ $route['report/export-to-excel-shipping-report'] = 'report/export_to_excel_shipp
 $route['report/retur-receipt-report'] = 'report/retur_receipt_report';
 $route['report/get-retur-receipt-report-data'] = 'report/get_retur_receipt_report_data';
 $route['report/export-to-excel-retur-receipt-report'] = 'report/export_to_excel_retur_receipt_report';
+$route['report/get-production-team-report-data-tab0'] = 'report/get_production_team_report_data_tab0';
+$route['report/get-production-team-report-data-tab1'] = 'report/get_production_team_report_data_tab1';
+$route['report/export-to-excel-production-team-report-tab0'] = 'report/export_to_excel_production_team_report_tab0';
+$route['report/export-to-excel-production-team-report-tab1'] = 'report/export_to_excel_production_team_report_tab1';
 
 
 $route['user'] = 'user';

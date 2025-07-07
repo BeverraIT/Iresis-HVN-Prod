@@ -934,4 +934,153 @@ class Report extends MY_Controller
 
         $this->load->view('template_report/retur_receipt_report', $data);
     }
+
+    public function production_team_report()
+    {
+        $data['message'] = $this->session->flashdata('message');
+
+        $this->show($data);
+    }
+
+    public function get_production_team_report_data_tab0()
+    {
+        $start_date = $this->input->post('start_date');
+        $end_date = $this->input->post('end_date');
+
+        $draw = intval($this->input->post('draw'));
+        $order = $this->input->post('order');
+
+        $data['start'] = intval($this->input->post('start'));
+        $data['length'] = intval($this->input->post('length'));
+        $data['search'] = $this->input->post('search')['value'];
+
+        $data['valid_columns'] = array(
+            0 => ['searchable' => true, 'col' => 'CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai)',],
+            1 => ['searchable' => true, 'col' => 'date(a.tanggal_resiambilbarang)',],
+            2 => ['searchable' => false, 'col' => 'count(1)',],
+        );
+
+        $data['order'] = $order;
+
+        $list_resi = $this->receipt_fcd->get_data_production_team_tab0($data, $start_date, $end_date);
+
+        $total = $this->receipt_fcd->get_total_data_production_team_tab0($data, $start_date, $end_date);
+
+        $data = array();
+        foreach ($list_resi->result() as $row) {
+            $data[] = array(
+                $row->pegawai,
+                '&emsp;&emsp;&emsp;' . $row->tanggal_resiambilbarang,
+                $row->total,
+            );
+        }
+
+        $output = array(
+            "draw" => $draw,
+            "recordsTotal" => $total,
+            "recordsFiltered" => $total,
+            "data" => $data
+        );
+        echo json_encode($output);
+        exit();
+    }
+
+    public function get_production_team_report_data_tab1()
+    {
+        $start_date = $this->input->post('start_date');
+        $end_date = $this->input->post('end_date');
+
+        $draw = intval($this->input->post('draw'));
+        $order = $this->input->post('order');
+
+        $data['start'] = intval($this->input->post('start'));
+        $data['length'] = intval($this->input->post('length'));
+        $data['search'] = $this->input->post('search')['value'];
+
+        $data['valid_columns'] = array(
+            0 => ['searchable' => true, 'col' => 'CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai)',],
+            1 => ['searchable' => true, 'col' => 'date(a.tanggal_packing)',],
+            2 => ['searchable' => false, 'col' => 'count(1)',],
+        );
+
+        $data['order'] = $order;
+
+        $list_resi = $this->receipt_fcd->get_data_production_team_tab1($data, $start_date, $end_date);
+
+        $total = $this->receipt_fcd->get_total_data_production_team_tab1($data, $start_date, $end_date);
+
+        $data = array();
+        foreach ($list_resi->result() as $row) {
+            $data[] = array(
+                $row->pegawai,
+                '&emsp;&emsp;&emsp;' . $row->tanggal_packing,
+                $row->total,
+            );
+        }
+
+        $output = array(
+            "draw" => $draw,
+            "recordsTotal" => $total,
+            "recordsFiltered" => $total,
+            "data" => $data
+        );
+        echo json_encode($output);
+        exit();
+    }
+
+    public function export_to_excel_production_team_report_tab0()
+    {
+        ini_set('memory_limit', '-1');
+        $reportrange = date('Y-m-d 00:00:00') . ' - ' . date('Y-m-d H:i:s');
+        if ($this->input->method() == 'post') {
+            $reportrange = $this->input->post('reportrange');
+        }
+
+        $start_date = explode(" - ", $reportrange)[0];
+        $end_date = explode(" - ", $reportrange)[1];
+
+        $data['reportrange'] = $reportrange;
+        $data['list_data'] = [];
+
+        $grand_total = 0;
+        $pickers = $this->receipt_fcd->get_data_production_team_tab0([], $start_date, $end_date)->result_array();
+        foreach ($pickers as $picker) {
+            $data['list_data'][$picker['pegawai']][] = ['tanggal' => $picker['tanggal_resiambilbarang'], 'total' => $picker['total']];
+            $grand_total += $picker['total'];
+        }
+        $data['grand_total'] = $grand_total;
+
+        header("Content-type: application/vnd-ms-excel");
+        header("Content-Disposition: attachment; filename=Laporan_Produksi_Picker.xls");
+
+        $this->load->view('template_report/production_team_report_tab0', $data);
+    }
+
+    public function export_to_excel_production_team_report_tab1()
+    {
+        ini_set('memory_limit', '-1');
+        $reportrange = date('Y-m-d 00:00:00') . ' - ' . date('Y-m-d H:i:s');
+        if ($this->input->method() == 'post') {
+            $reportrange = $this->input->post('reportrange');
+        }
+
+        $start_date = explode(" - ", $reportrange)[0];
+        $end_date = explode(" - ", $reportrange)[1];
+
+        $data['reportrange'] = $reportrange;
+        $data['list_data'] = [];
+
+        $grand_total = 0;
+        $pickers = $this->receipt_fcd->get_data_production_team_tab1([], $start_date, $end_date)->result_array();
+        foreach ($pickers as $picker) {
+            $data['list_data'][$picker['pegawai']][] = ['tanggal' => $picker['tanggal_packing'], 'total' => $picker['total']];
+            $grand_total += $picker['total'];
+        }
+        $data['grand_total'] = $grand_total;
+
+        header("Content-type: application/vnd-ms-excel");
+        header("Content-Disposition: attachment; filename=Laporan_Produksi_Packer.xls");
+
+        $this->load->view('template_report/production_team_report_tab1', $data);
+    }
 }
