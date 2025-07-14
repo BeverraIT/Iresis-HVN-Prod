@@ -72,7 +72,7 @@ class Picker extends MY_Controller
             2 => 't3.nama_pegawai',
             3 => 't.tanggal_resiambilbarang',
             4 => 't.tanggal_resiambilbarang',
-            5 => 't4.username',
+            5 => 't4.name',
             6 => null,
         );
 
@@ -88,10 +88,10 @@ class Picker extends MY_Controller
             $data[] = array(
                 $i++ . '.',
                 $row->noresi,
-                $row->packer,
+                $row->nama_pegawai,
                 date('Y-m-d', strtotime($row->tanggal_resiambilbarang)),
                 date('H:i:s', strtotime($row->tanggal_resiambilbarang)),
-                $row->admin,
+                $row->name,
                 $row->nama_komputer,
             );
         }

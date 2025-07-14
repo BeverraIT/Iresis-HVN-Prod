@@ -18,19 +18,11 @@
                   name="noresi"
                   id="noresi"
                   placeholder="Nomor resi"
-                  value="<?= isset($noresi) ? htmlspecialchars($noresi) : '' ?>"
-                  <?= isset($noresi) && $noresi !== '' ? 'disabled' : '' ?>
                 />
                   <span class="input-group-btn" id="button-group">
-                    <?php if (isset($noresi) && $noresi !== ''): ?>
-                        <button type="button" id="btn-reset" class="btn btn-warning">
-                          <i class="fa fa-refresh"></i> Reset
-                        </button>
-                    <?php else: ?>
-                        <button class="btn btn-default" type="submit">
-                          <i class="fa fa-search"></i> Cari
-                        </button>
-                    <?php endif; ?>
+                    <button class="btn btn-default" type="submit">
+                      <i class="fa fa-search"></i> Cari
+                    </button>
                   </span>
               </div>
             </div>
@@ -48,17 +40,53 @@
                       <button id="submit-selected" class="btn btn-success mb-2" style="margin-bottom: 10px;">
                           <strong>Submit</strong>
                       </button>
+                      <button id="btn-reset" class="btn btn-warning mb-2" style="margin-bottom: 10px;">
+                          <strong>Reset</strong>
+                      </button>
                   </div>
               </div>
               <div class="row">
                   <div class="col-md-4 text-center" style="border-right: 1px solid #ccc;">
-                      <div><strong><?= $total_scan ?></strong></div>
+                      <div><strong>Total Scan: <?= $total_scan ?></strong></div>
                   </div>
                   <div class="col-md-4 text-center" style="border-right: 1px solid #ccc;">
-                      <div><strong><?= $nama_picker ?></strong></div>
+                      <div><strong>Picker: <?= $nama_picker ?></strong></div>
                   </div>
                   <div class="col-md-4 text-center">
-                      <div><strong><?= $komputer_picker ?></strong></div>
+                      <div><strong>Komputer: <?= $komputer_picker ?></strong></div>
+                  </div>
+              </div>
+              <div class="row justify-content-center">
+                  <div class="col-md-3">
+                  </div>
+                  <div class="col-md-2">
+                      <input type="text"
+                             class="form-control text-center"
+                             readonly
+                             value="No Resi:"
+                             style="
+                                background-color: transparent;
+                                border: none;
+                                color: black;
+                                font-weight: bold;
+                                cursor: text;"
+                      />
+                  </div>
+                  <div class="col-md-4">
+                      <input type="text"
+                             name="noresi"
+                             id="noresi-detail"
+                             class="form-control text-center mx-auto"
+                             readonly
+                             value="<?= $noresi ?>"
+                             style="
+                                background-color: transparent;
+                                color: black;
+                                font-weight: bold;
+                                cursor: text;"
+                      />
+                  </div>
+                  <div class="col-md-3">
                   </div>
               </div>
           </div>
@@ -372,7 +400,7 @@
 
     // Handle submit selected, simpan ke tblpacking
     $('#submit-selected').on('click', function() {
-      const noresi = $('#noresi').val();
+      const noresi = $('#noresi-detail').val();
 
       if (!noresi || noresi.trim() === '') {
           alert("Nomor resi tidak boleh kosong!");
@@ -386,7 +414,10 @@
         data: { noresi: noresi },
         success: function(response) {
           alert("Data berhasil disubmit!");
-          table.ajax.reload(null, false); // reload data tanpa reset page
+            $resultInfo.hide();
+            $table.hide();
+            $footer.hide();
+            $('#noresi').focus();
         },
         error: function(xhr, status, error) {
           alert(xhr.responseText);
@@ -394,38 +425,15 @@
       });
     });
 
-    const $noresi = $('#noresi');
-    const $buttonGroup = $('#button-group');
     const $resultInfo = $('#result-info');
     const $table = $('#table-scan-packer');
     const $footer = $('#button-footer');
     $('#btn-reset').on('click', function () {
-        // Enable the input
-        $noresi.prop('disabled', false);
-        // Remove the hidden input if it exists
-        $('#hidden-noresi').remove()
-        // Change button to "Cari"
-        updateToCariButton();
-        // Hide the result info section
         $resultInfo.hide();
         $table.hide();
         $footer.hide();
+        $('#noresi').focus();
     });
-
-    // Optional: also check if the field becomes enabled manually
-    $noresi.on('input propertychange change', function () {
-        if (!$noresi.prop('disabled')) {
-            updateToCariButton();
-        }
-    });
-
-    function updateToCariButton() {
-        $buttonGroup.html(`
-      <button class="btn btn-default" type="submit">
-        <i class="fa fa-search"></i> Cari
-      </button>
-    `);
-    }
   })
 
 </script>

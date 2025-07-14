@@ -183,7 +183,7 @@ class Packer extends MY_Controller
             $data[] = array(
                 $i++ . '.',
                 $row->noresi,
-                $row->packer,
+                $row->nama_pegawai,
                 date('Y-m-d', strtotime($row->tanggal_packing)),
                 date('H:i:s', strtotime($row->tanggal_packing)),
                 $row->keterangan,

@@ -121,18 +121,17 @@ class Picking_fcd extends CI_Model
         }
 
         $this->db->select('
-            t.id_resiambilbarang id,
             t2.noresi,
-            t3.nama_pegawai packer,
+            t3.nama_pegawai,
             t.tanggal_resiambilbarang,
-            t4.name admin,
+            t4.name,
             t.nama_komputer
         ');
 
+        $this->db->distinct();
         $this->db->join('tblprintresi t2', 't2.id_printresi = t.id_resi');
         $this->db->join('tblpegawai t3', 't3.kode_pegawai = t.yangambil_pegawai', 'left');
         $this->db->join('tbluser t4', 't4.id_user = t.admin_pegawai', 'left');
-        //$this->db->group_by('t2.noresi');
         $this->db->limit($data['length'], $data['start']);
 
         return $this->db->get('tblresiambilbarang t');
@@ -161,12 +160,9 @@ class Picking_fcd extends CI_Model
         }
 
         $this->db->join('tblprintresi t2', 't2.id_printresi = t.id_resi');
-
         $this->db->join('tblpegawai t3', 't3.kode_pegawai = t.yangambil_pegawai', 'left');
-
         $this->db->join('tbluser t4', 't4.id_user = t.admin_pegawai', 'left');
-
-        $query = $this->db->select("count(1) as num")->get("tblresiambilbarang t");
+        $query = $this->db->select("COUNT(DISTINCT t2.noresi) AS num")->get("tblresiambilbarang t");
         $result = $query->row();
 
         return isset($result) ? $result->num : 0;

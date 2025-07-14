@@ -12,7 +12,7 @@ class Receipt_fcd extends CI_Model
         $subquery = $this->db->get_compiled_select();
 
         // Step 2: Main query using subquery join
-        $this->db->select('t.*, t2.nama_marketplace, t3.nama_kurir, t4.name');
+        $this->db->select('t.noresi, t.tanggal_printresi, t.no_pesanan, t.sku, t2.nama_marketplace, t.nomorpicklist, t.status_pesanan, t3.nama_kurir, t4.name, t.created_at, t.id_printresi');
         $this->db->from('tblprintresi t');
         $this->db->join('tblmarketplace t2', 't.id_marketplace = t2.id_marketplace', 'left');
         $this->db->join('tblkurir t3', 't.id_kurir = t3.id_kurir', 'left');
@@ -32,8 +32,35 @@ class Receipt_fcd extends CI_Model
         return $query;
     }
 
-    function get_total_data($data = null) {
-        return $this->db->count_all('tblprintresi');
+    public function get_total_data($data = null)
+    {
+        // Step 1: Subquery for latest created_at per no_pesanan + sku
+        $this->db->select('no_pesanan, sku, MAX(created_at) AS latest_created_at');
+        $this->db->from('tblprintresi');
+        $this->db->group_by(['no_pesanan', 'sku']);
+        $subquery = $this->db->get_compiled_select();
+
+        // Step 2: Main query for counting total filtered rows
+        $this->db->from('tblprintresi t');
+        $this->db->join('tblmarketplace t2', 't.id_marketplace = t2.id_marketplace', 'left');
+        $this->db->join('tblkurir t3', 't.id_kurir = t3.id_kurir', 'left');
+        $this->db->join('tbluser t4', 't.created_by = t4.id_user', 'left');
+        $this->db->join("($subquery) latest",
+            't.no_pesanan = latest.no_pesanan AND t.sku = latest.sku AND t.created_at = latest.latest_created_at',
+            'inner');
+
+        // Apply search filter if available
+        if (!empty($data['search'])) {
+            $this->db->group_start();
+            foreach ($data['valid_columns'] as $column) {
+                if (!empty($column)) {
+                    $this->db->or_like($column, $data['search']);
+                }
+            }
+            $this->db->group_end();
+        }
+
+        return $this->db->count_all_results();
     }
 
     function get_detail_receipt($noresi) {

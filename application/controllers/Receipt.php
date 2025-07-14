@@ -90,12 +90,12 @@ class Receipt extends MY_Controller
             1 => 't.noresi',
             2 => 't.tanggal_printresi',
             3 => 't.no_pesanan',
-            4 => 't2.nama_marketplace',
-            5 => 't.nomorpicklist',
-            6 => 't.batal',
-            7 => 't.keterangan',
+            4 => 't.sku',
+            5 => 't2.nama_marketplace',
+            6 => 't.nomorpicklist',
+            7 => 't.status_pesanan',
             8 => 't3.nama_kurir',
-            9 => 't3.username',
+            9 => 't4.name',
         );
 
         $data['order'] = !isset($data['valid_columns'][$col]) ? null : $data['valid_columns'][$col];
