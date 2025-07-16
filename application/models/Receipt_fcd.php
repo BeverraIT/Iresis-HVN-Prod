@@ -154,7 +154,7 @@ class Receipt_fcd extends CI_Model
     function get_detail($noresi)
     {
         $this->db->select('t.noresi, t.tanggal_printresi, t2.nama_marketplace, t3.tanggal_resiambilbarang
-            , t4.nama_pegawai picker, t5.tanggal_packing, t6.nama_pegawai packer
+            , t4.nama_pegawai picker, t5.tanggal_packing, t6.name packer
             , t5.keterangan komputer_packer_no, t7.nama_kurir, t8.tanggal_cetak
             , t8.tanggal_resikeluar, t.status_pesanan, t.sku, t.tanggal_retur, t.tanggal_bataskirim
             , t.jumlah, t.no_pesanan'
@@ -164,7 +164,7 @@ class Receipt_fcd extends CI_Model
         $this->db->join('tblresiambilbarang t3', 't3.id_resi = t.id_printresi', 'left');
         $this->db->join('tblpegawai t4', 't4.kode_pegawai = t3.yangambil_pegawai', 'left');
         $this->db->join('tblpacking t5', 't5.id_resi = t.id_printresi', 'left');
-        $this->db->join('tblpegawai t6', 't6.kode_pegawai = t5.packer_pegawai', 'left');
+        $this->db->join('tbluser t6', 't6.id_user = t5.packer_pegawai', 'left');
         $this->db->join('tblkurir t7', 't7.id_kurir = t.id_kurir', 'left');
         $this->db->join('tblresikeluar t8', 't8.id_resi = t.id_printresi', 'left');
 

@@ -1,2 +1,5 @@
 .vscode
 /vendor/
+composer.lock
+composer.json
+application/logs/
