@@ -1508,7 +1508,7 @@ class Receipt_fcd extends CI_Model
                 $this->db->order_by($data['valid_columns'][$order['column']]['col'], $order['dir'], FALSE);
             }
         } else {
-            $this->db->order_by('CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai)', 'asc', FALSE);
+            $this->db->order_by('CONCAT(b.name, \' - \', b.id_user)', 'asc', FALSE);
             $this->db->order_by('date(a.tanggal_packing)', 'asc', FALSE);
         }
 
@@ -1534,11 +1534,11 @@ class Receipt_fcd extends CI_Model
 
         $this->db->select('
             min(a.tanggal_packing) tanggal_packing,
-            CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai) pegawai,
+            CONCAT(b.name, \' - \', b.id_user) pegawai,
             count(1) as total
         ');
 
-        $this->db->join('tblpegawai b', 'b.kode_pegawai = a.packer_pegawai');
+        $this->db->join('tbluser b', 'b.id_user = a.packer_pegawai');
 
         $this->db->where('a.tanggal_packing >=', $start_date);
         $this->db->where('a.tanggal_packing <=', $end_date);
@@ -1547,7 +1547,7 @@ class Receipt_fcd extends CI_Model
             $this->db->limit($data['length'], $data['start']);
         }
 
-        $this->db->group_by('date(a.tanggal_packing), CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai)');
+        $this->db->group_by('date(a.tanggal_packing), CONCAT(b.name, \' - \', b.id_user)');
 
         return $this->db->get('tblpacking a');
     }
@@ -1574,12 +1574,12 @@ class Receipt_fcd extends CI_Model
             $this->db->group_end();
         }
 
-        $this->db->join('tblpegawai b', 'b.kode_pegawai = a.packer_pegawai');
+        $this->db->join('tbluser b', 'b.id_user = a.packer_pegawai');
 
         $this->db->where('a.tanggal_packing >=', $start_date);
         $this->db->where('a.tanggal_packing <=', $end_date);
 
-        $this->db->group_by('date(a.tanggal_packing), CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai)');
+        $this->db->group_by('date(a.tanggal_packing), CONCAT(b.name, \' - \', b.id_user)');
 
         $query = $this->db->select("count(1) as num")->get("tblpacking a");
         $result = $query->num_rows();

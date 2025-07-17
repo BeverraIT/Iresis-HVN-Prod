@@ -998,7 +998,7 @@ class Report extends MY_Controller
         $data['search'] = $this->input->post('search')['value'];
 
         $data['valid_columns'] = array(
-            0 => ['searchable' => true, 'col' => 'CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai)',],
+            0 => ['searchable' => true, 'col' => 'CONCAT(b.name, \' - \', b.id_user)',],
             1 => ['searchable' => true, 'col' => 'date(a.tanggal_packing)',],
             2 => ['searchable' => false, 'col' => 'count(1)',],
         );

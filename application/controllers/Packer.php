@@ -164,11 +164,11 @@ class Packer extends MY_Controller
 
         $data['valid_columns'] = array(
             0 => null,
-            1 => 't2.noresi',
-            2 => 't3.nama_pegawai',
-            3 => 't.tanggal_packing',
-            4 => 't.tanggal_packing',
-            5 => 't.keterangan',
+            1 => 'pr.noresi',
+            2 => 'u.name',
+            3 => 'p.tanggal_packing',
+            4 => 'p.tanggal_packing',
+            5 => 'p.keterangan',
         );
 
         $data['order'] = !isset($data['valid_columns'][$col]) ? null : $data['valid_columns'][$col];

@@ -82,32 +82,49 @@ class Packer_fcd extends CI_Model
 
                 $x++;
             }
-
             $this->db->group_end();
         }
 
         $this->db->select('
-            t2.noresi,
-            t3.nama_pegawai,
-            t.tanggal_packing,
-            t.keterangan
+            pr.noresi,
+            u.name AS nama_pegawai,
+            p.tanggal_packing,
+            p.keterangan
         ');
 
-        $this->db->distinct();
-        $this->db->join('tblprintresi t2', 't2.id_printresi = t.id_resi');
-        $this->db->join('tblpegawai t3', 't3.kode_pegawai = t.packer_pegawai', 'left');
+        $this->db->from('tblprintresi pr');
+
+        // Subquery to pick one packing row per id_resi
+        $this->db->join('(
+            SELECT MIN(id_packing) AS id_packing, id_resi
+            FROM tblpacking
+            GROUP BY id_resi
+        ) p_min', 'p_min.id_resi = pr.id_printresi');
+
+        // Join to the selected packing row
+        $this->db->join('tblpacking p', 'p.id_packing = p_min.id_packing');
+
+        // Join to user table
+        $this->db->join('tbluser u', 'u.id_user = p.packer_pegawai', 'left');
+
+        // Group to ensure uniqueness   
+        $this->db->group_by([
+            'pr.noresi',
+            'u.name',
+            'p.tanggal_packing',
+            'p.keterangan'
+        ]);
+
         $this->db->limit($data['length'], $data['start']);
 
-        return $this->db->get('tblpacking t');
+        return $this->db->get();
     }
 
     function get_total_data($data)
     {
         if (!empty($data['search'])) {
             $x = 0;
-
             $this->db->group_start();
-
             foreach ($data['valid_columns'] as $sterm) {
                 if (empty($sterm)) continue;
 
@@ -119,16 +136,35 @@ class Packer_fcd extends CI_Model
 
                 $x++;
             }
-
             $this->db->group_end();
         }
 
-        $this->db->join('tblprintresi t2', 't2.id_printresi = t.id_resi');
-        $this->db->join('tblpegawai t3', 't3.kode_pegawai = t.packer_pegawai', 'left');
-        $query = $this->db->select("COUNT(DISTINCT t2.noresi) AS num")->get("tblpacking t");
-        $result = $query->row();
+        $this->db->select('
+            t2.noresi,
+            t3.name AS nama_pegawai,
+            t.tanggal_packing,
+            t.keterangan
+        ');
 
-        return isset($result) ? $result->num : 0;
+        $this->db->from('tblpacking t');
+
+        $this->db->join('(
+            SELECT id_printresi, MIN(noresi) AS noresi
+            FROM tblprintresi
+            GROUP BY id_printresi
+        ) t2', 't2.id_printresi = t.id_resi');
+        
+        $this->db->join('tbluser t3', 't3.id_user = t.packer_pegawai', 'left');
+
+        $this->db->group_by([
+            't2.noresi',
+            't3.name',
+            't.tanggal_packing',
+            't.keterangan'
+        ]);
+
+        $query = $this->db->get();
+        return $query->num_rows();
     }
 
     function get_total_scan_user($id_pegawai)
@@ -146,10 +182,14 @@ class Packer_fcd extends CI_Model
     }
 
     function get_picker_detail_for_packer($noresi) {
-        $this->db->select('t.nama_komputer, t3.nama_pegawai');
+        $this->db->select('
+            t.nama_komputer,
+            t3.name nama_pegawai
+        ');
+        $this->db->select('t.nama_komputer, t3.name');
         $this->db->from('tblresiambilbarang t');
         $this->db->join('tblprintresi t2', 't.id_resi = t2.id_printresi');
-        $this->db->join('tblpegawai t3', 't3.kode_pegawai = t.admin_pegawai');
+        $this->db->join('tbluser t3', 't3.id_user = t.admin_pegawai');
         $this->db->where('t2.noresi', $noresi);
 
         $query = $this->db->get();
