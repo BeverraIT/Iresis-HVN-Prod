@@ -5,22 +5,11 @@ class Receipt_fcd extends CI_Model
 {
     function get_data($data = null) {
 
-        // Step 1: Build subquery for latest created_at per no_pesanan + sku
-        $this->db->select('no_pesanan, sku, MAX(created_at) AS latest_created_at');
-        $this->db->from('tblprintresi');
-        $this->db->group_by(['no_pesanan', 'sku']);
-        $subquery = $this->db->get_compiled_select();
-
-        // Step 2: Main query using subquery join
-        $this->db->select('t.noresi, t.tanggal_printresi, t.no_pesanan, t.sku, t2.nama_marketplace, t.nomorpicklist, t.status_pesanan, t3.nama_kurir, t4.name, t.created_at, t.id_printresi');
+        $this->db->select('t.noresi, t.tanggal_printresi, t3.nama_kurir, t2.nama_marketplace, t.nomorpicklist, t.status_pesanan, t4.name, t.created_at, t.id_printresi');
         $this->db->from('tblprintresi t');
         $this->db->join('tblmarketplace t2', 't.id_marketplace = t2.id_marketplace', 'left');
         $this->db->join('tblkurir t3', 't.id_kurir = t3.id_kurir', 'left');
         $this->db->join('tbluser t4', 't.created_by = t4.id_user', 'left');
-        $this->db->join("($subquery) latest",
-            't.no_pesanan = latest.no_pesanan AND t.sku = latest.sku AND t.created_at = latest.latest_created_at',
-            'inner');
-
         $this->db->order_by('t.created_at', 'DESC');
 
         if (!empty($data['length'])) {
@@ -34,20 +23,12 @@ class Receipt_fcd extends CI_Model
 
     public function get_total_data($data = null)
     {
-        // Step 1: Subquery for latest created_at per no_pesanan + sku
-        $this->db->select('no_pesanan, sku, MAX(created_at) AS latest_created_at');
-        $this->db->from('tblprintresi');
-        $this->db->group_by(['no_pesanan', 'sku']);
-        $subquery = $this->db->get_compiled_select();
-
-        // Step 2: Main query for counting total filtered rows
+        $this->db->select('t.noresi, t.tanggal_printresi, t3.nama_kurir, t2.nama_marketplace, t.nomorpicklist, t.status_pesanan, t4.name, t.created_at, t.id_printresi');
         $this->db->from('tblprintresi t');
         $this->db->join('tblmarketplace t2', 't.id_marketplace = t2.id_marketplace', 'left');
         $this->db->join('tblkurir t3', 't.id_kurir = t3.id_kurir', 'left');
         $this->db->join('tbluser t4', 't.created_by = t4.id_user', 'left');
-        $this->db->join("($subquery) latest",
-            't.no_pesanan = latest.no_pesanan AND t.sku = latest.sku AND t.created_at = latest.latest_created_at',
-            'inner');
+        $this->db->order_by('t.created_at', 'DESC');
 
         // Apply search filter if available
         if (!empty($data['search'])) {
@@ -1060,202 +1041,354 @@ class Receipt_fcd extends CI_Model
     }
 
     function insert_receipt(array $receiptData, ?string $user_id = null) {
-        if (empty($receiptData)) return;
+        if (empty($receiptData)) return "No data provided";
 
         $batch_size = 500;
-        $batch_data = [];
         $total_success_insert = 0;
         $total_skip_insert = 0;
+        $total_duplicate_skip = 0;
+        $total_skip_update_same_status = 0; // Track skipped updates
 
-        // Lookup maps for faster ID resolution
-        $marketplace_map = [];
-        foreach ($this->db->get('tblmarketplace')->result() as $mp) {
-            $marketplace_map[strtolower($mp->nama_marketplace)] = $mp->id_marketplace;
-        }
+        // Start transaction
+        $this->db->trans_start();
 
-        $kurir_map = [];
-        foreach ($this->db->get('tblkurir')->result() as $kr) {
-            $kurir_map[strtolower($kr->nama_kurir)] = $kr->id_kurir;
-        }
-
-        // Cache existing data
-        $existing_data = $this->get_existing_receipt_data($receiptData);
-
-        // Convert Excel serial date to PHP date string
-        $excelDateToPhpDate = function ($excelDate) {
-            if (is_numeric($excelDate)) {
-                $unixDate = ($excelDate - 25569) * 86400;
-                return gmdate("d/m/Y", $unixDate);
+        try {
+            // Lookup caches
+            $marketplace_map = [];
+            foreach ($this->db->get('tblmarketplace')->result() as $mp) {
+                $marketplace_map[strtolower($mp->nama_marketplace)] = $mp->id_marketplace;
             }
-            return $excelDate; // assume it's already in proper format
-        };
-
-        // Convert Excel fractional time to H:i:s
-        $excelTimeToPhpTime = function ($excelTime) {
-            if (is_numeric($excelTime)) {
-                $totalSeconds = (int) round($excelTime * 86400); // 86400 = seconds per day
-                $hours = floor($totalSeconds / 3600);
-                $minutes = floor(($totalSeconds % 3600) / 60);
-                $seconds = $totalSeconds % 60;
-                return sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+            $kurir_map = [];
+            foreach ($this->db->get('tblkurir')->result() as $kr) {
+                $kurir_map[strtolower($kr->nama_kurir)] = $kr->id_kurir;
             }
-            return $excelTime; // Assume already formatted
-        };
 
-        // Helper to combine date and time
-        $combineDateTime = function ($date, $time) {
-            if (!$date || !$time) return null;
-            $dt = DateTime::createFromFormat('d/m/Y H:i:s', "$date $time");
-            return $dt ? $dt->format('Y-m-d H:i:s') : null;
-        };
+            // Helpers
+            $excelDateToPhpDate = function ($excelDate) {
+                if (is_numeric($excelDate)) {
+                    $unixDate = ($excelDate - 25569) * 86400;
+                    return gmdate("d/m/Y", $unixDate);
+                }
+                return $excelDate;
+            };
+            $excelTimeToPhpTime = function ($excelTime) {
+                if (is_numeric($excelTime)) {
+                    $totalSeconds = (int) round($excelTime * 86400);
+                    $hours = floor($totalSeconds / 3600);
+                    $minutes = floor(($totalSeconds % 3600) / 60);
+                    $seconds = $totalSeconds % 60;
+                    return sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+                }
+                return $excelTime;
+            };
+            $combineDateTime = function ($date, $time) {
+                if (!$date || !$time) return null;
+                $dt = DateTime::createFromFormat('d/m/Y H:i:s', "$date $time");
+                return $dt ? $dt->format('Y-m-d H:i:s') : null;
+            };
 
-        $batch_data_map = [];
+            $courier_aliases = [
+                'anteraja'          => ['anteraja'],
+                'baraka'            => ['baraka'],
+                'central cargo'     => ['kargo', 'central cargo'],
+                'goto'              => ['goto'],
+                'id express'        => ['id express'],
+                'instant/sameday'   => ['instant', 'gosend', 'grab'],
+                'jemput sendiri'    => ['jemput sendiri'],
+                'jne'               => ['jne'],
+                'jnt'               => ['j&t', 'jnt'],
+                'lazada'            => ['lazada', 'lex id'],
+                'ninja'             => ['ninja'],
+                'rex'               => ['rex'],
+                'sicepat - rekom'   => ['sicepat rekom', 'rekomendasi'],
+                'sicepat'           => ['sicepat'],
+                'shopee'            => ['spx', 'shopee'],
+                'spax'              => ['spax'],
+                'wahana'            => ['wahana'],
+            ];
+            $detectCourier = function(string $raw) use ($courier_aliases) {
+                $rawLower = strtolower($raw);
+                $section = $rawLower;
+                if (stripos($rawLower, 'diantar oleh:') !== false) {
+                    $parts = explode('diantar oleh:', $rawLower);
+                    $section = trim($parts[1]);
+                } elseif (stripos($rawLower, 'delivery:') !== false) {
+                    $parts = explode('delivery:', $rawLower);
+                    $section = trim($parts[1]);
+                }
+                foreach ([$section, $rawLower] as $text) {
+                    foreach ($courier_aliases as $norm => $alts) {
+                        foreach ($alts as $needle) {
+                            if (stripos($text, $needle) !== false) return $norm;
+                        }
+                    }
+                }
+                return '';
+            };
 
-        foreach ($receiptData as $row) {
-            $no_pesanan = $row['A'] ?? null;
-            $sku = $row['P'] ?? null;
-            $status_pesanan = strtolower($row['T']); // Optional usage
+            // Check for existing records with status-based logic
+            $existing_noresi = [];
+            $update_candidates = [];
+            $existing_status_map = [];
+            $noresi_list = array_filter(array_unique(array_column($receiptData, 'B')));
+            if (!empty($noresi_list)) {
+                // Process in smaller chunks to avoid regex compilation errors
+                $chunk_size = 1000; // Process 1000 noresi at a time
+                $noresi_chunks = array_chunk($noresi_list, $chunk_size);
 
-            $key = "$no_pesanan-$sku";
+                foreach ($noresi_chunks as $chunk) {
+                    $this->db->select('noresi, status_pesanan, id_printresi');
+                    $this->db->from('tblprintresi');
+                    $this->db->where_in('noresi', $chunk);
+                    $existing_result = $this->db->get()->result();
 
-            if ($no_pesanan === 'NO_PESANAN' || !$no_pesanan || !$sku) continue;
+                    foreach ($existing_result as $row) {
+                        $status = strtoupper(trim($row->status_pesanan ?? ''));
+                        $existing_status_map[$row->noresi] = $status;
+                        if ($status === 'COMPLETED') {
+                            // Skip - status is COMPLETED, do not update
+                            $existing_noresi[$row->noresi] = 'completed_skip';
+                            $total_duplicate_skip++;
+                        } else {
+                            // Can be updated - status is null, empty string, or anything except COMPLETED
+                            $update_candidates[$row->noresi] = [
+                                'id_printresi' => $row->id_printresi,
+                                'current_status' => $row->status_pesanan
+                            ];
+                        }
+                    }
+                }
+            }
 
-            if (isset($existing_data[$key])) {
-                $db_status = strtolower($existing_data[$key]);
+            $batch_header_map = [];
+            $batch_detail_map = [];
+            $batch_update_map = [];
+            $total_updated = 0;
 
-                if ($db_status === 'completed' || $db_status === 'canceled') {
+            foreach ($receiptData as $row) {
+                $noresi             = $row['B'] ?? '';
+                $no_pesanan         = $row['A'] ?? null;
+                $sku                = $row['P'] ?? '';
+                $status_pesanan     = $row['T'] ?? null;
+                $new_status_upper   = strtoupper(trim($status_pesanan ?? ''));
+
+                // Skip header row or invalid data
+                if ($no_pesanan === 'NO_PESANAN' || !$no_pesanan || !$sku || !$noresi) {
                     $total_skip_insert++;
-                    continue; // skip if DB already has completed/canceled
+                    continue;
+                }
+
+                // Skip if already exists and is COMPLETED
+                if (isset($existing_noresi[$noresi])) {
+                    continue; // This will be counted in total_duplicate_skip already
+                }
+
+                // Check if this noresi needs to be updated instead of inserted
+                if (isset($update_candidates[$noresi])) {
+                    $current_status = strtoupper(trim($existing_status_map[$noresi] ?? ''));
+                    // Only update if status_pesanan is different (case-insensitive, trim)
+                    if ($current_status !== $new_status_upper) {
+                        // Normalize marketplace
+                        $marketplaceRaw = strtolower($row['N'] ?? '');
+                        if (stripos($marketplaceRaw, 'tokopedia') !== false) {
+                            $marketplace = 'tokopedia';
+                        }
+                        elseif (stripos($marketplaceRaw, 'internal') !== false) {
+                            $marketplace = 'reseller';
+                        }
+                        else $marketplace = $marketplaceRaw;
+                        $id_marketplace = $marketplace_map[$marketplace] ?? 99;
+
+                        // Normalize courier
+                        $kurirRaw = $row['S'] ?? '';
+                        $kurir = $detectCourier($kurirRaw);
+                        $id_kurir = $kurir_map[$kurir] ?? 99;
+
+                        $batch_update_map[$noresi] = [
+                            'id_printresi'        => $update_candidates[$noresi]['id_printresi'],
+                            'id_marketplace'      => $id_marketplace,
+                            'id_kurir'            => $id_kurir,
+                            'tanggal_pesan'       => $combineDateTime($excelDateToPhpDate($row['D'] ?? null), $excelTimeToPhpTime($row['E'] ?? null)),
+                            'tanggal_bataskirim'  => $combineDateTime($excelDateToPhpDate($row['H'] ?? null), $excelTimeToPhpTime($row['I'] ?? null)),
+                            'tanggal_pengiriman'  => $combineDateTime($excelDateToPhpDate($row['J'] ?? null), $excelTimeToPhpTime($row['K'] ?? null)),
+                            'tanggal_selesai'     => $combineDateTime($excelDateToPhpDate($row['L'] ?? null), $excelTimeToPhpTime($row['M'] ?? null)),
+                            'tanggal_retur'       => $combineDateTime($excelDateToPhpDate($row['U'] ?? null), $excelTimeToPhpTime($row['V'] ?? null)),
+                            'status_pesanan'      => $row['T'] ?? null,
+                            'nomorpicklist'       => $row['C'] ?? '',
+                            'modified_at'         => date('Y-m-d H:i:s'),
+                            'modified_by'         => $user_id
+                        ];
+                    } else {
+                        $total_skip_update_same_status++;
+                    }
+                    continue;
+                }
+
+                // Normalize marketplace
+                $marketplaceRaw = strtolower($row['N'] ?? '');
+                if (stripos($marketplaceRaw, 'tokopedia') !== false) {
+                    $marketplace = 'tokopedia';
+                }
+                elseif (stripos($marketplaceRaw, 'internal') !== false) {
+                    $marketplace = 'reseller';
+                }
+                else $marketplace = $marketplaceRaw;
+                $id_marketplace = $marketplace_map[$marketplace] ?? 99;
+
+                // Normalize courier
+                $kurirRaw = $row['S'] ?? '';
+                $kurir = $detectCourier($kurirRaw);
+                $id_kurir = $kurir_map[$kurir] ?? 99;
+
+                // Always set detail_key
+                $detail_key = "$noresi-$no_pesanan-$sku";
+
+                // Header: one per noresi
+                if (!isset($batch_header_map[$noresi])) {
+                    $batch_header_map[$noresi] = [
+                        'noresi'              => $noresi,
+                        'id_marketplace'      => $id_marketplace,
+                        'id_kurir'            => $id_kurir,
+                        'admin_pegawai'       => $user_id,
+                        'tanggal_printresi'   => $combineDateTime($excelDateToPhpDate($row['F'] ?? ''), $excelTimeToPhpTime($row['G'] ?? '')),
+                        'tanggal_pesan'       => $combineDateTime($excelDateToPhpDate($row['D'] ?? null), $excelTimeToPhpTime($row['E'] ?? null)),
+                        'tanggal_bataskirim'  => $combineDateTime($excelDateToPhpDate($row['H'] ?? null), $excelTimeToPhpTime($row['I'] ?? null)),
+                        'tanggal_pengiriman'  => $combineDateTime($excelDateToPhpDate($row['J'] ?? null), $excelTimeToPhpTime($row['K'] ?? null)),
+                        'tanggal_selesai'     => $combineDateTime($excelDateToPhpDate($row['L'] ?? null), $excelTimeToPhpTime($row['M'] ?? null)),
+                        'tanggal_retur'       => $combineDateTime($excelDateToPhpDate($row['U'] ?? null), $excelTimeToPhpTime($row['V'] ?? null)),
+                        'status_pesanan'      => $row['T'] ?? null,
+                        'batal'               => '',
+                        'keterangan'          => '',
+                        'nomorpicklist'       => $row['C'] ?? '',
+                        'created_at'          => date('Y-m-d H:i:s'),
+                        'created_by'          => $user_id
+                    ];
+                }
+
+                // Detail: sum per noresi + no_pesanan + sku
+                if (!isset($batch_detail_map[$detail_key])) {
+                    $batch_detail_map[$detail_key] = [
+                        'noresi'     => $noresi,
+                        'no_pesanan' => $no_pesanan,
+                        'sku'        => $sku,
+                        'no_rak'     => $row['R'] ?? '',
+                        'jumlah'     => (int)($row['Q'] ?? 0)
+                    ];
+                } else {
+                    $batch_detail_map[$detail_key]['jumlah'] += (int)($row['Q'] ?? 0);
                 }
             }
 
-            $marketplace = '';
-            $marketplaceRaw = strtolower($row['N'] ?? '');
-            if (stripos($marketplaceRaw, 'tokopedia') !== false) {
-                $marketplace = 'tokopedia';
+            // Insert Headers in batches
+            if (!empty($batch_header_map)) {
+                $header_chunks = array_chunk(array_values($batch_header_map), $batch_size);
+                foreach ($header_chunks as $chunk) {
+                    $this->db->insert_batch('tblprintresi', $chunk);
+                }
+                $total_success_insert += count($batch_header_map);
             }
-            elseif (stripos($marketplaceRaw, 'internal') !== false) {
-                $marketplace = 'reseller';
-            }
-            else $marketplace = $marketplaceRaw;
-            $id_marketplace = $marketplace_map[$marketplace] ?? 99;
 
-            $kurir = '';
-            $kurirRaw = $row['S'] ?? '';
-            $kurirDiantarOleh = '';
-            // Try to extract courier from "Diantar oleh:" first
-            if (stripos($kurirRaw, 'Diantar oleh:') !== false) {
-                $parts = explode('Diantar oleh:', $kurirRaw);
-                $kurirDiantarOleh = strtolower(trim($parts[1]));
-            }
-            // If not found, try "Delivery:"
-            elseif (stripos($kurirRaw, 'Delivery:') !== false) {
-                $parts = explode('Delivery:', $kurirRaw);
-                $kurirDiantarOleh = strtolower(trim($parts[1]));
-            }
-            // Check courier from extracted part first
-            if ($kurirDiantarOleh !== '') {
-                if (stripos($kurirDiantarOleh, 'jne') !== false) {
-                    $kurir = 'jne';
-                } elseif (stripos($kurirDiantarOleh, 'j&t') !== false || stripos($kurirDiantarOleh, 'jnt') !== false) {
-                    $kurir = 'jnt';
-                } elseif (stripos($kurirDiantarOleh, 'ninja') !== false) {
-                    $kurir = 'ninja';
-                } elseif (stripos($kurirDiantarOleh, 'sicepat') !== false) {
-                    $kurir = 'sicepat';
-                } elseif (stripos($kurirDiantarOleh, 'spx') !== false) {
-                    $kurir = 'shopee';
-                } elseif (stripos($kurirDiantarOleh, 'lex id') !== false) {
-                    $kurir = 'lazada';
+            // Get inserted header IDs for detail insertion - handle large datasets properly
+            $noresi_list = array_keys($batch_header_map);
+            $id_resi_map = [];
+            if (!empty($noresi_list)) {
+                // Process in smaller chunks to avoid regex compilation errors
+                $chunk_size = 1000; // Process 1000 noresi at a time
+                $noresi_chunks = array_chunk($noresi_list, $chunk_size);
+
+                foreach ($noresi_chunks as $chunk) {
+                    $this->db->select('id_printresi, noresi');
+                    $this->db->from('tblprintresi');
+                    $this->db->where_in('noresi', $chunk);
+                    $headers = $this->db->get()->result();
+
+                    foreach ($headers as $h) {
+                        $id_resi_map[$h->noresi] = $h->id_printresi;
+                    }
+                }
+
+                // Prepare Detail Rows
+                $detail_rows = [];
+                foreach ($batch_detail_map as $detail) {
+                    $id_resi = $id_resi_map[$detail['noresi']] ?? null;
+                    if (!$id_resi) continue;
+
+                    $detail_rows[] = [
+                        'id_resi'    => $id_resi,
+                        'no_pesanan' => $detail['no_pesanan'],
+                        'sku'        => $detail['sku'],
+                        'no_rak'     => $detail['no_rak'],
+                        'jumlah'     => $detail['jumlah']
+                    ];
+                }
+
+                // Insert Details in batches
+                if (!empty($detail_rows)) {
+                    $detail_chunks = array_chunk($detail_rows, $batch_size);
+                    foreach ($detail_chunks as $chunk) {
+                        $this->db->insert_batch('tbldetailprintresi', $chunk);
+                    }
                 }
             }
-            // If not found in extracted part, search the whole raw string
-            if ($kurir === '') {
-                if (stripos($kurirRaw, 'anteraja') !== false) {
-                    $kurir = 'anteraja';
-                } elseif (stripos($kurirRaw, 'baraka') !== false) {
-                    $kurir = 'baraka';
-                } elseif (stripos($kurirRaw, 'goto') !== false) {
-                    $kurir = 'goto';
-                } elseif (stripos($kurirRaw, 'id express') !== false) {
-                    $kurir = 'id express';
-                } elseif (stripos($kurirRaw, 'instant') !== false || stripos($kurirRaw, 'gosend') !== false || stripos($kurirRaw, 'grab') !== false) {
-                    $kurir = 'instant/sameday';
-                } elseif (stripos($kurirRaw, 'jemput sendiri') !== false) {
-                    $kurir = 'jemput sendiri';
-                } elseif (stripos($kurirRaw, 'jne') !== false) {
-                    $kurir = 'jne';
-                } elseif (stripos($kurirRaw, 'j&t') !== false || stripos($kurirRaw, 'jnt') !== false) {
-                    $kurir = 'jnt';
-                } elseif (stripos($kurirRaw, 'kargo') !== false) {
-                    $kurir = 'central cargo';
-                } elseif (stripos($kurirRaw, 'lazada') !== false || stripos($kurirRaw, 'lex id') !== false) {
-                    $kurir = 'lazada';
-                } elseif (stripos($kurirRaw, 'ninja') !== false) {
-                    $kurir = 'ninja';
-                } elseif (stripos($kurirRaw, 'rex') !== false) {
-                    $kurir = 'rex';
-                } elseif (stripos($kurirRaw, 'sicepat') !== false) {
-                    $kurir = 'sicepat';
-                } elseif (stripos($kurirRaw, 'sicepat rekom') !== false || stripos($kurirRaw, 'rekomendasi') !== false) {
-                    $kurir = 'sicepat - rekom';
-                } elseif (stripos($kurirRaw, 'spx') !== false || stripos($kurirRaw, 'shopee') !== false) {
-                    $kurir = 'shopee';
-                } elseif (stripos($kurirRaw, 'spax') !== false) {
-                    $kurir = 'spax';
-                } elseif (stripos($kurirRaw, 'wahana') !== false) {
-                    $kurir = 'wahana';
+
+            // Update records that were marked for update
+            if (!empty($batch_update_map)) {
+                foreach ($batch_update_map as $noresi => $update_data) {
+                    $this->db->where('id_printresi', $update_data['id_printresi']);
+                    $this->db->update('tblprintresi', $update_data);
+                    $total_updated++;
                 }
             }
-            // Default fallback
-            $id_kurir = $kurir_map[$kurir] ?? 99;
 
-            if (!isset($batch_data_map[$key])) {
-                $batch_data_map[$key] = [
-                    'noresi' => $row['B'] ?? null,
-                    'no_pesanan' => $no_pesanan,
-                    'id_marketplace' => $id_marketplace,
-                    'id_kurir' => $id_kurir,
-                    'admin_pegawai' => $user_id,
-                    'sku' => $sku,
-                    'nama_barang' => $row['W'] ?? null,
-                    'jumlah' => $row['Q'] ?? null,
-                    'no_rak' => $row['R'] ?? null,
-                    'tanggal_printresi' => $combineDateTime($excelDateToPhpDate($row['F'] ?? null), $excelTimeToPhpTime($row['G'] ?? null)),
-                    'tanggal_pesan' => $combineDateTime($excelDateToPhpDate($row['D'] ?? null), $excelTimeToPhpTime($row['E'] ?? null)),
-                    'tanggal_bataskirim' => $combineDateTime($excelDateToPhpDate($row['H'] ?? null), $excelTimeToPhpTime($row['I'] ?? null)),
-                    'tanggal_pengiriman' => $combineDateTime($excelDateToPhpDate($row['J'] ?? null), $excelTimeToPhpTime($row['K'] ?? null)),
-                    'tanggal_selesai' => $combineDateTime($excelDateToPhpDate($row['L'] ?? null), $excelTimeToPhpTime($row['M'] ?? null)),
-                    'tanggal_retur' => $combineDateTime($excelDateToPhpDate($row['U'] ?? null), $excelTimeToPhpTime($row['V'] ?? null)),
-                    'status_pesanan' => $row['T'] ?? null,
-                    'batal' => null,
-                    'keterangan' => null,
-                    'nomorpicklist' => $row['C'] ?? null,
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'created_by' => $user_id
-                ];
-            } else {
-                // Sum the quantity
-                $batch_data_map[$key]['jumlah'] += (int) ($row['Q'] ?? 0);
+            // Complete transaction
+            $this->db->trans_complete();
+
+            if ($this->db->trans_status() === FALSE) {
+                throw new Exception('Transaction failed');
             }
 
-            if (count($batch_data_map) >= $batch_size) {
-                $this->db->insert_batch('tblprintresi', array_values($batch_data_map));
-                $total_success_insert += count($batch_data_map);
-                $batch_data_map = [];
-            }
+            $message = "Total Data Terinput: $total_success_insert | Dilewati: $total_skip_insert | Duplikat: $total_duplicate_skip | Diupdate: $total_updated | Data Tidak Berubah: $total_skip_update_same_status";
+            log_message('info', $message);
+
+            return $message;
+
+        } catch (Exception $e) {
+            $this->db->trans_rollback();
+            $error_message = "Error inserting receipt data: " . $e->getMessage();
+            log_message('error', $error_message);
+            return $error_message;
+        }
+    }
+
+    /**
+     * Helper to insert batch safely
+     */
+    private function _flush_batch(&$batch_data_map, &$batch_detail_map, &$total_success_insert) {
+        $this->db->insert_batch('tblprintresi', array_values($batch_data_map));
+        $inserted_rows = count($batch_data_map);
+        $last_id = $this->db->insert_id();
+
+        $detail_batch = [];
+        $i = 0;
+        foreach ($batch_data_map as $k => $header) {
+            $id_resi = $last_id - $inserted_rows + (++$i);
+            $detail = $batch_detail_map[$k];
+            $detail_batch[] = [
+                'id_resi'   => $id_resi,
+                'no_pesanan'=> $detail['no_pesanan'],
+                'sku'       => $detail['sku'],
+                'no_rak'    => $detail['no_rak'],
+                'jumlah'    => $detail['jumlah']
+            ];
         }
 
-        // Insert remaining batch
-        if (!empty($batch_data_map)) {
-            $this->db->insert_batch('tblprintresi', array_values($batch_data_map));
-            $total_success_insert += count($batch_data_map);
+        if (!empty($detail_batch)) {
+            $this->db->insert_batch('tbldetailprintresi', $detail_batch);
         }
 
-        $message = "Total Data Terinput: $total_success_insert | Dilewati: $total_skip_insert";
-        log_message('error', $message);
-
-        return $message;
+        $total_success_insert += $inserted_rows;
+        $batch_data_map = [];
+        $batch_detail_map = [];
     }
 
     private function get_existing_receipt_data(array $dataResi) {
@@ -1587,3 +1720,4 @@ class Receipt_fcd extends CI_Model
         return isset($result) ? $result : 0;
     }
 }
+

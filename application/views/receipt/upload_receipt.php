@@ -73,15 +73,24 @@
                 data: formData,
                 contentType: false, // Jangan set contentType, jQuery akan menanganinya
                 processData: false, // Jangan Merubah data menjadi query string
+                timeout: 600000, // 10 minutes timeout for large files
                 success: function(data) {},
                 error: function(data) {},
                 beforeSend: function() {
                     $('#loadingPopUp').show(); // Pastikan spinner tampil sebelum kirim
+
+                    // Show processing message for large files
+                    $("#span_latest_receipt").text("Processing file... This may take several minutes for large files.");
+                    $("#div_container_latest_receipt").removeClass("tile-danger tile-success").addClass("tile-default");
+
+                    // Start progress checking for large files
+                    window.progressInterval = setInterval(checkUploadProgress, 5000);
                 }
             })
                 .done(function(response) {
                     console.log("==============> Response Success", response);
                     $('#loadingPopUp').hide(); // Pastikan spinner di sembunyikan setelah sukses
+                    clearInterval(window.progressInterval);
 
                     let res = JSON.parse(response);
 
@@ -91,17 +100,33 @@
                     $("#div_container_latest_receipt").removeClass("tile-danger tile-default").addClass("tile-success");
 
                     $('#receipt_file').val(''); // Mengosongkan input file
+
+                    // Remove auto-redirect - user stays on upload page
+                    // setTimeout(function() {
+                    //     window.location.href = 'receipt/list_receipt';
+                    // }, 3000);
                 })
                 .fail(function(response) {
                     console.log("==============> Response Error", response);
                     $('#loadingPopUp').hide(); // Pastikan spinner di sembunyikan setelah sukses
+                    clearInterval(window.progressInterval);
 
-                    let res = JSON.parse(response.responseText);
+                    let errorMessage = "Error processing file";
+
+                    try {
+                        let res = JSON.parse(response.responseText);
+                        errorMessage = res.message || errorMessage;
+                    } catch (e) {
+                        // If response is not JSON (timeout case)
+                        if (response.status === 0 || response.statusText === 'timeout') {
+                            errorMessage = "File processing timed out. Please try with a smaller file or contact support.";
+                        }
+                    }
 
                     document.getElementById('audio-fail').play();
 
-                    $("#span_latest_receipt").text("Error");
-                    $("#div_container_latest_receipt").removeClass("tile-default").addClass("tile-danger");
+                    $("#span_latest_receipt").text(errorMessage);
+                    $("#div_container_latest_receipt").removeClass("tile-default tile-success").addClass("tile-danger");
 
                     $('#receipt_file').val(''); // Mengosongkan input file
                 })
@@ -109,6 +134,36 @@
             return false; // supaya action setelah submit success maupun error di handle disini bukan di controller
         }
     });
+
+    // Function to check upload progress
+    function checkUploadProgress() {
+        $.ajax({
+            url: 'receipt/check_upload_progress',
+            type: 'GET',
+            success: function(response) {
+                try {
+                    let data = JSON.parse(response);
+                    if (data.processing) {
+                        let minutes = Math.floor(data.elapsed_time / 60);
+                        let seconds = data.elapsed_time % 60;
+                        let timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+
+                        $("#span_latest_receipt").text(`Processing ${data.row_count} rows... Elapsed: ${timeStr}`);
+                    } else {
+                        // Processing completed, stop checking but don't redirect
+                        clearInterval(window.progressInterval);
+                        $("#span_latest_receipt").text("Processing completed!");
+                        $("#div_container_latest_receipt").removeClass("tile-danger tile-default").addClass("tile-success");
+                    }
+                } catch (e) {
+                    console.log("Progress check error:", e);
+                }
+            },
+            error: function() {
+                // Ignore progress check errors
+            }
+        });
+    }
 </script>
 
 <style>

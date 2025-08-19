@@ -89,13 +89,11 @@ class Receipt extends MY_Controller
             0 => null,
             1 => 't.noresi',
             2 => 't.tanggal_printresi',
-            3 => 't.no_pesanan',
-            4 => 't.sku',
-            5 => 't2.nama_marketplace',
-            6 => 't.nomorpicklist',
-            7 => 't.status_pesanan',
-            8 => 't3.nama_kurir',
-            9 => 't4.name',
+            3 => 't3.nama_kurir',
+            4 => 't2.nama_marketplace',
+            5 => 't.nomorpicklist',
+            6 => 't.status_pesanan',
+            7 => null // Action column
         );
 
         $data['order'] = !isset($data['valid_columns'][$col]) ? null : $data['valid_columns'][$col];
@@ -111,14 +109,10 @@ class Receipt extends MY_Controller
                 $i++ . '.',
                 $row->noresi,
                 date('Y-m-d H:i:s', strtotime($row->tanggal_printresi)),
-                $row->no_pesanan,
-                $row->sku,
+                $row->nama_kurir,
                 $row->nama_marketplace,
                 $row->nomorpicklist,
                 $row->status_pesanan,
-                $row->nama_kurir,
-                $row->name,
-                // '<a href="receipt_list/detail/' . $row->id_printresi . '" class="btn btn-default link"><i class="fa fa-eye"></i> </a> ' .
                 '<a href="receipt/delete-list-receipt-data/' . $row->id_printresi . '" class="btn btn-danger confirm" onClick="notyConfirm(event);"><i class="fa fa-trash-o"></i> </a>',
             );
         }
@@ -281,29 +275,100 @@ class Receipt extends MY_Controller
             $this->make_ajax_response(400, INVALID_REQUEST_METHOD);
         }
 
-        // Simulasi loading
-        // sleep(5); // delay 60 detik
-
         if (!isset($_FILES['receiptFile']) || $_FILES['receiptFile']['error'] != 0) {
             $this->make_ajax_response(500, FAILED_SAVE_DATA);
         }
 
-        ini_set('memory_limit', '2048M');
+        // Set proper limits for large file processing
+        ini_set('memory_limit', '3072M'); // Increase memory limit
+        ini_set('max_execution_time', 0); // Remove execution time limit
+        set_time_limit(0); // Also remove time limit
+
+        // Log the start of processing
+        log_message('info', 'Starting Excel upload processing for user: ' . ($this->data['user']['id_user'] ?? 'unknown'));
 
         $user_id = $this->data['user']['id_user'] ?? null;
         $file = $_FILES['receiptFile']['tmp_name'];
 
-        // Baca file Excel
-        $reader = IOFactory::createReader('Xlsx');
-        $reader->setReadDataOnly(true);
-        $spreadsheet = $reader->load($file);
-        $sheet = $spreadsheet->getActiveSheet();
+        try {
+            // Baca file Excel
+            $reader = IOFactory::createReader('Xlsx');
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($file);
+            $sheet = $spreadsheet->getActiveSheet();
 
-        // Get all rows with Excel-style column keys (A, B, C, etc.)
-        $dataRaw = $sheet->toArray(null, true, true, true);
+            // Get all rows with Excel-style column keys (A, B, C, etc.)
+            $dataRaw = $sheet->toArray(null, true, true, true);
 
-        // Proses insert
-        $result = $this->receipt_fcd->insert_receipt($dataRaw, $user_id);
-        $this->make_ajax_response(201, $result);
+            // Log row count
+            $rowCount = count($dataRaw);
+            log_message('info', "Processing Excel file with {$rowCount} rows");
+
+            // Show progress for large files
+            if ($rowCount > 1000) {
+                // Set a session flag to indicate processing
+                $this->session->set_userdata('upload_processing', true);
+                $this->session->set_userdata('upload_start_time', time());
+                $this->session->set_userdata('upload_row_count', $rowCount);
+            }
+
+            // Proses insert
+            $result = $this->receipt_fcd->insert_receipt($dataRaw, $user_id);
+
+            // Clear processing flag
+            $this->session->unset_userdata('upload_processing');
+            $this->session->unset_userdata('upload_start_time');
+            $this->session->unset_userdata('upload_row_count');
+
+            // Log completion
+            log_message('info', "Excel upload completed: {$result}");
+
+            // Set session flashdata for notification on next page load
+            $this->session->set_flashdata('noty_message', [
+                'text' => $result,
+                'type' => 'success'
+            ]);
+
+            $this->make_ajax_response(201, $result);
+
+        } catch (Exception $e) {
+            // Clear processing flag on error
+            $this->session->unset_userdata('upload_processing');
+            $this->session->unset_userdata('upload_start_time');
+            $this->session->unset_userdata('upload_row_count');
+
+            $error_message = "Error processing Excel file: " . $e->getMessage();
+            log_message('error', $error_message);
+
+            $this->session->set_flashdata('noty_message', [
+                'text' => $error_message,
+                'type' => 'error'
+            ]);
+
+            $this->make_ajax_response(500, $error_message);
+        }
+    }
+
+    // Add a method to check upload progress
+    public function check_upload_progress()
+    {
+        $processing = $this->session->userdata('upload_processing');
+        $start_time = $this->session->userdata('upload_start_time');
+        $row_count = $this->session->userdata('upload_row_count');
+
+        if ($processing && $start_time) {
+            $elapsed = time() - $start_time;
+            $response = [
+                'processing' => true,
+                'elapsed_time' => $elapsed,
+                'row_count' => $row_count,
+                'estimated_time' => round($row_count / 100) // Rough estimate: 100 rows per second
+            ];
+        } else {
+            $response = ['processing' => false];
+        }
+
+        echo json_encode($response);
     }
 }
+
