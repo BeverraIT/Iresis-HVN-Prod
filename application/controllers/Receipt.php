@@ -53,6 +53,7 @@ class Receipt extends MY_Controller
 
             $data['noresi'] = $noresi;
             $data['receipt'] = $this->receipt_fcd->get_detail($noresi)->row_array();
+            $data['receipt_items'] = $this->receipt_fcd->get_detail_items($noresi)->result_array();
         }
 
         $this->show($data);

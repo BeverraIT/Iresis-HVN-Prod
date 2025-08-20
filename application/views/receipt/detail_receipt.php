@@ -34,7 +34,16 @@
                 <tbody>
                   <tr>
                       <td align="right">Nomor Pesanan :</td>
-                      <td><strong><?= $receipt['no_pesanan'] ?></strong></td>
+                      <td><strong>
+                        <?php if (!empty($receipt_items)) : ?>
+                          <?php
+                          $unique_orders = array_unique(array_column($receipt_items, 'no_pesanan'));
+                          echo implode(', ', $unique_orders);
+                          ?>
+                        <?php else : ?>
+                          -
+                        <?php endif; ?>
+                      </strong></td>
                   </tr>
                   <tr>
                       <td align="right">Status Pesanan :</td>
@@ -42,11 +51,28 @@
                   </tr>
                   <tr>
                       <td align="right">SKU :</td>
-                      <td><strong><?= $receipt['sku'] ?></strong></td>
-                  </tr>
-                  <tr>
-                      <td align="right">Kuantitas :</td>
-                      <td><strong><?= $receipt['jumlah'] ?></strong></td>
+                      <td>
+                        <?php if (!empty($receipt_items)) : ?>
+                          <table class="table table-condensed table-bordered" style="margin: 0;">
+                            <thead>
+                              <tr>
+                                <th>SKU</th>
+                                <th>Kuantitas</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <?php foreach ($receipt_items as $item) : ?>
+                              <tr>
+                                <td><strong><?= $item['sku'] ?></strong></td>
+                                <td><strong><?= $item['jumlah'] ?></strong></td>
+                              </tr>
+                              <?php endforeach; ?>
+                            </tbody>
+                          </table>
+                        <?php else : ?>
+                          <strong>-</strong>
+                        <?php endif; ?>
+                      </td>
                   </tr>
                   <tr>
                       <td align="right">Marketplace :</td>
