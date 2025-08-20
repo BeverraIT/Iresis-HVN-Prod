@@ -137,8 +137,8 @@ class Receipt_fcd extends CI_Model
         $this->db->select('t.noresi, t.tanggal_printresi, t2.nama_marketplace, t3.tanggal_resiambilbarang
             , t4.nama_pegawai picker, t5.tanggal_packing, t6.name packer
             , t5.keterangan komputer_packer_no, t7.nama_kurir, t8.tanggal_cetak
-            , t8.tanggal_resikeluar, t.status_pesanan, t.sku, t.tanggal_retur, t.tanggal_bataskirim
-            , t.jumlah, t.no_pesanan'
+            , t8.tanggal_resikeluar, t.status_pesanan, t9.sku, t.tanggal_retur, t.tanggal_bataskirim
+            , t9.jumlah, t9.no_pesanan'
         );
 
         $this->db->join('tblmarketplace t2', 't2.id_marketplace = t.id_marketplace', 'left');
@@ -148,6 +148,7 @@ class Receipt_fcd extends CI_Model
         $this->db->join('tbluser t6', 't6.id_user = t5.packer_pegawai', 'left');
         $this->db->join('tblkurir t7', 't7.id_kurir = t.id_kurir', 'left');
         $this->db->join('tblresikeluar t8', 't8.id_resi = t.id_printresi', 'left');
+        $this->db->join('tbldetailprintresi t9', 't9.id_resi = t.id_printresi', 'left');
 
         $this->db->where(['t.noresi' => $noresi]);
         $this->db->order_by('t.created_at', 'DESC');
