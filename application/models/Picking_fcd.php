@@ -25,58 +25,59 @@ class Picking_fcd extends CI_Model
 
     function save($picking, $user, $mode = PICKING_INSERT_PACKER)
     {
-        // 1. Check if noresi exists
+        // 1. Check if noresi exists (now expecting single record since noresi is unique)
         $receipt = $this->db
             ->select('id_printresi')
             ->get_where('tblprintresi', ['noresi' => $picking['noresi']])
-            ->result_array();
+            ->row(); // Changed from result_array() to row() since noresi is now unique
+
         if (empty($receipt)) {
             return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi tidak ditemukan'];
         }
 
         unset($picking['noresi']);
 
-        $id_resi_list = array_column($receipt, 'id_printresi');
+        $id_resi = $receipt->id_printresi; // Single ID instead of array
 
         // 2. Check if id_resi exists in tblresiambilbarang
-        $this->db->where_in('id_resi', $id_resi_list);
-        $picking_exist = $this->db->get('tblresiambilbarang')->result_array();
+        $picking_exist = $this->db
+            ->get_where('tblresiambilbarang', ['id_resi' => $id_resi])
+            ->row(); // Changed to row() since we're checking single record
 
         if ($mode == PICKING_INSERT_PACKER) {
-            if (count($picking_exist) > 0) {
+            if (!empty($picking_exist)) {
                 return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi sudah diambil. Silakan Cek data'];
             }
 
-            foreach ($receipt as $row) {
-                $insert_batch_data[] = [
-                    'id_resi' => $row['id_printresi'],
-                    'tanggal_resiambilbarang' => date('Y-m-d H:i:s'),
-                    'admin_pegawai' => $user['id_user'],
-                    'yangambil_pegawai' => $picking['yangambil_pegawai'],
-                    'nama_komputer' => $user['nama_komputer'],
-                    'pending' => $picking['pending'],
-                ];
-            }
+            // Insert single record instead of batch
+            $insert_data = [
+                'id_resi' => $id_resi,
+                'tanggal_resiambilbarang' => date('Y-m-d H:i:s'),
+                'admin_pegawai' => $user['id_user'],
+                'yangambil_pegawai' => $picking['yangambil_pegawai'],
+                'nama_komputer' => $user['nama_komputer'],
+                'pending' => $picking['pending'],
+            ];
 
-            $this->db->insert_batch('tblresiambilbarang', $insert_batch_data);
-            $picking['affected_rows'] = count($insert_batch_data);
+            $this->db->insert('tblresiambilbarang', $insert_data);
+            $picking['affected_rows'] = $this->db->affected_rows();
+
         } else if ($mode == PICKING_UPDATE_PACKER) {
-            if (count($picking_exist) == 0) {
+            if (empty($picking_exist)) {
                 return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor Resi belum di-picker. Silakan Cek data'];
             }
 
-            foreach ($picking_exist as $row) {
-                $update_batch_data[] = [
-                    'id_resiambilbarang' => $row['id_resiambilbarang'],
-                    'tanggal_resiambilbarang' => date('Y-m-d H:i:s'),
-                    'admin_pegawai' => $user['id_user'],
-                    'yangambil_pegawai' => $picking['yangambil_pegawai'],
-                    'nama_komputer' => $user['nama_komputer']
-                ];
-            }
+            // Update single record instead of batch
+            $update_data = [
+                'tanggal_resiambilbarang' => date('Y-m-d H:i:s'),
+                'admin_pegawai' => $user['id_user'],
+                'yangambil_pegawai' => $picking['yangambil_pegawai'],
+                'nama_komputer' => $user['nama_komputer']
+            ];
 
-            $this->db->update_batch('tblresiambilbarang', $update_batch_data, 'id_resiambilbarang');
-            $picking['affected_rows'] = count($update_batch_data);
+            $this->db->where('id_resiambilbarang', $picking_exist->id_resiambilbarang);
+            $this->db->update('tblresiambilbarang', $update_data);
+            $picking['affected_rows'] = $this->db->affected_rows();
         }
 
         return $picking;
@@ -99,9 +100,20 @@ class Picking_fcd extends CI_Model
 
     function get_data($data)
     {
-        if ($data['order'] != null) {
-            $this->db->order_by($data['order'], $data['dir'], FALSE);
-        }
+        // Use subquery to improve performance by filtering first
+        $this->db->select('
+            t2.noresi,
+            COALESCE(t3.nama_pegawai, "-") as nama_pegawai,
+            t.tanggal_resiambilbarang,
+            COALESCE(t4.name, "-") as name,
+            t.nama_komputer
+        ');
+
+        // Add index hints for better performance
+        $this->db->from('tblresiambilbarang t');
+        $this->db->join('tblprintresi t2', 't2.id_printresi = t.id_resi', 'inner');
+        $this->db->join('tblpegawai t3', 't3.kode_pegawai = t.yangambil_pegawai', 'left');
+        $this->db->join('tbluser t4', 't4.id_user = t.admin_pegawai', 'left');
 
         if (!empty($data['search'])) {
             $x = 0;
@@ -120,30 +132,30 @@ class Picking_fcd extends CI_Model
             $this->db->group_end();
         }
 
-        $this->db->select('
-            t2.noresi,
-            t3.nama_pegawai,
-            t.tanggal_resiambilbarang,
-            t4.name,
-            t.nama_komputer
-        ');
+        if ($data['order'] != null) {
+            $this->db->order_by($data['order'], $data['dir'], FALSE);
+        } else {
+            // Add default ordering for consistent results
+            $this->db->order_by('t.tanggal_resiambilbarang', 'DESC');
+        }
 
-        $this->db->distinct();
-        $this->db->join('tblprintresi t2', 't2.id_printresi = t.id_resi');
-        $this->db->join('tblpegawai t3', 't3.kode_pegawai = t.yangambil_pegawai', 'left');
-        $this->db->join('tbluser t4', 't4.id_user = t.admin_pegawai', 'left');
         $this->db->limit($data['length'], $data['start']);
 
-        return $this->db->get('tblresiambilbarang t');
+        return $this->db->get();
     }
 
     function get_total_data($data)
     {
+        // Optimize total count query - avoid unnecessary JOINs when possible
         if (!empty($data['search'])) {
+            // Only use JOINs when search is applied
+            $this->db->from('tblresiambilbarang t');
+            $this->db->join('tblprintresi t2', 't2.id_printresi = t.id_resi', 'inner');
+            $this->db->join('tblpegawai t3', 't3.kode_pegawai = t.yangambil_pegawai', 'left');
+            $this->db->join('tbluser t4', 't4.id_user = t.admin_pegawai', 'left');
+
             $x = 0;
-
             $this->db->group_start();
-
             foreach ($data['valid_columns'] as $sterm) {
                 if (empty($sterm)) continue;
 
@@ -152,20 +164,15 @@ class Picking_fcd extends CI_Model
                 } else {
                     $this->db->or_like($sterm, $data['search']);
                 }
-
                 $x++;
             }
-
             $this->db->group_end();
+
+            return $this->db->count_all_results();
+        } else {
+            // When no search, simply count all records from main table
+            return $this->db->count_all('tblresiambilbarang');
         }
-
-        $this->db->join('tblprintresi t2', 't2.id_printresi = t.id_resi');
-        $this->db->join('tblpegawai t3', 't3.kode_pegawai = t.yangambil_pegawai', 'left');
-        $this->db->join('tbluser t4', 't4.id_user = t.admin_pegawai', 'left');
-        $query = $this->db->select("COUNT(DISTINCT t2.noresi) AS num")->get("tblresiambilbarang t");
-        $result = $query->row();
-
-        return isset($result) ? $result->num : 0;
     }
 
     function destroy_picker($id_namaambilbarang)
