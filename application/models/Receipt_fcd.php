@@ -16,6 +16,16 @@ class Receipt_fcd extends CI_Model
             $this->db->limit($data['length'], $data['start']);
         }
 
+        if (!empty($data['search'])) {
+            $this->db->group_start();
+            foreach ($data['valid_columns'] as $column) {
+                if (!empty($column)) {
+                    $this->db->or_like($column, $data['search']);
+                }
+            }
+            $this->db->group_end();
+        }
+
         $query = $this->db->get();
         log_message('error', 'Query yang dijalankan: ' . $this->db->last_query());
         return $query;

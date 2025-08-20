@@ -152,8 +152,8 @@
                     } else {
                         // Processing completed, stop checking but don't redirect
                         clearInterval(window.progressInterval);
-                        $("#span_latest_receipt").text("Processing completed!");
-                        $("#div_container_latest_receipt").removeClass("tile-danger tile-default").addClass("tile-success");
+                        //$("#span_latest_receipt").text("Processing completed!");
+                        //$("#div_container_latest_receipt").removeClass("tile-danger tile-default").addClass("tile-success");
                     }
                 } catch (e) {
                     console.log("Progress check error:", e);
