@@ -75,7 +75,7 @@ $route['picker/delete_master_picker'] = 'picker/delete_master_picker';
 $route['picker/pending_picker'] = 'picker/pending_picker';
 $route['picker/save-pending-picker'] = 'picker/save_pending_picker';
 $route['picker/update_picker'] = 'picker/update_picker';
-$route['picker/save_update_picker'] = 'picker/save_update_picker';
+$route['picker/save-update-picker'] = 'picker/save_update_picker';
 
 $route['packer/scan-packer'] = 'packer/scan_packer';
 $route['packer/save-packer'] = 'packer/save_packer';

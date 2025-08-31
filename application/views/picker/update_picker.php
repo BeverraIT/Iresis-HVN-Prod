@@ -1,6 +1,6 @@
 <div class="row">
   <div class="col-md-6 center-block float-none">
-    <form action="picker/save_update_picker" class="form-horizontal" id="form_scan_picker" autocomplete="off">
+    <form action="picker/save-update-picker" class="form-horizontal" id="form_scan_picker" autocomplete="off">
       <div class="panel panel-default">
         <div class="panel-heading">
           <h3 class="panel-title"><strong>Update Picker</strong></h3>

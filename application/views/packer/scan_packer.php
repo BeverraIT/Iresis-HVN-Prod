@@ -32,8 +32,6 @@
 
       <!-- table untuk data resi -->
       <?php if (!empty($noresi)) : ?>
-
-
           <div class="col-md-12" id="result-info">
               <div id="button-footer">
                   <div class="text-left" style="margin-top: 10px;">
@@ -90,20 +88,25 @@
                   </div>
               </div>
           </div>
-      <div class="panel-body" id="table-scan-packer">
-        <table class="table table-striped datatable-masalah-picker">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Nama Barang</th>
-              <th>SKU</th>
-              <th>Quantity</th>
-              <th>Foto</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-        </table>
-      </div>
+          <div class="panel-body" id="table-scan-packer">
+            <table class="table table-striped datatable-masalah-picker">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nama Barang</th>
+                  <th>SKU</th>
+                  <th>Quantity</th>
+                  <th>Foto</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="6" class="text-center">No details</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
       <?php endif; ?>
 
       <!-- modal pop up untuk masalah picker -->

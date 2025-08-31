@@ -8,56 +8,50 @@ class Packer_fcd extends CI_Model
     {
         /**
          * 1. check does noresi exist in tblprintresi
-         * 1. throw if doest not exist
-         * 2. check does id_resi exist in tblresiamblibarang
-         * 3. throw if exist
-         * 4. save into tblresiambilbarang
+         * 2. throw if does not exist
+         * 3. check does id_resi exist in tblresiambilbarang
+         * 4. throw if does not exist
+         * 5. check does id_resi exist in tblpacking
+         * 6. throw if exists
+         * 7. save into tblpacking
          */
         $receipt = $this->db
             ->select('id_printresi')
             ->get_where('tblprintresi', ['noresi' => $packer['noresi']])
-            ->result_array();
+            ->row();
         if (empty($receipt)) {
             return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi tidak ditemukan'];
         }
 
         unset($packer['noresi']);
 
-        $id_resi_list = array_column($receipt, 'id_printresi');
-
-        $this->db->where_in('id_resi', $id_resi_list);
-        $picking_exist = $this->db->get('tblresiambilbarang')->result_array();
-        if (count($picking_exist) == 0) {
+        // Check if this receipt has been picked
+        $picking_exist = $this->db->get_where('tblresiambilbarang', ['id_resi' => $receipt->id_printresi])->row();
+        if (!$picking_exist) {
             return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor Resi belum di-picker. Silakan Cek data'];
         }
 
-        $this->db->where_in('id_resi', $id_resi_list);
-        $packer_exist = $this->db->get('tblpacking')->result_array();
-        if (count($packer_exist) > 0) {
+        // Check if this receipt has already been packed
+        $packer_exist = $this->db->get_where('tblpacking', ['id_resi' => $receipt->id_printresi])->row();
+        if ($packer_exist) {
             return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi sudah di-packing. Silakan Cek data'];
         }
 
-        foreach ($receipt as $row) {
-            $insert_batch_data[] = [
-                'id_resi' => $row['id_printresi'],
-                'tanggal_packing' => date('Y-m-d H:i:s'),
-                'packer_pegawai' => $user['id_user'],
-                'keterangan' => $user['nama_komputer']
-            ];
-        }
+        // Insert packing record
+        $insert_data = [
+            'id_resi' => $receipt->id_printresi,
+            'tanggal_packing' => date('Y-m-d H:i:s'),
+            'packer_pegawai' => $user['id_user'],
+            'keterangan' => $user['nama_komputer']
+        ];
 
-        $this->db->insert_batch('tblpacking', $insert_batch_data);
+        $this->db->insert('tblpacking', $insert_data);
 
-        // update tblresiambilbarang to reset pending to ''
-        foreach ($picking_exist as $row) {
-            $update_batch_data[] = [
-                'id_resiambilbarang' => $row['id_resiambilbarang'],
-                'pending' => ''
-            ];
-        }
-        $this->db->update_batch('tblresiambilbarang', $update_batch_data, 'id_resiambilbarang');
+        // Update tblresiambilbarang to reset pending to ''
+        $this->db->where('id_resiambilbarang', $picking_exist->id_resiambilbarang);
+        $this->db->update('tblresiambilbarang', ['pending' => '']);
 
-        $packer['affected_rows'] = count($insert_batch_data);
+        $packer['affected_rows'] = $this->db->affected_rows();
 
         return $packer;
     }
@@ -92,28 +86,9 @@ class Packer_fcd extends CI_Model
             p.keterangan
         ');
 
-        $this->db->from('tblprintresi pr');
-
-        // Subquery to pick one packing row per id_resi
-        $this->db->join('(
-            SELECT MIN(id_packing) AS id_packing, id_resi
-            FROM tblpacking
-            GROUP BY id_resi
-        ) p_min', 'p_min.id_resi = pr.id_printresi');
-
-        // Join to the selected packing row
-        $this->db->join('tblpacking p', 'p.id_packing = p_min.id_packing');
-
-        // Join to user table
+        $this->db->from('tblpacking p');
+        $this->db->join('tblprintresi pr', 'pr.id_printresi = p.id_resi');
         $this->db->join('tbluser u', 'u.id_user = p.packer_pegawai', 'left');
-
-        // Group to ensure uniqueness   
-        $this->db->group_by([
-            'pr.noresi',
-            'u.name',
-            'p.tanggal_packing',
-            'p.keterangan'
-        ]);
 
         $this->db->limit($data['length'], $data['start']);
 
@@ -139,32 +114,11 @@ class Packer_fcd extends CI_Model
             $this->db->group_end();
         }
 
-        $this->db->select('
-            t2.noresi,
-            t3.name AS nama_pegawai,
-            t.tanggal_packing,
-            t.keterangan
-        ');
+        $this->db->from('tblpacking p');
+        $this->db->join('tblprintresi pr', 'pr.id_printresi = p.id_resi');
+        $this->db->join('tbluser u', 'u.id_user = p.packer_pegawai', 'left');
 
-        $this->db->from('tblpacking t');
-
-        $this->db->join('(
-            SELECT id_printresi, MIN(noresi) AS noresi
-            FROM tblprintresi
-            GROUP BY id_printresi
-        ) t2', 't2.id_printresi = t.id_resi');
-        
-        $this->db->join('tbluser t3', 't3.id_user = t.packer_pegawai', 'left');
-
-        $this->db->group_by([
-            't2.noresi',
-            't3.name',
-            't.tanggal_packing',
-            't.keterangan'
-        ]);
-
-        $query = $this->db->get();
-        return $query->num_rows();
+        return $this->db->count_all_results();
     }
 
     function get_total_scan_user($id_pegawai)
@@ -184,9 +138,8 @@ class Packer_fcd extends CI_Model
     function get_picker_detail_for_packer($noresi) {
         $this->db->select('
             t.nama_komputer,
-            t3.name nama_pegawai
+            t3.name as nama_pegawai
         ');
-        $this->db->select('t.nama_komputer, t3.name');
         $this->db->from('tblresiambilbarang t');
         $this->db->join('tblprintresi t2', 't.id_resi = t2.id_printresi');
         $this->db->join('tbluser t3', 't3.id_user = t.admin_pegawai');
