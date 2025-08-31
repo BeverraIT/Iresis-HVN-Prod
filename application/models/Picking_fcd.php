@@ -25,9 +25,9 @@ class Picking_fcd extends CI_Model
 
     function save($picking, $user, $mode = PICKING_INSERT_PACKER)
     {
-        // 1. Check if noresi exists (now expecting single record since noresi is unique)
+        // 1. Check if noresi exists and get status (now expecting single record since noresi is unique)
         $receipt = $this->db
-            ->select('id_printresi')
+            ->select('id_printresi, status_pesanan')
             ->get_where('tblprintresi', ['noresi' => $picking['noresi']])
             ->row(); // Changed from result_array() to row() since noresi is now unique
 
@@ -35,11 +35,16 @@ class Picking_fcd extends CI_Model
             return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi tidak ditemukan'];
         }
 
+        // 2. Check if status_pesanan is COMPLETED or CANCELED
+        if (in_array($receipt->status_pesanan, ['COMPLETED', 'CANCELED'])) {
+            return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi tidak dapat diproses karena status pesanan sudah ' . $receipt->status_pesanan];
+        }
+
         unset($picking['noresi']);
 
         $id_resi = $receipt->id_printresi; // Single ID instead of array
 
-        // 2. Check if id_resi exists in tblresiambilbarang
+        // 3. Check if id_resi exists in tblresiambilbarang
         $picking_exist = $this->db
             ->get_where('tblresiambilbarang', ['id_resi' => $id_resi])
             ->row(); // Changed to row() since we're checking single record
