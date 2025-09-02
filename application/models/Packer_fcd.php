@@ -7,20 +7,27 @@ class Packer_fcd extends CI_Model
     function save($packer, $user)
     {
         /**
-         * 1. check does noresi exist in tblprintresi
+         * 1. check does noresi exist in tblprintresi and get status
          * 2. throw if does not exist
-         * 3. check does id_resi exist in tblresiambilbarang
-         * 4. throw if does not exist
-         * 5. check does id_resi exist in tblpacking
-         * 6. throw if exists
-         * 7. save into tblpacking
+         * 3. check if status_pesanan is COMPLETED or CANCELED
+         * 4. throw if status is COMPLETED or CANCELED
+         * 5. check does id_resi exist in tblresiambilbarang
+         * 6. throw if does not exist
+         * 7. check does id_resi exist in tblpacking
+         * 8. throw if exists
+         * 9. save into tblpacking
          */
         $receipt = $this->db
-            ->select('id_printresi')
+            ->select('id_printresi, status_pesanan')
             ->get_where('tblprintresi', ['noresi' => $packer['noresi']])
             ->row();
         if (empty($receipt)) {
             return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi tidak ditemukan'];
+        }
+
+        // Check if status_pesanan is COMPLETED or CANCELED
+        if (in_array($receipt->status_pesanan, ['COMPLETED', 'CANCELED'])) {
+            return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi tidak dapat diproses karena status pesanan sudah ' . $receipt->status_pesanan];
         }
 
         unset($packer['noresi']);
