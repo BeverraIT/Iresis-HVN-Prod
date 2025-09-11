@@ -139,7 +139,6 @@ class Packer extends MY_Controller
                         '<button class="btn btn-info lihat-foto" data-foto="' . htmlspecialchars($link_foto, ENT_QUOTES, 'UTF-8') . '">Lihat Foto</button>',
                         '<div class="text-center">
                             <button 
-                                style="margin-bottom: 2px; width: 50px"
                                 class="btn btn-info saveMasalahPicker" 
                                 data-id="' . htmlspecialchars($row_masalah->id_printresi, ENT_QUOTES, 'UTF-8') . '"
                                 data-noresi="' . htmlspecialchars($row_masalah->noresi, ENT_QUOTES, 'UTF-8') . '"

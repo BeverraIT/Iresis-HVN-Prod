@@ -240,7 +240,7 @@
           { width: '10%', targets: 2 },
           { width: '10%', targets: 3 },
           { width: '10%', targets: 4 },
-          { width: '10%', targets: 5 },
+          { width: '20%', targets: 5 },
           { className: 'text-center', targets: [0, 1, 2, 3, 4, 5] }
         ],
         'ajax': {
