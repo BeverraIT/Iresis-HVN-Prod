@@ -86,7 +86,7 @@ class Receipt_fcd extends CI_Model
         $this->db->join('tblpacking p', 'p.id_resi = pr.id_printresi', 'left');
 
         $this->db->where('pr.noresi', $noresi);
-        $this->db->where('p.id_resi IS NULL'); // Only unpacked items
+        //$this->db->where('p.id_resi IS NULL'); // Only unpacked items
 
         // Optional: pagination
         if (!empty($data['length'])) {

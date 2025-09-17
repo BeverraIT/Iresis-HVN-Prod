@@ -253,11 +253,11 @@
     // ====================== modal masalah picker ======================
 
     // tampilkan modal masalah picker
-    $(document).on('click', '.saveMasalahPicker', function() {
+    $(document).on('click', '.saveMasalahPickera', function() {
       alert('Fitur ini belum bisa digunakan');
     });
 
-    $(document).on('click', '.saveMasalahPickera', function() {
+    $(document).on('click', '.saveMasalahPicker', function() {
 
       event.preventDefault();
 

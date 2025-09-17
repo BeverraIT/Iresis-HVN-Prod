@@ -8,7 +8,7 @@ class Handover_fcd extends CI_Model
     {
         /**
          * 1. check does noresi exist in tblprintresi
-         * 2. throw if doest not exist
+         * 2. throw if does not exist
          * 3. check does id_resi exist in tblresikeluar
          * 4. throw if exist
          * 5. check does id_resi exist in tblresiambilbarang
@@ -20,49 +20,47 @@ class Handover_fcd extends CI_Model
         $receipt = $this->db
             ->select('id_printresi')
             ->get_where('tblprintresi', ['noresi' => $handover['noresi']])
-            ->result_array();
+            ->row();
         if (empty($receipt)) {
             return ['error' => TRUE, 'code' => 404, 'message' => 'Nomor resi tidak ditemukan', 'data' => ['EXCEPTION_CODE' => 'NOT_FOUND']];
         }
 
+        // Check if status_pesanan is COMPLETED or CANCELED
+        if (in_array($receipt->status_pesanan, ['COMPLETED', 'CANCELED'])) {
+            return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi tidak dapat diproses karena status pesanan sudah ' . $receipt->status_pesanan];
+        }
+
         unset($handover['noresi']);
 
-        $id_resi_list = array_column($receipt, 'id_printresi');
-
-        $this->db->where_in('id_resi', $id_resi_list);
-        $picking_exist = $this->db->get('tblresiambilbarang')->result_array();
-        if (count($picking_exist) == 0) {
-            return ['error' => TRUE, 'code' => 402, 'message' => 'Nomor Resi belum di-picker. Silakan Cek data'];
+        // Check if this receipt has been picked
+        $picking_exist = $this->db->get_where('tblresiambilbarang', ['id_resi' => $receipt->id_printresi])->row();
+        if (!$picking_exist) {
+            return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor Resi belum di-picker. Silakan Cek data'];
         }
 
-        $this->db->where_in('id_resi', $id_resi_list);
-        $packer_exist = $this->db->get('tblpacking')->result_array();
-        if (count($packer_exist) == 0) {
-            return ['error' => TRUE, 'code' => 402, 'message' => 'Nomor resi belum di-packing. Silakan Cek data'];
+        // Check if this receipt has been packed
+        $packer_exist = $this->db->get_where('tblpacking', ['id_resi' => $receipt->id_printresi])->row();
+        if (!$packer_exist) {
+            return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi belum di-packing. Silakan Cek data'];
         }
 
-        $this->db->where_in('id_resi', $id_resi_list);
-        $handover_exist = $this->db->get('tblresikeluar')->result_array();
-        if (count($handover_exist) > 0) {
-            return ['error' => TRUE, 'code' => 402, 'message' => 'Nomor resi sudah dikirim. Silakan cek data'];
+        // Check if this receipt has already been handed over
+        $handover_exist = $this->db->get_where('tblresikeluar', ['id_resi' => $receipt->id_printresi])->row();
+        if ($handover_exist) {
+            return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi sudah dikirim. Silakan Cek data'];
         }
 
-        foreach ($receipt as $row) {
-            $insert_batch_data[] = [
-                'id_resi' => $row['id_printresi'],
-                'tanggal_resikeluar' => date('Y-m-d H:i:s'),
-                'sudah_cetak' => '-',
-                'tanggal_cetak' => '',
-                'id_pegawai' => $user['id_user']
-            ];
-        }
+        $insert_data = [
+            'id_resi' => $receipt->id_printresi,
+            'tanggal_resikeluar' => date('Y-m-d H:i:s'),
+            'sudah_cetak' => '-',
+            'tanggal_cetak' => '',
+            'id_pegawai' => $user['id_user']
+        ];
 
-        //$handover['id_pegawai'] = $user['id_pegawai'];
+        $this->db->insert('tblresikeluar', $insert_data);
 
-        $this->db->insert_batch('tblresikeluar', $insert_batch_data);
-
-        $handover['id_resikeluar'] = $this->db->insert_id();
-        $handover['affected_rows'] = count($insert_batch_data);
+        $handover['affected_rows'] = $this->db->affected_rows();
 
         return $handover;
     }
