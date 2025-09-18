@@ -130,6 +130,7 @@ class Packer extends MY_Controller
                     $nama_barang = $row_masalah->nama_sku ?? '-';
                     $link_foto = $row_masalah->link_foto ?? '';
                     $yangambil_pegawai = $row_masalah->yangambil_pegawai ?? '';
+                    $picker_name = $row_masalah->name ?? $yangambil_pegawai; // Use picker_name if available, fallback to yangambil_pegawai
 
                     $data_masalah_picker[] = array(
                         $table_number++ . '.',
@@ -144,7 +145,7 @@ class Packer extends MY_Controller
                                 data-noresi="' . htmlspecialchars($row_masalah->noresi, ENT_QUOTES, 'UTF-8') . '"
                                 data-sku="' . htmlspecialchars($sku, ENT_QUOTES, 'UTF-8') . '"
                                 data-qty="' . htmlspecialchars($jumlah, ENT_QUOTES, 'UTF-8') . '"
-                                data-nama-picker="' . htmlspecialchars($yangambil_pegawai, ENT_QUOTES, 'UTF-8') . '"
+                                data-nama-picker="' . htmlspecialchars($picker_name, ENT_QUOTES, 'UTF-8') . '"
                                 data-no-rak="' . htmlspecialchars($no_rak, ENT_QUOTES, 'UTF-8') . '"
                             >Masalah Picker</button><br>
                         </div>'

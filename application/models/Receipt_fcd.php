@@ -77,12 +77,14 @@ class Receipt_fcd extends CI_Model
             dr.no_rak,
             s.nama_sku,
             s.link_foto,
-            rab.yangambil_pegawai
+            rab.yangambil_pegawai,
+            u.name
         ');
         $this->db->from('tblprintresi pr');
         $this->db->join('tbldetailprintresi dr', 'dr.id_resi = pr.id_printresi', 'left');
         $this->db->join('tblsku s', 's.id_sku = dr.sku', 'left');
         $this->db->join('tblresiambilbarang rab', 'rab.id_resi = pr.id_printresi', 'left');
+        $this->db->join('tbluser u', 'u.id_pegawai = rab.yangambil_pegawai', 'left');
         $this->db->join('tblpacking p', 'p.id_resi = pr.id_printresi', 'left');
 
         $this->db->where('pr.noresi', $noresi);

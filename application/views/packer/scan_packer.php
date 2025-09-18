@@ -122,22 +122,33 @@
 
               <div class="panel-body">
 
-                  <div class="form-group">
-                      <div class="row">
-                          <div class="col-md-3 text-center" style="border-right: 1px solid #ccc;">
-                              <div><strong id="modal_nama_picker"></strong></div>
-                          </div>
-                          <div class="col-md-3 text-center" style="border-right: 1px solid #ccc;">
-                              <div><strong id="modal_sku"></strong></div>
-                          </div>
-                          <div class="col-md-3 text-center" style="border-right: 1px solid #ccc;">
-                              <div><strong id="modal_qty"></strong></div>
-                          </div>
-                          <div class="col-md-3 text-center">
-                              <div><strong id="modal_no_rak"></strong></div>
-                          </div>
-                      </div>
+                <div class="form-group">
+                  <label class="col-md-3 col-xs-12 control-label">Nama Picker</label>
+                  <div class="col-md-8 col-xs-12">
+                    <input type="text" id="modal_nama_picker" class="form-control" readonly />
                   </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="col-md-3 col-xs-12 control-label">SKU</label>
+                  <div class="col-md-8 col-xs-12">
+                    <input type="text" id="modal_sku" class="form-control" readonly />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="col-md-3 col-xs-12 control-label">Quantity</label>
+                  <div class="col-md-8 col-xs-12">
+                    <input type="text" id="modal_qty" class="form-control" readonly />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="col-md-3 col-xs-12 control-label">No Rak</label>
+                  <div class="col-md-8 col-xs-12">
+                    <input type="text" id="modal_no_rak" class="form-control" readonly />
+                  </div>
+                </div>
 
                 <div class="form-group">
                   <label class="col-md-3 col-xs-12 control-label">Action</label>
@@ -273,10 +284,10 @@
       const qty = $(this).data("qty");
       const noRak = $(this).data("no-rak");
 
-      $('#modal_nama_picker').text(namapicker);
-      $('#modal_sku').text(sku);
-      $('#modal_qty').text(qty);
-      $('#modal_no_rak').text(noRak);
+      $('#modal_nama_picker').val(namapicker);
+      $('#modal_sku').val(sku);
+      $('#modal_qty').val(qty);
+      $('#modal_no_rak').val(noRak);
 
       // Update qty_bermasalah dropdown
       const $qtyDropdown = $('#qty_bermasalah');
