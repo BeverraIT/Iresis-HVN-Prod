@@ -103,10 +103,10 @@ class Packer extends MY_Controller
         // Define valid columns for ordering
         $data['valid_columns'] = [
             0 => null,
-            1 => 's.nama_barang',
-            2 => 'dr.sku',
-            3 => 'dr.jumlah',
-            4 => null,
+            1 => null,
+            2 => 's.nama_barang',
+            3 => 'dr.sku',
+            4 => 'dr.jumlah',
             5 => null
         ];
 
@@ -134,10 +134,10 @@ class Packer extends MY_Controller
 
                     $data_masalah_picker[] = array(
                         $table_number++ . '.',
+                        $link_foto ? '<img src="' . htmlspecialchars($link_foto, ENT_QUOTES, 'UTF-8') . '" style="max-width: 100px; max-height: 100px; cursor: pointer;" class="img-thumbnail foto-preview" data-foto="' . htmlspecialchars($link_foto, ENT_QUOTES, 'UTF-8') . '">' : '<span class="text-muted">No Photo</span>',
                         $nama_barang,
                         $sku,
                         $jumlah,
-                        '<button class="btn btn-info lihat-foto" data-foto="' . htmlspecialchars($link_foto, ENT_QUOTES, 'UTF-8') . '">Lihat Foto</button>',
                         '<div class="text-center">
                             <button 
                                 class="btn btn-info saveMasalahPicker" 

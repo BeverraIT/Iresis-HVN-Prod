@@ -18,7 +18,7 @@ class Handover_fcd extends CI_Model
          * 9. save into tblresikeluar
          */
         $receipt = $this->db
-            ->select('id_printresi')
+            ->select('id_printresi, status_pesanan')
             ->get_where('tblprintresi', ['noresi' => $handover['noresi']])
             ->row();
         if (empty($receipt)) {

@@ -93,10 +93,10 @@
               <thead>
                 <tr>
                   <th>#</th>
+                  <th>Foto</th>
                   <th>Nama Barang</th>
                   <th>SKU</th>
                   <th>Quantity</th>
-                  <th>Foto</th>
                   <th>Aksi</th>
                 </tr>
               </thead>
@@ -247,8 +247,8 @@
         ],
         'columnDefs': [
           { width: '5%', targets: 0 },
-          { width: '45%', targets: 1 },
-          { width: '10%', targets: 2 },
+          { width: '20%', targets: 1 },
+          { width: '35%', targets: 2 },
           { width: '10%', targets: 3 },
           { width: '10%', targets: 4 },
           { width: '20%', targets: 5 },
@@ -375,7 +375,19 @@
 
     // ====================== modal foto ======================
 
-    // event ketika klik button lihat foto
+    // event ketika klik gambar foto yang ada di tabel
+    $(document).on('click', '.foto-preview', function() {
+      var fotoUrl = $(this).data('foto');
+
+        if (fotoUrl && fotoUrl.trim() !== '') {
+            $('#previewFoto').attr('src', fotoUrl);   // ✅ Set the image source
+            $('#fotoModal').fadeIn();                 // ✅ Show the modal
+        } else {
+            alert('Foto tidak tersedia!');
+        }
+    });
+
+    // event ketika klik button lihat foto (for backward compatibility)
     $(document).on('click', '.lihat-foto', function() {
       var fotoUrl = $(this).data('foto');
 
