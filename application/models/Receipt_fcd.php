@@ -505,7 +505,6 @@ class Receipt_fcd extends CI_Model
             , t4.nama_pegawai admin_ho
         ');
 
-        $this->db->distinct();
         $this->db->join('tblresiambilbarang b', 'a.id_printresi = b.id_resi', 'left');
         $this->db->join('tblpacking c', 'a.id_printresi = c.id_resi', 'left');
         $this->db->join('tblresikeluar d', 'a.id_printresi = d.id_resi', 'left');
