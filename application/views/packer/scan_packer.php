@@ -212,6 +212,25 @@
         </div>
       </div>
 
+      <!-- Success Auto Popup Modal -->
+      <div id="successModal" class="custom-popup-overlay" style="display: none;">
+        <div class="custom-popup-box success-popup">
+          <div class="panel panel-default">
+            <div class="panel-heading" style="background-color: #5cb85c; color: white;">
+              <h3 class="panel-title">
+                <i class="fa fa-check-circle"></i> <strong>Success!</strong>
+              </h3>
+            </div>
+            <div class="panel-body">
+              <p id="successMessage" style="font-size: 16px; margin: 20px 0;">Data berhasil disubmit!</p>
+              <div class="progress" style="margin: 10px 0;">
+                <div id="progressBar" class="progress-bar progress-bar-success" role="progressbar" style="width: 100%; transition: width 1s linear;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -439,7 +458,13 @@
         method: 'POST',
         data: { noresi: noresi },
         success: function(response) {
-          alert("Data berhasil disubmit!");
+          // alert("Data berhasil disubmit!");
+          $('#successModal').fadeIn();
+
+          setTimeout(function() {
+            $('#successModal').fadeOut();
+          }, 1000);
+
             $resultInfo.hide();
             $table.hide();
             $footer.hide();
@@ -537,5 +562,24 @@
 
   #result-info {
       display: <?= empty($noresi) ? 'none' : 'block' ?>;
+  }
+
+  /* Style untuk success modal */
+  .success-popup {
+    text-align: center;
+  }
+
+  .success-popup .panel-heading {
+    background-color: #5cb85c;
+    color: white;
+  }
+
+  .success-popup .progress {
+    height: 5px;
+    background-color: #f5f5f5;
+  }
+
+  .success-popup .progress-bar {
+    background-color: #5cb85c;
   }
 </style>
