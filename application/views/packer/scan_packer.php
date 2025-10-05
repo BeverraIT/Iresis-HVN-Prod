@@ -231,6 +231,25 @@
         </div>
       </div>
 
+      <!-- Error Auto Popup Modal -->
+      <div id="errorModal" class="custom-popup-overlay" style="display: none;">
+        <div class="custom-popup-box error-popup">
+          <div class="panel panel-default">
+            <div class="panel-heading" style="background-color: #d9534f; color: white;">
+              <h3 class="panel-title">
+                <i class="fa fa-times-circle"></i> <strong>Error!</strong>
+              </h3>
+            </div>
+            <div class="panel-body">
+              <p id="errorMessage" style="font-size: 16px; margin: 20px 0;">Terjadi kesalahan!</p>
+              <div class="progress" style="margin: 10px 0;">
+                <div id="errorProgressBar" class="progress-bar progress-bar-danger" role="progressbar" style="width: 100%; transition: width 1s linear;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -448,7 +467,12 @@
       const noresi = $('#noresi-detail').val();
 
       if (!noresi || noresi.trim() === '') {
-          alert("Nomor resi tidak boleh kosong!");
+          // Show error popup for empty noresi
+          $('#errorMessage').text("Nomor resi tidak boleh kosong!");
+          $('#errorModal').fadeIn();
+          setTimeout(function() {
+            $('#errorModal').fadeOut();
+          }, 1000);
           return;
       }
 
@@ -471,7 +495,26 @@
             $('#noresi').focus();
         },
         error: function(xhr, status, error) {
-          alert(xhr.responseText);
+          // Show error popup instead of alert
+          let errorText = 'Terjadi kesalahan saat memproses data!';
+
+          // Try to parse JSON response and extract message
+          try {
+            let response = JSON.parse(xhr.responseText);
+            if (response.message) {
+              errorText = response.message;
+            }
+          } catch (e) {
+            // If not JSON, use responseText directly or default message
+            errorText = xhr.responseText || errorText;
+          }
+
+          $('#errorMessage').text(errorText);
+          $('#errorModal').fadeIn();
+
+          setTimeout(function() {
+            $('#errorModal').fadeOut();
+          }, 1000);
         }
       });
     });
@@ -581,5 +624,24 @@
 
   .success-popup .progress-bar {
     background-color: #5cb85c;
+  }
+
+  /* Style untuk error modal */
+  .error-popup {
+    text-align: center;
+  }
+
+  .error-popup .panel-heading {
+    background-color: #d9534f;
+    color: white;
+  }
+
+  .error-popup .progress {
+    height: 5px;
+    background-color: #f5f5f5;
+  }
+
+  .error-popup .progress-bar {
+    background-color: #d9534f;
   }
 </style>
