@@ -145,11 +145,11 @@ class Packer_fcd extends CI_Model
     function get_picker_detail_for_packer($noresi) {
         $this->db->select('
             t.nama_komputer,
-            t3.name as nama_pegawai
+            t3.nama_pegawai
         ');
         $this->db->from('tblresiambilbarang t');
         $this->db->join('tblprintresi t2', 't.id_resi = t2.id_printresi');
-        $this->db->join('tbluser t3', 't3.id_user = t.admin_pegawai');
+        $this->db->join('tblpegawai t3', 't3.kode_pegawai = t.yangambil_pegawai');
         $this->db->where('t2.noresi', $noresi);
 
         $query = $this->db->get();
