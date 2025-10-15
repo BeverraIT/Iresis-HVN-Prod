@@ -39,11 +39,11 @@
 						<div class="profile-image">
 							<img src="assets/img/no-image.jpg" alt="John Doe" />
 						</div>
-						<div class="profile-data">
+						                        <div class="profile-data">
 							<div class="profile-data-name"><?= $user['username'] ?></div>
-							<div class="profile-data-title"><?= $user['akses'] . ' - ' . $user['nama_komputer'] ?></div>
-						</div>
-					</div>
+							<div class="profile-data-title"><?= $user['akses'] . ' - ' . $nama_pk ?></div>
+                            <div class="profile-data-title">Status: <?= $status_performa ?></div>
+						</div>					</div>
 				</li>
 
 				<li class="xn-title">Navigation</li>
@@ -86,7 +86,8 @@
 			<!-- PAGE CONTENT WRAPPER -->
 			<div class="page-content-wrap">
 
-				<?= $content ?>
+				                
+				                				<?= $content ?>
 
 			</div>
 			<!-- END PAGE CONTENT WRAPPER -->

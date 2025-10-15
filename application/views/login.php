@@ -57,6 +57,20 @@
                     </div>
                     <div class="form-group">
                         <div class="col-md-12">
+                            <select name="status_performa" id="status_performa" class="form-control select" data-live-search="true" style="font-weight: bold;">
+                                <option value="" style="font-weight: bold;" selected disabled>-- Select Status Performa --</option>
+                                <?php foreach ($list_status_performa as $role => $statuses) : ?>
+                                    <optgroup label="<?= $role ?>">
+                                        <?php foreach ($statuses as $status) : ?>
+                                            <option value="<?= $status['status_name'] ?>"><?= $status['status_name'] ?></option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-12">
                             <button class="btn btn-info btn-block">Log In</button>
                         </div>
                     </div>

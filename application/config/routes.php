@@ -117,6 +117,10 @@ $route['report/get-production-team-report-data-tab1'] = 'report/get_production_t
 $route['report/export-to-excel-production-team-report-tab0'] = 'report/export_to_excel_production_team_report_tab0';
 $route['report/export-to-excel-production-team-report-tab1'] = 'report/export_to_excel_production_team_report_tab1';
 
+$route['kpi_reports'] = 'kpi_reports';
+$route['kpi_reports/export'] = 'kpi_reports/export';
+$route['kpi_reports/get-kpi-data'] = 'kpi_reports/get_kpi_data';
+$route['kpi_reports/export-to-excel'] = 'kpi_reports/export_to_excel';
 
 $route['user'] = 'user';
 $route['user/add_user'] = 'user/edit_user';

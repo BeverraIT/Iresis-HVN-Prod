@@ -1744,5 +1744,110 @@ class Receipt_fcd extends CI_Model
 
         return isset($result) ? $result : 0;
     }
+
+    // KPI Methods
+    function get_total_receipts_processed($start_date, $end_date)
+    {
+        $this->db->where('tanggal_printresi >=', $start_date);
+        $this->db->where('tanggal_printresi <=', $end_date);
+        return $this->db->count_all_results('tblprintresi');
+    }
+
+    function get_total_shipped_receipts($start_date, $end_date)
+    {
+        $this->db->join('tblresikeluar t2', 't.id_printresi = t2.id_printresi', 'inner');
+        $this->db->where('t.tanggal_printresi >=', $start_date);
+        $this->db->where('t.tanggal_printresi <=', $end_date);
+        return $this->db->count_all_results('tblprintresi t');
+    }
+
+    function get_total_pending_receipts($start_date, $end_date)
+    {
+        $this->db->join('tblresikeluar t2', 't.id_printresi = t2.id_printresi', 'left');
+        $this->db->where('t.tanggal_printresi >=', $start_date);
+        $this->db->where('t.tanggal_printresi <=', $end_date);
+        $this->db->where('t2.id_printresi IS NULL');
+        return $this->db->count_all_results('tblprintresi t');
+    }
+
+    function get_total_retur_receipts($start_date, $end_date)
+    {
+        $this->db->join('tblresiretur t2', 't.id_printresi = t2.id_printresi', 'inner');
+        $this->db->where('t.tanggal_printresi >=', $start_date);
+        $this->db->where('t.tanggal_printresi <=', $end_date);
+        return $this->db->count_all_results('tblprintresi t');
+    }
+
+    function get_avg_processing_time($start_date, $end_date)
+    {
+        $this->db->select('AVG(TIMESTAMPDIFF(HOUR, t.tanggal_printresi, t2.tanggal_resikeluar)) as avg_time');
+        $this->db->join('tblresikeluar t2', 't.id_printresi = t2.id_printresi', 'inner');
+        $this->db->where('t.tanggal_printresi >=', $start_date);
+        $this->db->where('t.tanggal_printresi <=', $end_date);
+        $this->db->where('t2.tanggal_resikeluar IS NOT NULL');
+        
+        $query = $this->db->get('tblprintresi t');
+        $result = $query->row();
+        
+        return $result ? round($result->avg_time, 2) : 0;
+    }
+
+    function get_picker_productivity($start_date, $end_date)
+    {
+        $this->db->select('COUNT(t.id_printresi) / COUNT(DISTINCT DATE(t.tanggal_resiambilbarang)) as productivity');
+        $this->db->join('tblresiambilbarang t2', 't.id_printresi = t2.id_printresi', 'inner');
+        $this->db->where('t.tanggal_printresi >=', $start_date);
+        $this->db->where('t.tanggal_printresi <=', $end_date);
+        $this->db->where('t2.tanggal_resiambilbarang IS NOT NULL');
+        
+        $query = $this->db->get('tblprintresi t');
+        $result = $query->row();
+        
+        return $result ? round($result->productivity, 2) : 0;
+    }
+
+    function get_packer_productivity($start_date, $end_date)
+    {
+        $this->db->select('COUNT(t.id_printresi) / COUNT(DISTINCT DATE(t2.tanggal_packing)) as productivity');
+        $this->db->join('tblpacking t2', 't.id_printresi = t2.id_printresi', 'inner');
+        $this->db->where('t.tanggal_printresi >=', $start_date);
+        $this->db->where('t.tanggal_printresi <=', $end_date);
+        $this->db->where('t2.tanggal_packing IS NOT NULL');
+        
+        $query = $this->db->get('tblprintresi t');
+        $result = $query->row();
+        
+        return $result ? round($result->productivity, 2) : 0;
+    }
+
+    function get_daily_performance($start_date, $end_date)
+    {
+        $this->db->select('
+            DATE(t.tanggal_printresi) as date,
+            COUNT(t.id_printresi) as receipts,
+            COUNT(t2.id_printresi) as completed,
+            ROUND((COUNT(t2.id_printresi) / COUNT(t.id_printresi)) * 100, 2) as completion_rate
+        ');
+        $this->db->join('tblresikeluar t2', 't.id_printresi = t2.id_printresi', 'left');
+        $this->db->where('t.tanggal_printresi >=', $start_date);
+        $this->db->where('t.tanggal_printresi <=', $end_date);
+        $this->db->group_by('DATE(t.tanggal_printresi)');
+        $this->db->order_by('DATE(t.tanggal_printresi)', 'ASC');
+        
+        $query = $this->db->get('tblprintresi t');
+        $results = $query->result_array();
+        
+        $data = array(
+            'labels' => array(),
+            'values' => array()
+        );
+        
+        foreach ($results as $row) {
+            $data['labels'][] = $row['date'];
+            $data['values'][] = $row['receipts'];
+        }
+        
+        return $data;
+    }
 }
 
