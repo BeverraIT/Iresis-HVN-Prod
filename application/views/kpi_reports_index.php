@@ -165,7 +165,19 @@ if (!$user || !isset($user['id_user'])) {
     </div>
 </div>
 
+<!-- Include Chart.js FIRST (before using it) - Use specific version -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
 <script>
+// Check if Chart.js loaded
+if (typeof Chart === 'undefined') {
+    console.error('Chart.js failed to load! Using fallback...');
+    // Fallback: load from alternative CDN
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js';
+    document.head.appendChild(script);
+}
+
 $(document).ready(function() {
     // Initialize date range picker
     $('.daterangepicker').daterangepicker({
@@ -380,7 +392,19 @@ function displayTopPerformers(data) {
     $('#top-performers-body').html(tableHtml);
 }
 
+// Global variables untuk menyimpan chart instances
+var dailyPerformanceChartInstance = null;
+var statusDistributionChartInstance = null;
+
 function updateCharts(data) {
+    // Destroy old charts if exist
+    if (dailyPerformanceChartInstance) {
+        dailyPerformanceChartInstance.destroy();
+    }
+    if (statusDistributionChartInstance) {
+        statusDistributionChartInstance.destroy();
+    }
+    
     // Daily Performance Chart by Status
     var ctx1 = document.getElementById('dailyPerformanceChart').getContext('2d');
     
@@ -427,7 +451,7 @@ function updateCharts(data) {
             colorIndex++;
         });
 
-        new Chart(ctx1, {
+        dailyPerformanceChartInstance = new Chart(ctx1, {
             type: 'line',
             data: {
                 labels: allDates,
@@ -478,7 +502,7 @@ function updateCharts(data) {
         var dataValues = data.status_distribution.map(item => item.total_transaksi);
         var colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF8A80', '#80CBC4'];
 
-        new Chart(ctx2, {
+        statusDistributionChartInstance = new Chart(ctx2, {
             type: 'doughnut',
             data: {
                 labels: labels,
@@ -533,9 +557,6 @@ function exportToExcel() {
     form.remove();
 }
 </script>
-
-<!-- Include Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 .huge {

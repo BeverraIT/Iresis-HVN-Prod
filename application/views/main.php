@@ -14,7 +14,7 @@
 	<!-- CSS INCLUDE -->
 	<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 	
-	<link rel="stylesheet" type="text/css" id="theme" href="assets/css/theme-black.css" />
+	<link rel="stylesheet" type="text/css" id="theme" href="assets/css/theme-black.css?v=<?= time() ?>" />
 	<!-- EOF CSS INCLUDE -->
 </head>
 
@@ -39,10 +39,12 @@
 						<div class="profile-image">
 							<img src="assets/img/no-image.jpg" alt="John Doe" />
 						</div>
-						                        <div class="profile-data">
+						<div class="profile-data">
 							<div class="profile-data-name"><?= $user['username'] ?></div>
 							<div class="profile-data-title"><?= $user['akses'] . ' - ' . $nama_pk ?></div>
+                            <?php if (!empty($status_performa)) : ?>
                             <div class="profile-data-title">Status: <?= $status_performa ?></div>
+                            <?php endif; ?>
 						</div>					</div>
 				</li>
 
@@ -160,8 +162,8 @@
 	<!-- END PLUGINS -->
 
 	<!-- START TEMPLATE -->
-	<script type="text/javascript" src="assets/js/plugins.js"></script>
-	<script type="text/javascript" src="assets/js/actions.js"></script>
+	<script type="text/javascript" src="assets/js/plugins.js?v=<?= time() ?>"></script>
+	<script type="text/javascript" src="assets/js/actions.js?v=<?= time() ?>"></script>
 	<!-- END TEMPLATE -->
 </body>
 

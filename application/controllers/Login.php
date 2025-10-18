@@ -17,9 +17,10 @@ class Login extends CI_Controller
 
     public function index()
     {
-        $this->load->model('status_performa_fcd');
+        $this->load->model('kpi_fcd');
 
-        $list_status_performa_raw = $this->status_performa_fcd->get_status_performa()->result_array();
+        // Hanya ambil data status performa untuk PACKER saja
+        $list_status_performa_raw = $this->kpi_fcd->get_status_performa_by_kategori('PACKER')->result_array();
         $grouped_status_performa = [];
         foreach ($list_status_performa_raw as $status) {
             $grouped_status_performa[$status['role']][] = $status;

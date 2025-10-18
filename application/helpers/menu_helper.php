@@ -55,7 +55,13 @@ if (!function_exists('tree_to_html_menu')) {
     {
         $html = '';
         foreach ($list_menu as $menu):
-            $uri = empty($menu['uri']) ? '#' : $menu['uri'];
+            // Untuk menu yang memiliki child (submenu), href harus '#' untuk menghindari navigasi
+            // Untuk menu tanpa child, gunakan URI yang sebenarnya
+            if (!empty($menu['child'])) {
+                $uri = '#';
+            } else {
+                $uri = empty($menu['uri']) ? '#' : $menu['uri'];
+            }
 
             if (empty($menu['child'])) {
                 $html .= '<li><a href="'.$uri.'" class="link"><span class="'.$menu['icon'].'"></span> '.$menu['name'].'</a></li>';

@@ -18,6 +18,8 @@ class Welcome extends MY_Controller
 		$data['header_daily_report'] = $this->receipt_fcd->get_header_daily_report(date('Y-m-d 00:00:00'), date('Y-m-d H:i:s'))->row_array();
 
 		$this->data['user'] = $this->session->userdata('user');
+		$this->data['nama_pk'] = $this->session->userdata('nama_pk');
+		$this->data['status_performa'] = $this->session->userdata('status_performa');
 		$this->data['html_menu_tree'] = $this->session->userdata('html_menu_tree');
 		$this->data['content'] = $this->load->view('welcome', $data, TRUE);
 
