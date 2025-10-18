@@ -6,9 +6,7 @@ if (!function_exists('menu_to_tree')) {
     {
         foreach ($list_menu_tree as $child):
             if ($child['parentid'] == $parent['id']) {
-                if (empty($child['uri'])) {
-                    $child = menu_to_tree($list_menu_tree, $child);
-                }
+                $child = menu_to_tree($list_menu_tree, $child);
                 $parent['child'][] = $child;
             }
         endforeach;

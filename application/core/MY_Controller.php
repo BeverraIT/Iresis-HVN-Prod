@@ -16,6 +16,8 @@ class MY_Controller extends CI_Controller
             $this->validate();
 
             $this->data['user'] = $this->session->userdata('user');
+            $this->data['nama_pk'] = $this->session->userdata('nama_pk');
+            $this->data['status_performa'] = $this->session->userdata('status_performa');
         }
     }
 

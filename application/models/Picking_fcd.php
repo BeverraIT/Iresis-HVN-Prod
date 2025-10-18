@@ -66,6 +66,9 @@ class Picking_fcd extends CI_Model
 
             $this->db->insert('tblresiambilbarang', $insert_data);
             $picking['affected_rows'] = $this->db->affected_rows();
+            
+            // Log transaksi ke tblkpi untuk KPI tracking
+            $this->log_kpi_transaksi($user['id_user'], 'PICKING');
 
         } else if ($mode == PICKING_UPDATE_PACKER) {
             if (empty($picking_exist)) {
@@ -201,5 +204,60 @@ class Picking_fcd extends CI_Model
         $this->db->where($criterias);
 
         return $this->db->get_where('tblresiambilbarang');
+    }
+
+    /**
+     * Log transaksi picking ke tblkpi untuk KPI tracking
+     */
+    private function log_kpi_transaksi($user_id, $tipe_transaksi) {
+        $tanggal = date('Y-m-d');
+        
+        // Ambil id_statusperforma dari log status performa user hari ini
+        $status_log = $this->db
+            ->select('id_statusperforma')
+            ->get_where('tblstatusperforma', [
+                'id_user' => $user_id,
+                'tanggal' => $tanggal,
+                'isactive' => 1
+            ])
+            ->row();
+        
+        if (!$status_log) {
+            // Jika tidak ada log status performa, skip
+            log_message('warning', "User {$user_id} melakukan {$tipe_transaksi} tanpa status performa");
+            return false;
+        }
+        
+        // Cek apakah sudah ada log transaksi untuk user, status, tanggal, dan tipe ini
+        $existing_log = $this->db
+            ->get_where('tblkpi', [
+                'id_user' => $user_id,
+                'id_statusperforma' => $status_log->id_statusperforma,
+                'tanggal' => $tanggal,
+                'tipe_transaksi' => $tipe_transaksi
+            ])
+            ->row();
+        
+        if ($existing_log) {
+            // Update: increment jumlah_resi
+            $this->db->where('id_log_transaksi', $existing_log->id_log_transaksi);
+            $this->db->set('jumlah_resi', 'jumlah_resi + 1', FALSE);
+            $this->db->set('updated', date('Y-m-d H:i:s'));
+            $this->db->set('updatedby', $user_id);
+            $this->db->update('tblkpi');
+        } else {
+            // Insert: log transaksi baru
+            $this->db->insert('tblkpi', [
+                'id_user' => $user_id,
+                'id_statusperforma' => $status_log->id_statusperforma,
+                'tanggal' => $tanggal,
+                'tipe_transaksi' => $tipe_transaksi,
+                'jumlah_resi' => 1,
+                'createdby' => $user_id,
+                'created' => date('Y-m-d H:i:s')
+            ]);
+        }
+        
+        return true;
     }
 }
