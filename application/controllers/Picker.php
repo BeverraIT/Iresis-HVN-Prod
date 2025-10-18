@@ -12,8 +12,14 @@ class Picker extends MY_Controller
 
     public function scan_picker()
     {
+        $this->load->model('kpi_fcd');
+        
         $data['list_picker'] = $this->picking_fcd->get_picker('AKTIF')->result_array();
         $data['total_scan'] = $this->picking_fcd->get_total_scan_user($this->data['user']['id_user'])->row()->total_scan;
+        
+        // Ambil data status performa untuk PICKER
+        $list_status_performa_raw = $this->kpi_fcd->get_status_performa_by_kategori('PICKER')->result_array();
+        $data['list_status_performa'] = $list_status_performa_raw;
 
         $this->show($data);
     }
@@ -27,6 +33,16 @@ class Picker extends MY_Controller
         $picking['noresi'] = $this->input->post('noresi');
         $picking['yangambil_pegawai'] = $this->input->post('id_pegawaipicker');
         $picking['pending'] = '';
+        
+        // Ambil status performa yang dipilih
+        $status_performa_name = $this->input->post('status_performa');
+        if (!empty($status_performa_name)) {
+            $this->load->model('kpi_fcd');
+            $status_id = $this->kpi_fcd->get_status_id_by_name($status_performa_name);
+            if ($status_id) {
+                $picking['status_performa_id'] = $status_id;
+            }
+        }
 
         $save = $this->picking_fcd->save($picking, $this->data['user']);
 

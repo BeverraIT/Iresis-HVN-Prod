@@ -60,11 +60,11 @@
                             <select name="status_performa" id="status_performa" class="form-control select" data-live-search="true" style="font-weight: bold;">
                                 <option value="" style="font-weight: bold;" selected disabled>-- Select Status Performa --</option>
                                 <?php foreach ($list_status_performa as $role => $statuses) : ?>
-                                    <optgroup label="<?= $role ?>">
+                                    <!-- <optgroup label="<?= $role ?>"> -->
                                         <?php foreach ($statuses as $status) : ?>
                                             <option value="<?= $status['status_name'] ?>"><?= $status['status_name'] ?></option>
                                         <?php endforeach; ?>
-                                    </optgroup>
+                                    <!-- </optgroup> -->
                                 <?php endforeach; ?>
                             </select>
                         </div>

@@ -27,6 +27,20 @@
           </div>
 
           <div class="form-group">
+            <label class="col-md-3 col-xs-12 control-label">Status Performa</label>
+            <div class="col-md-8 col-xs-12">
+              <select name="status_performa" id="status_performa" class="form-control select" data-live-search="true" style="font-weight: bold;">
+                <option value="" style="font-weight: bold;" selected disabled>-- Select Status Performa --</option>
+                <?php foreach ($list_status_performa as $status) : ?>
+                  <option value="<?= $status['kode_status'] ?>" style="font-weight: bold;">
+                    <?= $status['status_name'] ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
             <label class="col-md-3 col-xs-12 control-label">Resi</label>
             <div class="col-md-8 col-xs-12">
               <input type="text" name="noresi" id="noresi" class="form-control" />
@@ -61,6 +75,9 @@
     ignore: [],
     rules: {
       id_pegawaipicker: {
+        required: true,
+      },
+      status_performa: {
         required: true,
       },
       noresi: {

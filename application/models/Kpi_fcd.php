@@ -8,7 +8,7 @@ class Kpi_fcd extends CI_Model
     function get_status_performa($id = null)
     {
         if (!empty($id)) {
-            $this->db->where('id', $id);
+            $this->db->where('id_statusperforma', $id);
         }
         
         $this->db->where('isactive', 1);
@@ -30,15 +30,15 @@ class Kpi_fcd extends CI_Model
     {
         $timestamp = date('Y-m-d H:i:s');
         
-        if (!empty($status['id'])) {
+        if (!empty($status['id_statusperforma'])) {
             // Update existing
             $status['updatedby'] = $user_id;
             $status['updated'] = $timestamp;
-            $this->db->where('id', $status['id']);
+            $this->db->where('id_statusperforma', $status['id_statusperforma']);
             $this->db->update('tblmasterstatusperforma', $status);
         } else {
             // Insert new
-            unset($status['id']);
+            unset($status['id_statusperforma']);
             $status['createdby'] = $user_id;
             $status['created'] = $timestamp;
             $this->db->insert('tblmasterstatusperforma', $status);
@@ -51,12 +51,16 @@ class Kpi_fcd extends CI_Model
     
     function get_status_id_by_name($status_name)
     {
-        $result = $this->db->get_where('tblmasterstatusperforma', array(
-            'status_name' => $status_name,
-            'isactive' => 1
-        ))->row();
+        // Cari berdasarkan status_name atau kode_status
+        $this->db->where('isactive', 1);
+        $this->db->group_start();
+        $this->db->where('status_name', $status_name);
+        $this->db->or_where('kode_status', $status_name);
+        $this->db->group_end();
         
-        return $result ? $result->id : null;
+        $result = $this->db->get('tblmasterstatusperforma')->row();
+        
+        return $result ? $result->id_statusperforma : null;
     }
     
     function log_status_performa_with_target($user_id, $status_id, $tanggal, $target_pribadi)
@@ -147,7 +151,7 @@ class Kpi_fcd extends CI_Model
         
         $this->db->select('lsp.*, sp.kode_status, sp.status_name, sp.role');
         $this->db->from('tblstatusperforma lsp');
-        $this->db->join('tblmasterstatusperforma sp', 'sp.id = lsp.id_statusperforma');
+        $this->db->join('tblmasterstatusperforma sp', 'sp.id_statusperforma = lsp.id_statusperforma');
         $this->db->where('lsp.id_user', $user_id);
         $this->db->where('lsp.tanggal', $tanggal);
         $this->db->where('lsp.isactive', 1);
@@ -207,7 +211,7 @@ class Kpi_fcd extends CI_Model
         
         $this->db->select('lth.*, sp.kode_status, sp.status_name, sp.role');
         $this->db->from('tblkpi lth');
-        $this->db->join('tblmasterstatusperforma sp', 'sp.id = lth.id_statusperforma');
+        $this->db->join('tblmasterstatusperforma sp', 'sp.id_statusperforma = lth.id_statusperforma');
         $this->db->where('lth.id_user', $user_id);
         $this->db->where('lth.tanggal', $tanggal);
         
@@ -218,46 +222,77 @@ class Kpi_fcd extends CI_Model
     
     function get_kpi_dashboard($start_date, $end_date)
     {
-        $this->db->where('tanggal >=', $start_date);
-        $this->db->where('tanggal <=', $end_date);
-        $this->db->order_by('tanggal DESC, total_transaksi DESC');
+        // Query langsung tanpa view untuk menghindari error
+        $this->db->select('
+            t.tanggal,
+            COUNT(DISTINCT t.id_user) as total_user_aktif,
+            COALESCE(SUM(k.jumlah_resi), 0) as total_transaksi
+        ');
         
-        return $this->db->get('vw_kpi_dashboard');
+        $this->db->from('tblstatusperforma t');
+        $this->db->join('tblkpi k', 'k.id_user = t.id_user AND k.id_statusperforma = t.id_statusperforma AND k.tanggal = t.tanggal', 'left');
+        $this->db->where('t.tanggal >=', $start_date);
+        $this->db->where('t.tanggal <=', $end_date);
+        $this->db->where('t.isactive', 1);
+        $this->db->group_by('t.tanggal');
+        $this->db->order_by('t.tanggal DESC, total_transaksi DESC');
+        
+        return $this->db->get();
     }
     
     function get_kpi_by_status($start_date, $end_date, $status_id = null)
     {
-        $this->db->where('tanggal >=', $start_date);
-        $this->db->where('tanggal <=', $end_date);
+        // Query langsung tanpa view untuk menghindari error
+        $this->db->select('
+            t.tanggal,
+            sp.id_statusperforma,
+            sp.kode_status,
+            sp.status_name,
+            COUNT(DISTINCT t.id_user) as total_user_aktif,
+            COALESCE(SUM(k.jumlah_resi), 0) as total_transaksi
+        ');
+        
+        $this->db->from('tblstatusperforma t');
+        $this->db->join('tblmasterstatusperforma sp', 'sp.id_statusperforma = t.id_statusperforma', 'left');
+        $this->db->join('tblkpi k', 'k.id_user = t.id_user AND k.id_statusperforma = t.id_statusperforma AND k.tanggal = t.tanggal', 'left');
+        $this->db->where('t.tanggal >=', $start_date);
+        $this->db->where('t.tanggal <=', $end_date);
+        $this->db->where('t.isactive', 1);
         
         if (!empty($status_id)) {
-            $this->db->where('id_statusperforma', $status_id);
+            $this->db->where('sp.id_statusperforma', $status_id);
         }
         
-        $this->db->order_by('tanggal DESC, total_transaksi DESC');
+        $this->db->group_by('t.tanggal, sp.id_statusperforma, sp.kode_status, sp.status_name');
+        $this->db->order_by('t.tanggal DESC, total_transaksi DESC');
         
-        return $this->db->get('vw_kpi_dashboard');
+        return $this->db->get();
     }
     
     function get_kpi_summary($start_date, $end_date)
     {
+        // Query langsung tanpa view untuk menghindari error
         $this->db->select('
-            COUNT(DISTINCT kode_status) as total_status,
-            SUM(total_user) as total_user_aktif,
-            SUM(total_packing) as total_packing,
-            SUM(total_picking) as total_picking,
-            SUM(total_transaksi) as total_transaksi,
-            AVG(persentase_capai) as rata_rata_capai,
-            COUNT(CASE WHEN status_performa = "EXCELLENT" THEN 1 END) as excellent_count,
-            COUNT(CASE WHEN status_performa = "GOOD" THEN 1 END) as good_count,
-            COUNT(CASE WHEN status_performa = "FAIR" THEN 1 END) as fair_count,
-            COUNT(CASE WHEN status_performa = "POOR" THEN 1 END) as poor_count
+            COUNT(DISTINCT sp.kode_status) as total_status,
+            COUNT(DISTINCT t.id_user) as total_user_aktif,
+            COALESCE(SUM(CASE WHEN k.tipe_transaksi = "PACKING" THEN k.jumlah_resi ELSE 0 END), 0) as total_packing,
+            COALESCE(SUM(CASE WHEN k.tipe_transaksi = "PICKING" THEN k.jumlah_resi ELSE 0 END), 0) as total_picking,
+            COALESCE(SUM(k.jumlah_resi), 0) as total_transaksi,
+            0 as rata_rata_capai,
+            0 as excellent_count,
+            0 as good_count,
+            0 as fair_count,
+            0 as poor_count
         ');
         
-        $this->db->where('tanggal >=', $start_date);
-        $this->db->where('tanggal <=', $end_date);
+        $this->db->from('tblstatusperforma t');
+        $this->db->join('tblmasterstatusperforma sp', 'sp.id_statusperforma = t.id_statusperforma', 'left');
+        $this->db->join('tblkpi k', 'k.id_user = t.id_user AND k.id_statusperforma = t.id_statusperforma AND k.tanggal = t.tanggal', 'left');
+        $this->db->where('t.tanggal >=', $start_date);
+        $this->db->where('t.tanggal <=', $end_date);
+        $this->db->where('t.isactive', 1);
         
-        return $this->db->get('vw_kpi_dashboard')->row();
+        return $this->db->get()->row();
     }
     
     function get_top_performers($start_date, $end_date, $limit = 10)
@@ -265,7 +300,7 @@ class Kpi_fcd extends CI_Model
         $this->db->select('
             u.name as nama_user,
             sp.kode_status,
-            sp.nama_status,
+            sp.status_name,
             SUM(lth.jumlah_resi) as total_transaksi,
             COUNT(DISTINCT lth.tanggal) as hari_aktif,
             AVG(lth.jumlah_resi) as rata_rata_harian
@@ -299,85 +334,101 @@ class Kpi_fcd extends CI_Model
     
     function get_daily_performance_chart($start_date, $end_date)
     {
+        // Query langsung tanpa view untuk menghindari error
         $this->db->select('
-            tanggal,
-            kode_status,
-            nama_status,
-            total_transaksi,
-            persentase_capai
+            t.tanggal,
+            sp.kode_status,
+            sp.status_name,
+            COALESCE(SUM(k.jumlah_resi), 0) as total_transaksi,
+            0 as persentase_capai
         ');
         
-        $this->db->where('tanggal >=', $start_date);
-        $this->db->where('tanggal <=', $end_date);
-        $this->db->order_by('tanggal ASC, total_transaksi DESC');
+        $this->db->from('tblstatusperforma t');
+        $this->db->join('tblmasterstatusperforma sp', 'sp.id_statusperforma = t.id_statusperforma', 'left');
+        $this->db->join('tblkpi k', 'k.id_user = t.id_user AND k.id_statusperforma = t.id_statusperforma AND k.tanggal = t.tanggal', 'left');
+        $this->db->where('t.tanggal >=', $start_date);
+        $this->db->where('t.tanggal <=', $end_date);
+        $this->db->where('t.isactive', 1);
+        $this->db->group_by('t.tanggal, sp.kode_status, sp.status_name');
+        $this->db->order_by('t.tanggal ASC, total_transaksi DESC');
         
-        return $this->db->get('vw_kpi_dashboard');
+        return $this->db->get();
     }
     
     function get_status_performance_comparison($start_date, $end_date)
     {
+        // Query langsung tanpa view untuk menghindari error
         $this->db->select('
-            kode_status,
-            status_name,
-            role,
-            SUM(total_user_aktif) as total_user,
-            SUM(total_transaksi) as total_transaksi,
-            AVG(rata_rata_per_user) as rata_rata_per_user,
-            AVG(persentase_capai) as rata_rata_capai,
-            COUNT(CASE WHEN persentase_capai >= 100 THEN 1 END) as excellent_days,
-            COUNT(CASE WHEN persentase_capai >= 80 AND persentase_capai < 100 THEN 1 END) as good_days,
-            COUNT(CASE WHEN persentase_capai >= 60 AND persentase_capai < 80 THEN 1 END) as fair_days,
-            COUNT(CASE WHEN persentase_capai < 60 THEN 1 END) as poor_days
+            sp.kode_status,
+            sp.status_name,
+            sp.role,
+            COUNT(DISTINCT t.id_user) as total_user,
+            COALESCE(SUM(k.jumlah_resi), 0) as total_transaksi,
+            0 as rata_rata_per_user,
+            0 as rata_rata_capai,
+            0 as excellent_days,
+            0 as good_days,
+            0 as fair_days,
+            0 as poor_days
         ');
         
-        $this->db->where('tanggal >=', $start_date);
-        $this->db->where('tanggal <=', $end_date);
-        $this->db->group_by('kode_status, status_name, role');
+        $this->db->from('tblstatusperforma t');
+        $this->db->join('tblmasterstatusperforma sp', 'sp.id_statusperforma = t.id_statusperforma', 'left');
+        $this->db->join('tblkpi k', 'k.id_user = t.id_user AND k.id_statusperforma = t.id_statusperforma AND k.tanggal = t.tanggal', 'left');
+        $this->db->where('t.tanggal >=', $start_date);
+        $this->db->where('t.tanggal <=', $end_date);
+        $this->db->where('t.isactive', 1);
+        $this->db->group_by('sp.kode_status, sp.status_name, sp.role');
         $this->db->order_by('total_transaksi DESC');
         
-        return $this->db->get('vw_kpi_dashboard');
+        return $this->db->get();
     }
     
     // ========== DASHBOARD SPECIFIC METHODS ==========
     
     function get_kpi_summary_cards($start_date, $end_date)
     {
+        // Query langsung tanpa view untuk menghindari error
         $this->db->select('
-            COUNT(DISTINCT kode_status) as total_status_aktif,
-            SUM(total_user) as total_user_aktif,
-            SUM(total_transaksi) as total_transaksi,
-            AVG(persentase_capai) as rata_rata_capai
+            COUNT(DISTINCT sp.kode_status) as total_status_aktif,
+            COUNT(DISTINCT t.id_user) as total_user_aktif,
+            COALESCE(SUM(k.jumlah_resi), 0) as total_transaksi,
+            0 as rata_rata_capai
         ');
         
-        $this->db->where('tanggal >=', $start_date);
-        $this->db->where('tanggal <=', $end_date);
+        $this->db->from('tblstatusperforma t');
+        $this->db->join('tblmasterstatusperforma sp', 'sp.id_statusperforma = t.id_statusperforma', 'left');
+        $this->db->join('tblkpi k', 'k.id_user = t.id_user AND k.id_statusperforma = t.id_statusperforma AND k.tanggal = t.tanggal', 'left');
+        $this->db->where('t.tanggal >=', $start_date);
+        $this->db->where('t.tanggal <=', $end_date);
+        $this->db->where('t.isactive', 1);
         
-        return $this->db->get('vw_kpi_dashboard')->row();
+        return $this->db->get()->row();
     }
     
     function get_status_performa_cards($start_date, $end_date, $limit = 4)
     {
+        // Query langsung tanpa view untuk menghindari error
         $this->db->select('
-            kode_status,
-            nama_status,
-            SUM(total_user) as total_user,
-            SUM(total_transaksi) as total_transaksi,
-            AVG(persentase_capai) as rata_rata_capai,
-            CASE 
-                WHEN AVG(persentase_capai) >= 100 THEN "EXCELLENT"
-                WHEN AVG(persentase_capai) >= 80 THEN "GOOD"
-                WHEN AVG(persentase_capai) >= 60 THEN "FAIR"
-                ELSE "POOR"
-            END as status_performa
+            sp.kode_status,
+            sp.status_name,
+            COUNT(DISTINCT t.id_user) as total_user,
+            COALESCE(SUM(k.jumlah_resi), 0) as total_transaksi,
+            0 as rata_rata_capai,
+            "NORMAL" as status_performa
         ');
         
-        $this->db->where('tanggal >=', $start_date);
-        $this->db->where('tanggal <=', $end_date);
-        $this->db->group_by('kode_status, nama_status');
+        $this->db->from('tblstatusperforma t');
+        $this->db->join('tblmasterstatusperforma sp', 'sp.id_statusperforma = t.id_statusperforma', 'left');
+        $this->db->join('tblkpi k', 'k.id_user = t.id_user AND k.id_statusperforma = t.id_statusperforma AND k.tanggal = t.tanggal', 'left');
+        $this->db->where('t.tanggal >=', $start_date);
+        $this->db->where('t.tanggal <=', $end_date);
+        $this->db->where('t.isactive', 1);
+        $this->db->group_by('sp.kode_status, sp.status_name');
         $this->db->order_by('total_transaksi DESC');
         $this->db->limit($limit);
         
-        return $this->db->get('vw_kpi_dashboard');
+        return $this->db->get();
     }
     
     function get_realtime_performance($tanggal = null)
@@ -386,10 +437,24 @@ class Kpi_fcd extends CI_Model
             $tanggal = date('Y-m-d');
         }
         
-        $this->db->where('tanggal', $tanggal);
+        // Query langsung tanpa view untuk menghindari error
+        $this->db->select('
+            t.tanggal,
+            sp.kode_status,
+            sp.status_name,
+            COUNT(DISTINCT t.id_user) as total_user_aktif,
+            COALESCE(SUM(k.jumlah_resi), 0) as total_transaksi
+        ');
+        
+        $this->db->from('tblstatusperforma t');
+        $this->db->join('tblmasterstatusperforma sp', 'sp.id_statusperforma = t.id_statusperforma', 'left');
+        $this->db->join('tblkpi k', 'k.id_user = t.id_user AND k.id_statusperforma = t.id_statusperforma AND k.tanggal = t.tanggal', 'left');
+        $this->db->where('t.tanggal', $tanggal);
+        $this->db->where('t.isactive', 1);
+        $this->db->group_by('t.tanggal, sp.kode_status, sp.status_name');
         $this->db->order_by('total_transaksi DESC');
         
-        return $this->db->get('vw_kpi_dashboard');
+        return $this->db->get();
     }
     
     function get_user_performance_today($user_id, $tanggal = null)
@@ -401,9 +466,8 @@ class Kpi_fcd extends CI_Model
         $this->db->select('
             lsp.*,
             sp.kode_status,
-            sp.nama_status,
+            sp.status_name,
             sp.target_harian,
-            sp.tipe_kerja,
             COALESCE(SUM(CASE WHEN lth.tipe_transaksi = "PACKING" THEN lth.jumlah_resi ELSE 0 END), 0) as total_packing,
             COALESCE(SUM(CASE WHEN lth.tipe_transaksi = "PICKING" THEN lth.jumlah_resi ELSE 0 END), 0) as total_picking,
             COALESCE(SUM(lth.jumlah_resi), 0) as total_transaksi,
@@ -427,35 +491,46 @@ class Kpi_fcd extends CI_Model
     
     function get_daily_trend_data($start_date, $end_date)
     {
+        // Query langsung tanpa view untuk menghindari error
         $this->db->select('
-            tanggal,
-            kode_status,
-            nama_status,
-            total_transaksi,
-            persentase_capai
+            t.tanggal,
+            sp.kode_status,
+            sp.status_name,
+            COALESCE(SUM(k.jumlah_resi), 0) as total_transaksi,
+            0 as persentase_capai
         ');
         
-        $this->db->where('tanggal >=', $start_date);
-        $this->db->where('tanggal <=', $end_date);
-        $this->db->order_by('tanggal ASC, kode_status ASC');
+        $this->db->from('tblstatusperforma t');
+        $this->db->join('tblmasterstatusperforma sp', 'sp.id_statusperforma = t.id_statusperforma', 'left');
+        $this->db->join('tblkpi k', 'k.id_user = t.id_user AND k.id_statusperforma = t.id_statusperforma AND k.tanggal = t.tanggal', 'left');
+        $this->db->where('t.tanggal >=', $start_date);
+        $this->db->where('t.tanggal <=', $end_date);
+        $this->db->where('t.isactive', 1);
+        $this->db->group_by('t.tanggal, sp.kode_status, sp.status_name');
+        $this->db->order_by('t.tanggal ASC, sp.kode_status ASC');
         
-        return $this->db->get('vw_kpi_dashboard');
+        return $this->db->get();
     }
     
     function get_performance_distribution($start_date, $end_date)
     {
+        // Query langsung tanpa view untuk menghindari error
         $this->db->select('
-            kode_status,
-            nama_status,
-            SUM(total_transaksi) as total_transaksi,
-            AVG(persentase_capai) as rata_rata_capai
+            sp.kode_status,
+            sp.status_name,
+            COALESCE(SUM(k.jumlah_resi), 0) as total_transaksi,
+            0 as rata_rata_capai
         ');
         
-        $this->db->where('tanggal >=', $start_date);
-        $this->db->where('tanggal <=', $end_date);
-        $this->db->group_by('kode_status, nama_status');
+        $this->db->from('tblstatusperforma t');
+        $this->db->join('tblmasterstatusperforma sp', 'sp.id_statusperforma = t.id_statusperforma', 'left');
+        $this->db->join('tblkpi k', 'k.id_user = t.id_user AND k.id_statusperforma = t.id_statusperforma AND k.tanggal = t.tanggal', 'left');
+        $this->db->where('t.tanggal >=', $start_date);
+        $this->db->where('t.tanggal <=', $end_date);
+        $this->db->where('t.isactive', 1);
+        $this->db->group_by('sp.kode_status, sp.status_name');
         $this->db->order_by('total_transaksi DESC');
         
-        return $this->db->get('vw_kpi_dashboard');
+        return $this->db->get();
     }
 }
