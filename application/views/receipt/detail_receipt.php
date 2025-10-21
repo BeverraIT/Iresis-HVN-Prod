@@ -121,6 +121,10 @@
                       <td><strong><?= $receipt['komputer_packer_no'] ?></strong></td>
                   </tr>
                   <tr>
+                      <td align="right">Status Performa Packer :</td>
+                      <td><strong><?= !empty($receipt['packer_status']) ? $receipt['packer_status'] : '-' ?></strong></td>
+                  </tr>
+                  <tr>
                     <td align="right">Tanggal Serah :</td>
                     <td><strong><?= $receipt['tanggal_resikeluar'] ?></strong></td>
                   </tr>

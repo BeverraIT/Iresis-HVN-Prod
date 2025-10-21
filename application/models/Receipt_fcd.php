@@ -151,7 +151,8 @@ class Receipt_fcd extends CI_Model
             , t4.nama_pegawai picker, t5.tanggal_packing, t6.name packer
             , t5.keterangan komputer_packer_no, t7.nama_kurir, t8.tanggal_cetak
             , t8.tanggal_resikeluar, t.status_pesanan, t.tanggal_retur, t.tanggal_bataskirim
-            , (SELECT sp.status_name FROM tblkpi k LEFT JOIN tblmasterstatusperforma sp ON sp.id_statusperforma = k.id_statusperforma WHERE k.id_user = t3.admin_pegawai AND DATE(k.tanggal) = DATE(t3.tanggal_resiambilbarang) AND k.tipe_transaksi = "PICKER" AND k.created <= t3.tanggal_resiambilbarang ORDER BY k.created DESC LIMIT 1) as picker_status'
+            , (SELECT sp.status_name FROM tblkpi k LEFT JOIN tblmasterstatusperforma sp ON sp.id_statusperforma = k.id_statusperforma WHERE k.id_user = t3.admin_pegawai AND DATE(k.tanggal) = DATE(t3.tanggal_resiambilbarang) AND k.tipe_transaksi = "PICKER" AND k.created <= t3.tanggal_resiambilbarang ORDER BY k.created DESC LIMIT 1) as picker_status
+            , (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = t5.packer_pegawai AND DATE(k2.tanggal) = DATE(t5.tanggal_packing) AND k2.tipe_transaksi = "PACKING" AND k2.created <= t5.tanggal_packing ORDER BY k2.created DESC LIMIT 1) as packer_status'
         );
 
         $this->db->join('tblmarketplace t2', 't2.id_marketplace = t.id_marketplace', 'left');
@@ -502,7 +503,8 @@ class Receipt_fcd extends CI_Model
             , t2.nama_pegawai admin_picker
             , (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = b.admin_pegawai AND DATE(k2.tanggal) = DATE(b.tanggal_resiambilbarang) AND k2.tipe_transaksi = "PICKER" AND k2.created <= b.tanggal_resiambilbarang ORDER BY k2.created DESC LIMIT 1) as picker_status
             , c.tanggal_packing
-            , t3.nama_pegawai admin_packer
+            , t3.name admin_packer
+            , (SELECT sp3.status_name FROM tblkpi k3 LEFT JOIN tblmasterstatusperforma sp3 ON sp3.id_statusperforma = k3.id_statusperforma WHERE k3.id_user = c.packer_pegawai AND DATE(k3.tanggal) = DATE(c.tanggal_packing) AND k3.tipe_transaksi = "PACKING" AND k3.created <= c.tanggal_packing ORDER BY k3.created DESC LIMIT 1) as packer_status
             , d.tanggal_resikeluar
             , t4.nama_pegawai admin_ho
         ');
@@ -514,7 +516,7 @@ class Receipt_fcd extends CI_Model
         $this->db->join('tblmarketplace f', 'f.id_marketplace = a.id_marketplace', 'left');
         $this->db->join('tblpegawai t1', 't1.kode_pegawai = a.admin_pegawai ', 'left');
         $this->db->join('tblpegawai t2', 't2.kode_pegawai = b.yangambil_pegawai ', 'left');
-        $this->db->join('tblpegawai t3', 't3.kode_pegawai = c.packer_pegawai ', 'left');
+        $this->db->join('tbluser t3', 't3.id_user = c.packer_pegawai ', 'left');
         $this->db->join('tblpegawai t4', 't4.kode_pegawai = d.id_pegawai', 'left');
 
         $this->db->where('a.tanggal_printresi >=', $start_date);
@@ -556,7 +558,7 @@ class Receipt_fcd extends CI_Model
         $this->db->join('tblmarketplace f', 'f.id_marketplace = a.id_marketplace', 'left');
         $this->db->join('tblpegawai t1', 't1.kode_pegawai = a.admin_pegawai ', 'left');
         $this->db->join('tblpegawai t2', 't2.kode_pegawai = b.yangambil_pegawai ', 'left');
-        $this->db->join('tblpegawai t3', 't3.kode_pegawai = c.packer_pegawai ', 'left');
+        $this->db->join('tbluser t3', 't3.id_user = c.packer_pegawai ', 'left');
         $this->db->join('tblpegawai t4', 't4.kode_pegawai = d.id_pegawai', 'left');
 
         $this->db->where('a.tanggal_printresi >=', $start_date);

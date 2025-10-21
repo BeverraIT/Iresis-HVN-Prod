@@ -351,10 +351,11 @@ class Report extends MY_Controller
             11 => 'sp.status_name',
             12 => 'c.tanggal_packing',
             13 => 'c.tanggal_packing',
-            14 => 't3.nama_pegawai',
-            15 => 'd.tanggal_resikeluar',
+            14 => 't3.name',
+            15 => 'sp3.status_name',
             16 => 'd.tanggal_resikeluar',
-            17 => 't4.nama_pegawai',
+            17 => 'd.tanggal_resikeluar',
+            18 => 't4.nama_pegawai',
         );
 
         $data['order'] = !isset($data['valid_columns'][$col]) ? null : $data['valid_columns'][$col];
@@ -382,6 +383,7 @@ class Report extends MY_Controller
                 empty($row->tanggal_packing) ? null : date('Y-m-d', strtotime($row->tanggal_packing)),
                 empty($row->tanggal_packing) ? null : date('H:i:s', strtotime($row->tanggal_packing)),
                 $row->admin_packer,
+                !empty($row->packer_status) ? $row->packer_status : (empty($row->tanggal_packing) ? '' : 'Normal'),
                 empty($row->tanggal_resikeluar) ? null : date('Y-m-d', strtotime($row->tanggal_resikeluar)),
                 empty($row->tanggal_resikeluar) ? null : date('H:i:s', strtotime($row->tanggal_resikeluar)),
                 $row->admin_ho,
