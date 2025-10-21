@@ -308,6 +308,7 @@ class Report extends MY_Controller
 
         $data['reportrange'] = $reportrange;
         $data['header'] = $this->receipt_fcd->get_header_daily_report($start_date, $end_date)->row_array();
+        
 
         $this->show($data);
     }
@@ -347,12 +348,13 @@ class Report extends MY_Controller
             8 => 'b.tanggal_resiambilbarang',
             9 => 'b.tanggal_resiambilbarang',
             10 => 't2.nama_pegawai',
-            11 => 'c.tanggal_packing',
+            11 => 'sp.status_name',
             12 => 'c.tanggal_packing',
-            13 => 't3.nama_pegawai',
-            14 => 'd.tanggal_resikeluar',
+            13 => 'c.tanggal_packing',
+            14 => 't3.nama_pegawai',
             15 => 'd.tanggal_resikeluar',
-            16 => 't4.nama_pegawai',
+            16 => 'd.tanggal_resikeluar',
+            17 => 't4.nama_pegawai',
         );
 
         $data['order'] = !isset($data['valid_columns'][$col]) ? null : $data['valid_columns'][$col];
@@ -376,6 +378,7 @@ class Report extends MY_Controller
                 empty($row->tanggal_resiambilbarang) ? null: date('Y-m-d', strtotime($row->tanggal_resiambilbarang)),
                 empty($row->tanggal_resiambilbarang) ? null: date('H:i:s', strtotime($row->tanggal_resiambilbarang)),
                 $row->admin_picker,
+                !empty($row->picker_status) ? $row->picker_status : (empty($row->tanggal_resiambilbarang) ? '' : 'Normal'),
                 empty($row->tanggal_packing) ? null : date('Y-m-d', strtotime($row->tanggal_packing)),
                 empty($row->tanggal_packing) ? null : date('H:i:s', strtotime($row->tanggal_packing)),
                 $row->admin_packer,
@@ -409,6 +412,7 @@ class Report extends MY_Controller
         $data['reportrange'] = $reportrange;
         $data['header'] = $this->receipt_fcd->get_header_daily_report($start_date, $end_date)->row_array();
         $data['list_data'] = $this->receipt_fcd->get_data_daily_report([], $start_date, $end_date)->result_array();
+        
 
         header("Content-type: application/vnd-ms-excel");
         header("Content-Disposition: attachment; filename=Laporan_Resi_Harian.xls");

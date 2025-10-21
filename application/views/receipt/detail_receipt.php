@@ -105,6 +105,10 @@
                       <td><strong><?= $receipt['tanggal_resiambilbarang'] ?></strong></td>
                   </tr>
                   <tr>
+                      <td align="right">Status Performa Picker :</td>
+                      <td><strong><?= !empty($receipt['picker_status']) ? $receipt['picker_status'] : '-' ?></strong></td>
+                  </tr>
+                  <tr>
                       <td align="right">Nama Packer :</td>
                       <td><strong><?= $receipt['packer'] ?></strong></td>
                   </tr>

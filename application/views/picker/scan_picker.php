@@ -86,41 +86,94 @@
     },
     submitHandler: function(form) {
       var formData = new FormData(form);
+      var noresiValue = form.noresi.value;
 
+      // Disable form dan tampilkan loading
       form.noresi.disabled = true;
+      form.querySelector('button[type="submit"]').disabled = true;
+      
+      // Immediate feedback - update UI sebelum AJAX
+      $("#div_container_latest_receipt").removeClass("tile-danger").addClass("tile-default");
+      $("#span_latest_receipt").text(noresiValue);
+      $("#p_latest_receipt_message").text("Memproses scan...");
+      
+      // Increment counter immediately
+      total_scan.value = Number(total_scan.value) + 1;
 
       $.ajax({
         url: form.action,
         type: 'post',
         data: Object.fromEntries(formData),
-        success: function(data) {},
-        error: function(data) {},
-      }).done(function(response) {
-        $("#div_container_latest_receipt").removeClass("tile-danger").addClass("tile-default");
-        $("#span_latest_receipt").text(form.noresi.value);
-        $("#p_latest_receipt_message").text("Nomor resi terakhir yang sudah di-scan Picker");
+        timeout: 10000, // 10 second timeout
+        cache: false, // Disable cache for real-time data
+        success: function(data) {
+          // Success feedback
+          $("#div_container_latest_receipt").removeClass("tile-danger").addClass("tile-default");
+          $("#span_latest_receipt").text(noresiValue);
+          $("#p_latest_receipt_message").text("Nomor resi terakhir yang sudah di-scan Picker");
 
-        document.getElementById('audio-alert').play();
+          // Play success sound
+          if (document.getElementById('audio-alert')) {
+            document.getElementById('audio-alert').play();
+          }
 
-        total_scan.value = Number(total_scan.value) + 1;
+          // Reset form
+          form.noresi.value = "";
+          form.noresi.disabled = false;
+          form.querySelector('button[type="submit"]').disabled = false;
+          form.noresi.focus();
+        },
+        error: function(xhr, status, error) {
+          // Error feedback
+          var response = {};
+          try {
+            response = JSON.parse(xhr.responseText);
+          } catch (e) {
+            response.message = "Terjadi kesalahan pada server";
+          }
 
-        form.noresi.value = "";
-        form.noresi.disabled = false;
-        form.noresi.focus();
-      }).fail(function(error) {
-        var response = JSON.parse(error.responseText);
+          $("#span_latest_receipt").text(noresiValue);
+          $("#div_container_latest_receipt").removeClass("tile-default").addClass("tile-danger");
+          $("#p_latest_receipt_message").text(response.message);
 
-        $("#span_latest_receipt").text(form.noresi.value);
-        $("#div_container_latest_receipt").removeClass("tile-default").addClass("tile-danger");
-        $("#p_latest_receipt_message").text(response.message);
+          // Play error sound
+          if (document.getElementById('audio-fail')) {
+            document.getElementById('audio-fail').play();
+          }
 
-        document.getElementById('audio-fail').play();
-
-        form.noresi.value = "";
-        form.noresi.disabled = false;
-        form.noresi.focus();
+          // Reset form
+          form.noresi.value = "";
+          form.noresi.disabled = false;
+          form.querySelector('button[type="submit"]').disabled = false;
+          form.noresi.focus();
+        }
       });
+      
       return false; // required to block normal submit since you used ajax
     }
+  });
+
+  // Process KPI queue every 30 seconds (optimized)
+  var kpiQueueInterval = setInterval(function() {
+    $.ajax({
+      url: 'picker/process-kpi-queue',
+      type: 'post',
+      timeout: 5000, // 5 second timeout
+      cache: false, // Disable cache for real-time data
+      success: function(response) {
+        // KPI queue processed successfully
+      },
+      error: function(xhr, status, error) {
+        // Silent fail - KPI processing is not critical
+        if (status === 'timeout') {
+          console.warn('KPI queue processing timeout');
+        }
+      }
+    });
+  }, 30000); // 30 seconds
+  
+  // Clear interval when page unloads
+  $(window).on('beforeunload', function() {
+    clearInterval(kpiQueueInterval);
   });
 </script>

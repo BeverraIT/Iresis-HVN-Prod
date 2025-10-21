@@ -150,7 +150,8 @@ class Receipt_fcd extends CI_Model
         $this->db->select('t.noresi, t.tanggal_printresi, t2.nama_marketplace, t3.tanggal_resiambilbarang
             , t4.nama_pegawai picker, t5.tanggal_packing, t6.name packer
             , t5.keterangan komputer_packer_no, t7.nama_kurir, t8.tanggal_cetak
-            , t8.tanggal_resikeluar, t.status_pesanan, t.tanggal_retur, t.tanggal_bataskirim'
+            , t8.tanggal_resikeluar, t.status_pesanan, t.tanggal_retur, t.tanggal_bataskirim
+            , (SELECT sp.status_name FROM tblkpi k LEFT JOIN tblmasterstatusperforma sp ON sp.id_statusperforma = k.id_statusperforma WHERE k.id_user = t3.admin_pegawai AND DATE(k.tanggal) = DATE(t3.tanggal_resiambilbarang) AND k.tipe_transaksi = "PICKER" AND k.created <= t3.tanggal_resiambilbarang ORDER BY k.created DESC LIMIT 1) as picker_status'
         );
 
         $this->db->join('tblmarketplace t2', 't2.id_marketplace = t.id_marketplace', 'left');
@@ -499,6 +500,7 @@ class Receipt_fcd extends CI_Model
             , t1.nama_pegawai admin_scan 
             , b.tanggal_resiambilbarang
             , t2.nama_pegawai admin_picker
+            , (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = b.admin_pegawai AND DATE(k2.tanggal) = DATE(b.tanggal_resiambilbarang) AND k2.tipe_transaksi = "PICKER" AND k2.created <= b.tanggal_resiambilbarang ORDER BY k2.created DESC LIMIT 1) as picker_status
             , c.tanggal_packing
             , t3.nama_pegawai admin_packer
             , d.tanggal_resikeluar
@@ -1848,6 +1850,32 @@ class Receipt_fcd extends CI_Model
         }
         
         return $data;
+    }
+
+
+    function get_picker_performance_by_user($start_date, $end_date)
+    {
+        $this->db->select('
+            COALESCE(peg.nama_pegawai, "Unknown User") as nama_pegawai,
+            COALESCE(peg.kode_pegawai, "N/A") as kode_pegawai,
+            COALESCE(sp.status_name, "Normal") as status_name,
+            COALESCE(sp.kode_status, "NORMAL") as kode_status,
+            COALESCE(COUNT(rab.id_resiambilbarang), 0) as total_scan,
+            COUNT(DISTINCT DATE(rab.tanggal_resiambilbarang)) as hari_aktif,
+            ROUND(COALESCE(COUNT(rab.id_resiambilbarang), 0) / NULLIF(COUNT(DISTINCT DATE(rab.tanggal_resiambilbarang)), 0), 2) as rata_rata_harian
+        ');
+        
+        $this->db->from('tblresiambilbarang rab');
+        $this->db->join('tblpegawai peg', 'peg.kode_pegawai = rab.yangambil_pegawai', 'left');
+        $this->db->join('tblkpi k', 'k.id_user = rab.admin_pegawai AND DATE(k.tanggal) = DATE(rab.tanggal_resiambilbarang) AND k.tipe_transaksi = "PICKER"', 'left');
+        $this->db->join('tblmasterstatusperforma sp', 'sp.id_statusperforma = k.id_statusperforma', 'left');
+        $this->db->where('rab.tanggal_resiambilbarang >=', $start_date);
+        $this->db->where('rab.tanggal_resiambilbarang <=', $end_date);
+        $this->db->where('peg.kode_pegawai IS NOT NULL');
+        $this->db->group_by('peg.kode_pegawai, peg.nama_pegawai, sp.kode_status, sp.status_name');
+        $this->db->order_by('total_scan DESC');
+        
+        return $this->db->get();
     }
 }
 

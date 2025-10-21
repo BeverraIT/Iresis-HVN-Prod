@@ -28,36 +28,40 @@
         <style>
           /* Column colors for different departments */
           .resi-col {
-            background-color: #e3f2fd !important; /* Light blue */
+            background-color: #f5f9ff !important; /* Very light blue */
           }
 
           .picker-col {
-            background-color: #e8f5e8 !important; /* Light green */
+            background-color: #f8fff8 !important; /* Very light green */
           }
 
           .packer-col {
-            background-color: #fff3e0 !important; /* Light orange */
+            background-color: #fffbf5 !important; /* Very light orange */
           }
 
           .ho-col {
-            background-color: #fce4ec !important; /* Light pink */
+            background-color: #fef7f9 !important; /* Very light pink */
           }
 
           /* Darker shades for headers */
           .resi-col-header {
-            background-color: #bbdefb !important; /* Medium blue */
+            background-color: #e3f2fd !important; /* Soft blue */
+            color: #1565c0 !important;
           }
 
           .picker-col-header {
-            background-color: #c8e6c9 !important; /* Medium green */
+            background-color: #e8f5e8 !important; /* Soft green */
+            color: #2e7d32 !important;
           }
 
           .packer-col-header {
-            background-color: #ffcc02 !important; /* Medium orange */
+            background-color: #fff3e0 !important; /* Soft orange */
+            color: #ef6c00 !important;
           }
 
           .ho-col-header {
-            background-color: #f8bbd9 !important; /* Medium pink */
+            background-color: #fce4ec !important; /* Soft pink */
+            color: #c2185b !important;
           }
         </style>
 
@@ -122,7 +126,7 @@
               <th rowspan="2"># Resi</th>
               <th rowspan="2">Pick list</th>
               <th class="text-center" colspan="3" style="background-color: #bbdefb !important; color: #1565c0 !important;">Resi</th>
-              <th class="text-center" colspan="3" style="background-color: #c8e6c9 !important; color: #2e7d32 !important;">Picker</th>
+              <th class="text-center" colspan="4" style="background-color: #c8e6c9 !important; color: #2e7d32 !important;">Picker</th>
               <th class="text-center" colspan="3" style="background-color: #ffcc02 !important; color: #e65100 !important;">Packer</th>
               <th class="text-center" colspan="3" style="background-color: #f8bbd9 !important; color: #c2185b !important;">HO</th>
             </tr>
@@ -133,6 +137,7 @@
               <th class="picker-col-header">Tgl scan</th>
               <th class="picker-col-header">Jam scan</th>
               <th class="picker-col-header">Nama</th>
+              <th class="picker-col-header">Status</th>
               <th class="packer-col-header">Tgl scan</th>
               <th class="packer-col-header">Jam scan</th>
               <th class="packer-col-header">Nama</th>
@@ -142,6 +147,7 @@
             </tr>
           </thead>
         </table>
+
 
       </div>
     </div>
@@ -197,19 +203,19 @@
         'targets': [5, 6, 7],
         'className': 'resi-col'
       },
-      // Picker columns (8, 9, 10) - Light green
+      // Picker columns (8, 9, 10, 11) - Light green
       {
-        'targets': [8, 9, 10],
+        'targets': [8, 9, 10, 11],
         'className': 'picker-col'
       },
-      // Packer columns (11, 12, 13) - Light orange
+      // Packer columns (12, 13, 14) - Light orange
       {
-        'targets': [11, 12, 13],
+        'targets': [12, 13, 14],
         'className': 'packer-col'
       },
-      // HO columns (14, 15, 16) - Light pink
+      // HO columns (15, 16, 17) - Light pink
       {
-        'targets': [14, 15, 16],
+        'targets': [15, 16, 17],
         'className': 'ho-col'
       }
     ]
@@ -226,4 +232,5 @@
     $('#form-report-receipt-daily').addClass('nojs');
     $('#form-report-receipt-daily').attr('action', 'report/export-to-excel-daily-receipt-report');
   });
+
 </script>
