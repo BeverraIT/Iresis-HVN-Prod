@@ -54,6 +54,14 @@
                 <td><?= empty($item['tanggal']) ? null : date('Y-m-d H:i:s', strtotime($item['tanggal'])) ?></td>
                 <td align="right"><?= $item['total'] ?></td>
             </tr>
+            <?php if (isset($item['status_performa']) && $item['status_performa'] !== 'N/A'): ?>
+            <tr>
+                <td></td>
+                <td></td>
+                <td style="padding-left: 20px;"><?= $item['status_performa'] ?></td>
+                <td></td>
+            </tr>
+            <?php endif; ?>
         <?php endforeach; ?>
         <tr>
             <td></td>

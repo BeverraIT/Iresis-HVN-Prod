@@ -961,8 +961,8 @@ class Report extends MY_Controller
         $data['search'] = $this->input->post('search')['value'];
 
         $data['valid_columns'] = array(
-            0 => ['searchable' => true, 'col' => 'CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai)',],
-            1 => ['searchable' => true, 'col' => 'date(a.tanggal_resiambilbarang)',],
+            0 => ['searchable' => true, 'col' => 't2.nama_pegawai',],
+            1 => ['searchable' => true, 'col' => 'date(b.tanggal_resiambilbarang)',],
             2 => ['searchable' => false, 'col' => 'count(1)',],
         );
 
@@ -973,12 +973,37 @@ class Report extends MY_Controller
         $total = $this->receipt_fcd->get_total_data_production_team_tab0($data, $start_date, $end_date);
 
         $data = array();
+        $grouped_data = array();
+        
+        // Kelompokkan data berdasarkan user dan status performa
         foreach ($list_resi->result() as $row) {
+            $key = $row->pegawai . '|' . $row->status_performa;
+            if (!isset($grouped_data[$key])) {
+                $grouped_data[$key] = array(
+                    'pegawai' => $row->pegawai,
+                    'tanggal' => $row->tanggal_resiambilbarang,
+                    'total' => 0,
+                    'status_performa' => $row->status_performa
+                );
+            }
+            $grouped_data[$key]['total'] += $row->total;
+        }
+        
+        foreach ($grouped_data as $item) {
             $data[] = array(
-                $row->pegawai,
-                '&emsp;&emsp;&emsp;' . $row->tanggal_resiambilbarang,
-                $row->total,
+                $item['pegawai'] . ' - ' . $item['total'],
+                $item['tanggal'],
+                $item['total']
             );
+            
+            // Tambahkan baris status performa jika ada
+            if (!empty($item['status_performa']) && $item['status_performa'] !== 'N/A' && $item['status_performa'] !== 'Normal') {
+                $data[] = array(
+                    '&emsp;&emsp;&emsp;&emsp;&emsp;' . $item['status_performa'],
+                    '',
+                    ''
+                );
+            }
         }
 
         $output = array(
@@ -1004,8 +1029,8 @@ class Report extends MY_Controller
         $data['search'] = $this->input->post('search')['value'];
 
         $data['valid_columns'] = array(
-            0 => ['searchable' => true, 'col' => 'CONCAT(b.name, \' - \', b.id_user)',],
-            1 => ['searchable' => true, 'col' => 'date(a.tanggal_packing)',],
+            0 => ['searchable' => true, 'col' => 't3.name',],
+            1 => ['searchable' => true, 'col' => 'date(c.tanggal_packing)',],
             2 => ['searchable' => false, 'col' => 'count(1)',],
         );
 
@@ -1016,12 +1041,37 @@ class Report extends MY_Controller
         $total = $this->receipt_fcd->get_total_data_production_team_tab1($data, $start_date, $end_date);
 
         $data = array();
+        $grouped_data = array();
+        
+        // Kelompokkan data berdasarkan user dan status performa
         foreach ($list_resi->result() as $row) {
+            $key = $row->pegawai . '|' . $row->status_performa;
+            if (!isset($grouped_data[$key])) {
+                $grouped_data[$key] = array(
+                    'pegawai' => $row->pegawai,
+                    'tanggal' => $row->tanggal_packing,
+                    'total' => 0,
+                    'status_performa' => $row->status_performa
+                );
+            }
+            $grouped_data[$key]['total'] += $row->total;
+        }
+        
+        foreach ($grouped_data as $item) {
             $data[] = array(
-                $row->pegawai,
-                '&emsp;&emsp;&emsp;' . $row->tanggal_packing,
-                $row->total,
+                $item['pegawai'] . ' - ' . $item['total'],
+                $item['tanggal'],
+                $item['total']
             );
+            
+            // Tambahkan baris status performa jika ada
+            if (!empty($item['status_performa']) && $item['status_performa'] !== 'N/A' && $item['status_performa'] !== 'Normal') {
+                $data[] = array(
+                    '&emsp;&emsp;&emsp;&emsp;&emsp;' . $item['status_performa'],
+                    '',
+                    ''
+                );
+            }
         }
 
         $output = array(
@@ -1051,7 +1101,11 @@ class Report extends MY_Controller
         $grand_total = 0;
         $pickers = $this->receipt_fcd->get_data_production_team_tab0([], $start_date, $end_date)->result_array();
         foreach ($pickers as $picker) {
-            $data['list_data'][$picker['pegawai']][] = ['tanggal' => $picker['tanggal_resiambilbarang'], 'total' => $picker['total']];
+            $data['list_data'][$picker['pegawai']][] = [
+                'tanggal' => $picker['tanggal_resiambilbarang'], 
+                'total' => $picker['total'],
+                'status_performa' => $picker['status_performa']
+            ];
             $grand_total += $picker['total'];
         }
         $data['grand_total'] = $grand_total;
@@ -1079,7 +1133,11 @@ class Report extends MY_Controller
         $grand_total = 0;
         $pickers = $this->receipt_fcd->get_data_production_team_tab1([], $start_date, $end_date)->result_array();
         foreach ($pickers as $picker) {
-            $data['list_data'][$picker['pegawai']][] = ['tanggal' => $picker['tanggal_packing'], 'total' => $picker['total']];
+            $data['list_data'][$picker['pegawai']][] = [
+                'tanggal' => $picker['tanggal_packing'], 
+                'total' => $picker['total'],
+                'status_performa' => $picker['status_performa']
+            ];
             $grand_total += $picker['total'];
         }
         $data['grand_total'] = $grand_total;

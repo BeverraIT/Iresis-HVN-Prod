@@ -1609,23 +1609,26 @@ class Receipt_fcd extends CI_Model
         }
 
         $this->db->select('
-            min(a.tanggal_resiambilbarang) tanggal_resiambilbarang,
-            CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai) pegawai,
-            count(1) as total
+            b.tanggal_resiambilbarang,
+            t2.nama_pegawai pegawai,
+            COUNT(1) as total,
+            (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = b.admin_pegawai AND DATE(k2.tanggal) = DATE(b.tanggal_resiambilbarang) AND k2.tipe_transaksi = "PICKER" AND k2.created <= b.tanggal_resiambilbarang ORDER BY k2.created DESC LIMIT 1) as status_performa
         ');
 
-        $this->db->join('tblpegawai b', 'b.kode_pegawai = a.yangambil_pegawai');
+        $this->db->join('tblresiambilbarang b', 'a.id_printresi = b.id_resi', 'left');
+        $this->db->join('tblpegawai t2', 't2.kode_pegawai = b.yangambil_pegawai', 'left');
 
-        $this->db->where('a.tanggal_resiambilbarang >=', $start_date);
-        $this->db->where('a.tanggal_resiambilbarang <=', $end_date);
+        $this->db->where('a.tanggal_printresi >=', $start_date);
+        $this->db->where('a.tanggal_printresi <=', $end_date);
+        $this->db->where('b.tanggal_resiambilbarang IS NOT NULL');
 
         if (!empty($data['length'])) {
             $this->db->limit($data['length'], $data['start']);
         }
 
-        $this->db->group_by('date(a.tanggal_resiambilbarang), CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai)');
+        $this->db->group_by('DATE(b.tanggal_resiambilbarang), t2.nama_pegawai, b.admin_pegawai, b.tanggal_resiambilbarang');
 
-        return $this->db->get('tblresiambilbarang a');
+        return $this->db->get('tblprintresi a');
     }
 
     function get_total_data_production_team_tab0($data, $start_date, $end_date)
@@ -1650,14 +1653,16 @@ class Receipt_fcd extends CI_Model
             $this->db->group_end();
         }
 
-        $this->db->join('tblpegawai b', 'b.kode_pegawai = a.yangambil_pegawai');
+        $this->db->join('tblresiambilbarang b', 'a.id_printresi = b.id_resi', 'left');
+        $this->db->join('tblpegawai t2', 't2.kode_pegawai = b.yangambil_pegawai', 'left');
 
-        $this->db->where('a.tanggal_resiambilbarang >=', $start_date);
-        $this->db->where('a.tanggal_resiambilbarang <=', $end_date);
+        $this->db->where('a.tanggal_printresi >=', $start_date);
+        $this->db->where('a.tanggal_printresi <=', $end_date);
+        $this->db->where('b.tanggal_resiambilbarang IS NOT NULL');
 
-        $this->db->group_by('date(a.tanggal_resiambilbarang), CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai)');
+        $this->db->group_by('DATE(b.tanggal_resiambilbarang), t2.nama_pegawai, b.admin_pegawai, b.tanggal_resiambilbarang');
 
-        $query = $this->db->select("count(1) as num")->get("tblresiambilbarang a");
+        $query = $this->db->select("count(1) as num")->get("tblprintresi a");
         $result = $query->num_rows();
 
         return isset($result) ? $result : 0;
@@ -1695,23 +1700,26 @@ class Receipt_fcd extends CI_Model
         }
 
         $this->db->select('
-            min(a.tanggal_packing) tanggal_packing,
-            CONCAT(b.name, \' - \', b.id_user) pegawai,
-            count(1) as total
+            c.tanggal_packing,
+            t3.name pegawai,
+            COUNT(1) as total,
+            (SELECT sp3.status_name FROM tblstatusperforma lsp3 LEFT JOIN tblmasterstatusperforma sp3 ON sp3.id_statusperforma = lsp3.id_statusperforma WHERE lsp3.id_user = c.packer_pegawai AND DATE(lsp3.tanggal) = DATE(c.tanggal_packing) AND lsp3.isactive = 1 ORDER BY lsp3.created DESC LIMIT 1) as status_performa
         ');
 
-        $this->db->join('tbluser b', 'b.id_user = a.packer_pegawai');
+        $this->db->join('tblpacking c', 'a.id_printresi = c.id_resi', 'left');
+        $this->db->join('tbluser t3', 't3.id_user = c.packer_pegawai', 'left');
 
-        $this->db->where('a.tanggal_packing >=', $start_date);
-        $this->db->where('a.tanggal_packing <=', $end_date);
+        $this->db->where('a.tanggal_printresi >=', $start_date);
+        $this->db->where('a.tanggal_printresi <=', $end_date);
+        $this->db->where('c.tanggal_packing IS NOT NULL');
 
         if (!empty($data['length'])) {
             $this->db->limit($data['length'], $data['start']);
         }
 
-        $this->db->group_by('date(a.tanggal_packing), CONCAT(b.name, \' - \', b.id_user)');
+        $this->db->group_by('DATE(c.tanggal_packing), t3.name, c.packer_pegawai, c.tanggal_packing');
 
-        return $this->db->get('tblpacking a');
+        return $this->db->get('tblprintresi a');
     }
 
     function get_total_data_production_team_tab1($data, $start_date, $end_date)
@@ -1736,14 +1744,16 @@ class Receipt_fcd extends CI_Model
             $this->db->group_end();
         }
 
-        $this->db->join('tbluser b', 'b.id_user = a.packer_pegawai');
+        $this->db->join('tblpacking c', 'a.id_printresi = c.id_resi', 'left');
+        $this->db->join('tbluser t3', 't3.id_user = c.packer_pegawai', 'left');
 
-        $this->db->where('a.tanggal_packing >=', $start_date);
-        $this->db->where('a.tanggal_packing <=', $end_date);
+        $this->db->where('a.tanggal_printresi >=', $start_date);
+        $this->db->where('a.tanggal_printresi <=', $end_date);
+        $this->db->where('c.tanggal_packing IS NOT NULL');
 
-        $this->db->group_by('date(a.tanggal_packing), CONCAT(b.name, \' - \', b.id_user)');
+        $this->db->group_by('DATE(c.tanggal_packing), t3.name, c.packer_pegawai, c.tanggal_packing');
 
-        $query = $this->db->select("count(1) as num")->get("tblpacking a");
+        $query = $this->db->select("count(1) as num")->get("tblprintresi a");
         $result = $query->num_rows();
 
         return isset($result) ? $result : 0;
