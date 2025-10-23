@@ -6,36 +6,40 @@
 
   /* Column colors for different departments */
   .resi-col {
-    background-color: #e3f2fd !important; /* Light blue */
+    background-color: #f5f9ff !important; /* Very light blue */
   }
 
   .picker-col {
-    background-color: #e8f5e8 !important; /* Light green */
+    background-color: #f8fff8 !important; /* Very light green */
   }
 
   .packer-col {
-    background-color: #fff3e0 !important; /* Light orange */
+    background-color: #fffbf5 !important; /* Very light orange */
   }
 
   .ho-col {
-    background-color: #fce4ec !important; /* Light pink */
+    background-color: #fef7f9 !important; /* Very light pink */
   }
 
   /* Darker shades for headers */
   .resi-col-header {
-    background-color: #bbdefb !important; /* Medium blue */
+    background-color: #e3f2fd !important; /* Soft blue */
+    color: #1565c0 !important;
   }
 
   .picker-col-header {
-    background-color: #c8e6c9 !important; /* Medium green */
+    background-color: #e8f5e8 !important; /* Soft green */
+    color: #2e7d32 !important;
   }
 
   .packer-col-header {
-    background-color: #ffcc02 !important; /* Medium orange */
+    background-color: #fff3e0 !important; /* Soft orange */
+    color: #ef6c00 !important;
   }
 
   .ho-col-header {
-    background-color: #f8bbd9 !important; /* Medium pink */
+    background-color: #fce4ec !important; /* Soft pink */
+    color: #c2185b !important;
   }
 </style>
 
@@ -54,6 +58,7 @@
       <th class="text-center packer-col-header"><?= number_format($header['total_scan_resi'] - $header['total_pack_resi']) ?></th>
       <th class="text-center packer-col-header"><?= number_format($not_pack_by_receipt_in_percent, 2) ?>%</th>
       <th class="text-center packer-col-header">-</th>
+      <th class="text-center packer-col-header">-</th>
       <th class="text-center ho-col-header"><?= number_format($header['total_scan_resi'] - $header['total_ho_resi']) ?></th>
       <th class="text-center ho-col-header"><?= number_format($not_ho_by_receipt_in_percent, 2) ?>%</th>
       <th class="text-center ho-col-header">-</th>
@@ -70,6 +75,7 @@
       <th class="text-center picker-col-header">-</th>
       <th class="text-center packer-col-header"><?= number_format($header['total_pick_resi'] - $header['total_pack_resi']) ?></th>
       <th class="text-center packer-col-header"><?= number_format($not_pack_by_dept_in_percent, 2) ?>%</th>
+      <th class="text-center packer-col-header">-</th>
       <th class="text-center packer-col-header">-</th>
       <th class="text-center ho-col-header"><?= number_format($header['total_pack_resi'] - $header['total_ho_resi']) ?></th>
       <th class="text-center ho-col-header"><?= number_format($not_ho_by_dept_in_percent, 2) ?>%</th>
@@ -89,6 +95,7 @@
       <th class="text-center packer-col-header"><?= number_format($header['total_pack_resi']) ?></th>
       <th class="text-center packer-col-header"><?= number_format($done_pack_in_percent, 2) ?>%</th>
       <th class="text-center packer-col-header">-</th>
+      <th class="text-center packer-col-header">-</th>
       <th class="text-center ho-col-header"><?= number_format($header['total_ho_resi']) ?></th>
       <th class="text-center ho-col-header"><?= number_format($done_ho_in_percent, 2) ?>%</th>
       <th class="text-center ho-col-header">-</th>
@@ -100,8 +107,8 @@
       <th rowspan="2"># Resi</th>
       <th rowspan="2">Pick list</th>
       <th class="text-center" colspan="3" style="background-color: #bbdefb !important; color: #1565c0 !important;">Resi</th>
-      <th class="text-center" colspan="3" style="background-color: #c8e6c9 !important; color: #2e7d32 !important;">Picker</th>
-      <th class="text-center" colspan="3" style="background-color: #ffcc02 !important; color: #e65100 !important;">Packer</th>
+      <th class="text-center" colspan="4" style="background-color: #c8e6c9 !important; color: #2e7d32 !important;">Picker</th>
+      <th class="text-center" colspan="4" style="background-color: #ffcc02 !important; color: #e65100 !important;">Packer</th>
       <th class="text-center" colspan="3" style="background-color: #f8bbd9 !important; color: #c2185b !important;">HO</th>
     </tr>
     <tr>
@@ -111,9 +118,11 @@
       <th class="picker-col-header">Tgl scan</th>
       <th class="picker-col-header">Jam scan</th>
       <th class="picker-col-header">Nama</th>
+      <th class="picker-col-header">Status</th>
       <th class="packer-col-header">Tgl scan</th>
       <th class="packer-col-header">Jam scan</th>
       <th class="packer-col-header">Nama</th>
+      <th class="packer-col-header">Status</th>
       <th class="ho-col-header">Tgl scan</th>
       <th class="ho-col-header">Jam scan</th>
       <th class="ho-col-header">Nama</th>
@@ -134,9 +143,11 @@
         <td class="picker-col"><?= empty($data['tanggal_resiambilbarang']) ? null : date('Y-m-d', strtotime($data['tanggal_resiambilbarang'])) ?></td>
         <td class="picker-col"><?= empty($data['tanggal_resiambilbarang']) ? null : date('H:i:s', strtotime($data['tanggal_resiambilbarang'])) ?></td>
         <td class="picker-col"><?= $data['admin_picker'] ?></td>
+        <td class="picker-col"><?= !empty($data['picker_status']) ? $data['picker_status'] : (empty($data['tanggal_resiambilbarang']) ? '' : 'Normal') ?></td>
         <td class="packer-col"><?= empty($data['tanggal_packing']) ? null : date('Y-m-d', strtotime($data['tanggal_packing'])) ?></td>
         <td class="packer-col"><?= empty($data['tanggal_packing']) ? null : date('H:i:s', strtotime($data['tanggal_packing'])) ?></td>
         <td class="packer-col"><?= $data['admin_packer'] ?></td>
+        <td class="packer-col"><?= !empty($data['packer_status']) ? $data['packer_status'] : (empty($data['tanggal_packing']) ? '' : 'Normal') ?></td>
         <td class="ho-col"><?= empty($data['tanggal_resikeluar']) ? null : date('Y-m-d', strtotime($data['tanggal_resikeluar'])) ?></td>
         <td class="ho-col"><?= empty($data['tanggal_resikeluar']) ? null : date('H:i:s', strtotime($data['tanggal_resikeluar'])) ?></td>
         <td class="ho-col"><?= $data['admin_ho'] ?></td>

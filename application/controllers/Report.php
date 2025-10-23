@@ -308,6 +308,7 @@ class Report extends MY_Controller
 
         $data['reportrange'] = $reportrange;
         $data['header'] = $this->receipt_fcd->get_header_daily_report($start_date, $end_date)->row_array();
+        
 
         $this->show($data);
     }
@@ -347,12 +348,14 @@ class Report extends MY_Controller
             8 => 'b.tanggal_resiambilbarang',
             9 => 'b.tanggal_resiambilbarang',
             10 => 't2.nama_pegawai',
-            11 => 'c.tanggal_packing',
+            11 => 'sp.status_name',
             12 => 'c.tanggal_packing',
-            13 => 't3.nama_pegawai',
-            14 => 'd.tanggal_resikeluar',
-            15 => 'd.tanggal_resikeluar',
-            16 => 't4.nama_pegawai',
+            13 => 'c.tanggal_packing',
+            14 => 't3.name',
+            15 => 'sp3.status_name',
+            16 => 'd.tanggal_resikeluar',
+            17 => 'd.tanggal_resikeluar',
+            18 => 't4.nama_pegawai',
         );
 
         $data['order'] = !isset($data['valid_columns'][$col]) ? null : $data['valid_columns'][$col];
@@ -376,9 +379,11 @@ class Report extends MY_Controller
                 empty($row->tanggal_resiambilbarang) ? null: date('Y-m-d', strtotime($row->tanggal_resiambilbarang)),
                 empty($row->tanggal_resiambilbarang) ? null: date('H:i:s', strtotime($row->tanggal_resiambilbarang)),
                 $row->admin_picker,
+                !empty($row->picker_status) ? $row->picker_status : (empty($row->tanggal_resiambilbarang) ? '' : 'Normal'),
                 empty($row->tanggal_packing) ? null : date('Y-m-d', strtotime($row->tanggal_packing)),
                 empty($row->tanggal_packing) ? null : date('H:i:s', strtotime($row->tanggal_packing)),
                 $row->admin_packer,
+                !empty($row->packer_status) ? $row->packer_status : (empty($row->tanggal_packing) ? '' : 'Normal'),
                 empty($row->tanggal_resikeluar) ? null : date('Y-m-d', strtotime($row->tanggal_resikeluar)),
                 empty($row->tanggal_resikeluar) ? null : date('H:i:s', strtotime($row->tanggal_resikeluar)),
                 $row->admin_ho,
@@ -409,6 +414,7 @@ class Report extends MY_Controller
         $data['reportrange'] = $reportrange;
         $data['header'] = $this->receipt_fcd->get_header_daily_report($start_date, $end_date)->row_array();
         $data['list_data'] = $this->receipt_fcd->get_data_daily_report([], $start_date, $end_date)->result_array();
+        
 
         header("Content-type: application/vnd-ms-excel");
         header("Content-Disposition: attachment; filename=Laporan_Resi_Harian.xls");
@@ -955,8 +961,8 @@ class Report extends MY_Controller
         $data['search'] = $this->input->post('search')['value'];
 
         $data['valid_columns'] = array(
-            0 => ['searchable' => true, 'col' => 'CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai)',],
-            1 => ['searchable' => true, 'col' => 'date(a.tanggal_resiambilbarang)',],
+            0 => ['searchable' => true, 'col' => 't2.nama_pegawai',],
+            1 => ['searchable' => true, 'col' => 'date(b.tanggal_resiambilbarang)',],
             2 => ['searchable' => false, 'col' => 'count(1)',],
         );
 
@@ -967,12 +973,37 @@ class Report extends MY_Controller
         $total = $this->receipt_fcd->get_total_data_production_team_tab0($data, $start_date, $end_date);
 
         $data = array();
+        $grouped_data = array();
+        
+        // Kelompokkan data berdasarkan user dan status performa
         foreach ($list_resi->result() as $row) {
+            $key = $row->pegawai . '|' . $row->status_performa;
+            if (!isset($grouped_data[$key])) {
+                $grouped_data[$key] = array(
+                    'pegawai' => $row->pegawai,
+                    'tanggal' => $row->tanggal_resiambilbarang,
+                    'total' => 0,
+                    'status_performa' => $row->status_performa
+                );
+            }
+            $grouped_data[$key]['total'] += $row->total;
+        }
+        
+        foreach ($grouped_data as $item) {
             $data[] = array(
-                $row->pegawai,
-                '&emsp;&emsp;&emsp;' . $row->tanggal_resiambilbarang,
-                $row->total,
+                $item['pegawai'] . ' - ' . $item['total'],
+                $item['tanggal'],
+                $item['total']
             );
+            
+            // Tambahkan baris status performa jika ada
+            if (!empty($item['status_performa']) && $item['status_performa'] !== 'N/A' && $item['status_performa'] !== 'Normal') {
+                $data[] = array(
+                    '&emsp;&emsp;&emsp;&emsp;&emsp;' . $item['status_performa'],
+                    '',
+                    ''
+                );
+            }
         }
 
         $output = array(
@@ -998,8 +1029,8 @@ class Report extends MY_Controller
         $data['search'] = $this->input->post('search')['value'];
 
         $data['valid_columns'] = array(
-            0 => ['searchable' => true, 'col' => 'CONCAT(b.name, \' - \', b.id_user)',],
-            1 => ['searchable' => true, 'col' => 'date(a.tanggal_packing)',],
+            0 => ['searchable' => true, 'col' => 't3.name',],
+            1 => ['searchable' => true, 'col' => 'date(c.tanggal_packing)',],
             2 => ['searchable' => false, 'col' => 'count(1)',],
         );
 
@@ -1010,12 +1041,37 @@ class Report extends MY_Controller
         $total = $this->receipt_fcd->get_total_data_production_team_tab1($data, $start_date, $end_date);
 
         $data = array();
+        $grouped_data = array();
+        
+        // Kelompokkan data berdasarkan user dan status performa
         foreach ($list_resi->result() as $row) {
+            $key = $row->pegawai . '|' . $row->status_performa;
+            if (!isset($grouped_data[$key])) {
+                $grouped_data[$key] = array(
+                    'pegawai' => $row->pegawai,
+                    'tanggal' => $row->tanggal_packing,
+                    'total' => 0,
+                    'status_performa' => $row->status_performa
+                );
+            }
+            $grouped_data[$key]['total'] += $row->total;
+        }
+        
+        foreach ($grouped_data as $item) {
             $data[] = array(
-                $row->pegawai,
-                '&emsp;&emsp;&emsp;' . $row->tanggal_packing,
-                $row->total,
+                $item['pegawai'] . ' - ' . $item['total'],
+                $item['tanggal'],
+                $item['total']
             );
+            
+            // Tambahkan baris status performa jika ada
+            if (!empty($item['status_performa']) && $item['status_performa'] !== 'N/A' && $item['status_performa'] !== 'Normal') {
+                $data[] = array(
+                    '&emsp;&emsp;&emsp;&emsp;&emsp;' . $item['status_performa'],
+                    '',
+                    ''
+                );
+            }
         }
 
         $output = array(
@@ -1045,7 +1101,11 @@ class Report extends MY_Controller
         $grand_total = 0;
         $pickers = $this->receipt_fcd->get_data_production_team_tab0([], $start_date, $end_date)->result_array();
         foreach ($pickers as $picker) {
-            $data['list_data'][$picker['pegawai']][] = ['tanggal' => $picker['tanggal_resiambilbarang'], 'total' => $picker['total']];
+            $data['list_data'][$picker['pegawai']][] = [
+                'tanggal' => $picker['tanggal_resiambilbarang'], 
+                'total' => $picker['total'],
+                'status_performa' => $picker['status_performa']
+            ];
             $grand_total += $picker['total'];
         }
         $data['grand_total'] = $grand_total;
@@ -1073,7 +1133,11 @@ class Report extends MY_Controller
         $grand_total = 0;
         $pickers = $this->receipt_fcd->get_data_production_team_tab1([], $start_date, $end_date)->result_array();
         foreach ($pickers as $picker) {
-            $data['list_data'][$picker['pegawai']][] = ['tanggal' => $picker['tanggal_packing'], 'total' => $picker['total']];
+            $data['list_data'][$picker['pegawai']][] = [
+                'tanggal' => $picker['tanggal_packing'], 
+                'total' => $picker['total'],
+                'status_performa' => $picker['status_performa']
+            ];
             $grand_total += $picker['total'];
         }
         $data['grand_total'] = $grand_total;

@@ -105,6 +105,10 @@
                       <td><strong><?= $receipt['tanggal_resiambilbarang'] ?></strong></td>
                   </tr>
                   <tr>
+                      <td align="right">Status Performa Picker :</td>
+                      <td><strong><?= !empty($receipt['picker_status']) ? $receipt['picker_status'] : '-' ?></strong></td>
+                  </tr>
+                  <tr>
                       <td align="right">Nama Packer :</td>
                       <td><strong><?= $receipt['packer'] ?></strong></td>
                   </tr>
@@ -115,6 +119,10 @@
                   <tr>
                       <td align="right">Nomor Komputer Packer :</td>
                       <td><strong><?= $receipt['komputer_packer_no'] ?></strong></td>
+                  </tr>
+                  <tr>
+                      <td align="right">Status Performa Packer :</td>
+                      <td><strong><?= !empty($receipt['packer_status']) ? $receipt['packer_status'] : '-' ?></strong></td>
                   </tr>
                   <tr>
                     <td align="right">Tanggal Serah :</td>

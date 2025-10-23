@@ -54,47 +54,13 @@
     });
     $('#btn-search-production-team-tab1').on('click', function() {
         table_production_team_tab1 = $('#datatable-production-team-tab1').DataTable({
-            columnDefs: [{
-                visible: false,
-                targets: groupColumn
-            }],
-            drawCallback: function(settings) {
-                var api = this.api();
-                var rows = api.rows({ page: 'current' }).nodes();
-                var last = null;
-                var groupTotal = 0;
-
-                api.column(groupColumn, { page: 'current' }).data().each(function(group, i) {
-                    if (i > 0) {
-                        groupTotal += Number(this.cell(i - 1, totalColumn).data());
-                    }
-
-                    if (last !== group) {
-                        if (last !== null) {
-                            $(rows).eq(i).before(`<tr><td align="right"><h5>Total<h5></td><td><h5>${groupTotal}</h5></td></tr>`);
-                            groupTotal = 0;
-                        }
-
-                        $(rows).eq(i).before(`<tr class="group"><td colspan="2"><h5>${group}<h5></td></tr>`);
-
-                        last = group;
-                    }
-
-                    if (i === rows.length - 1) {
-                        groupTotal += Number(this.cell(i, totalColumn).data())
-                        $(rows).eq(i).after(`<tr><td align="right"><h5>Total<h5></td><td><h5>${groupTotal}</h5></td></tr>`);
-                    }
-                });
-            },
-
             dom: '<if<t>lp>',
             'destroy': true,
             'pageLength': 50,
             'processing': true,
             'serverSide': true,
             'order': [
-                [0, 'asc'],
-                [1, 'asc'],
+                [0, 'asc']
             ],
             'lengthMenu': [
                 [10, 50, 100, 150, 200],
@@ -108,16 +74,6 @@
                     d.end_date = $('#reportrange-production-team-tab1').val().split(" - ")[1];
                 }
             },
-        });
-        // Order by the grouping
-        $('#datatable-production-team-tab1 tbody').on('dblclick', 'tr.group', function () {
-            var currentOrder = table_production_team_tab1.order()[0];
-            if (currentOrder[0] === groupColumn && currentOrder[1] === 'asc') {
-                table_production_team_tab1.order([groupColumn, 'desc']).draw();
-            }
-            else {
-                table_production_team_tab1.order([groupColumn, 'asc']).draw();
-            }
         });
     });
 </script>

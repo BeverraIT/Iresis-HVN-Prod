@@ -2,6 +2,14 @@
 
 class Picker extends MY_Controller
 {
+    private static $status_cache = array(); // Simple static cache for status IDs
+    
+    // Clear cache method for debugging
+    public function clear_status_cache() {
+        self::$status_cache = array();
+        echo "Status cache cleared";
+    }
+    
     function __construct()
     {
         parent::__construct();
@@ -14,8 +22,12 @@ class Picker extends MY_Controller
     {
         $this->load->model('kpi_fcd');
         
+        // Optimize: Load data in parallel
         $data['list_picker'] = $this->picking_fcd->get_picker('AKTIF')->result_array();
-        $data['total_scan'] = $this->picking_fcd->get_total_scan_user($this->data['user']['id_user'])->row()->total_scan;
+        
+        // Get total scan with fallback
+        $total_scan_result = $this->picking_fcd->get_total_scan_user($this->data['user']['id_user'])->row();
+        $data['total_scan'] = $total_scan_result ? $total_scan_result->total_scan : 0;
         
         // Ambil data status performa untuk PICKER
         $list_status_performa_raw = $this->kpi_fcd->get_status_performa_by_kategori('PICKER')->result_array();
@@ -34,15 +46,43 @@ class Picker extends MY_Controller
         $picking['yangambil_pegawai'] = $this->input->post('id_pegawaipicker');
         $picking['pending'] = '';
         
-        // Ambil status performa yang dipilih
-        $status_performa_name = $this->input->post('status_performa');
-        if (!empty($status_performa_name)) {
-            $this->load->model('kpi_fcd');
-            $status_id = $this->kpi_fcd->get_status_id_by_name($status_performa_name);
+        // Debug: Tampilkan semua data POST
+        $post_data = $this->input->post();
+        log_message('debug', 'All POST data: ' . json_encode($post_data));
+        
+        // Ambil status performa yang dipilih (optimized with static cache)
+        $status_performa_code = $this->input->post('status_performa');
+        log_message('debug', 'Status performa code dari POST: ' . $status_performa_code);
+        
+        if (!empty($status_performa_code)) {
+            // Check static cache first
+            if (!isset(self::$status_cache[$status_performa_code])) {
+                $this->load->model('kpi_fcd');
+                $status_id = $this->kpi_fcd->get_status_id_by_name($status_performa_code);
+                self::$status_cache[$status_performa_code] = $status_id;
+                log_message('debug', 'Status ID dari database: ' . $status_id . ' untuk kode: ' . $status_performa_code);
+            }
+            
+            $status_id = self::$status_cache[$status_performa_code];
             if ($status_id) {
                 $picking['status_performa_id'] = $status_id;
+                log_message('debug', 'Status performa ID: ' . $status_id . ' untuk kode: ' . $status_performa_code);
+            } else {
+                log_message('debug', 'Status performa ID tidak ditemukan untuk kode: ' . $status_performa_code);
+            }
+        } else {
+            // Jika tidak ada status yang dipilih, gunakan NORMAL sebagai default
+            $this->load->model('kpi_fcd');
+            $normal_status_id = $this->kpi_fcd->get_status_id_by_name('NORMAL_PICKER');
+            if ($normal_status_id) {
+                $picking['status_performa_id'] = $normal_status_id;
+                log_message('debug', 'Menggunakan status NORMAL sebagai default: ' . $normal_status_id);
             }
         }
+
+        // Debug: Tampilkan data yang akan disimpan
+        log_message('debug', 'Data picking yang akan disimpan: ' . json_encode($picking));
+        log_message('debug', 'User data: ' . json_encode($this->data['user']));
 
         $save = $this->picking_fcd->save($picking, $this->data['user']);
 
@@ -60,6 +100,13 @@ class Picker extends MY_Controller
     public function search_picker()
     {
         $this->show();
+    }
+
+    public function process_kpi_queue()
+    {
+        // Process KPI queue in background
+        $this->picking_fcd->process_kpi_queue();
+        $this->make_ajax_response(200, 'KPI queue processed');
     }
 
     public function get_search_picker_data()
