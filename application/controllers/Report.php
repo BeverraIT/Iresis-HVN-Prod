@@ -348,11 +348,11 @@ class Report extends MY_Controller
             8 => 'b.tanggal_resiambilbarang',
             9 => 'b.tanggal_resiambilbarang',
             10 => 't2.nama_pegawai',
-            11 => 'sp.status_name',
+            11 => null, // sp2.status_name - tidak bisa di-search karena subquery
             12 => 'c.tanggal_packing',
             13 => 'c.tanggal_packing',
             14 => 't3.name',
-            15 => 'sp3.status_name',
+            15 => null, // sp3.status_name - tidak bisa di-search karena subquery
             16 => 'd.tanggal_resikeluar',
             17 => 'd.tanggal_resikeluar',
             18 => 't4.nama_pegawai',
