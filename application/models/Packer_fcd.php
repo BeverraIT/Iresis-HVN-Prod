@@ -193,7 +193,7 @@ class Packer_fcd extends CI_Model
         
         if ($existing_log) {
             // Update: increment jumlah_resi
-            $this->db->where('id_log_transaksi', $existing_log->id_log_transaksi);
+            $this->db->where('id_log', $existing_log->id_log);
             $this->db->set('jumlah_resi', 'jumlah_resi + 1', FALSE);
             $this->db->set('updated', date('Y-m-d H:i:s'));
             $this->db->set('updatedby', $user_id);

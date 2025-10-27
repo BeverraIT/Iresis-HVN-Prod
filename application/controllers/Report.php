@@ -363,6 +363,38 @@ class Report extends MY_Controller
         $list_resi = $this->receipt_fcd->get_data_daily_report($data, $start_date, $end_date);
 
         $total = $this->receipt_fcd->get_total_data_daily_report($data, $start_date, $end_date);
+        
+        // Get status performa for picker and packer separately since subquery may not work
+        $this->db->select('k.id_user, k.tanggal, k.created, sp.status_name, k.tipe_transaksi');
+        $this->db->join('tblmasterstatusperforma sp', 'sp.id_statusperforma = k.id_statusperforma');
+        $this->db->where('k.tanggal >=', $start_date);
+        $this->db->where('k.tanggal <=', $end_date);
+        $this->db->order_by('k.created', 'ASC'); // ASC untuk ambil dari yang paling awal
+        $all_statuses = $this->db->get('tblkpi k')->result();
+        
+        $picker_status_map = array();
+        $packer_status_map = array();
+        
+        foreach ($all_statuses as $ps) {
+            $map_key = $ps->id_user . '_' . $ps->tanggal;
+            if ($ps->tipe_transaksi == 'PICKER') {
+                if (!isset($picker_status_map[$map_key])) {
+                    $picker_status_map[$map_key] = array();
+                }
+                $picker_status_map[$map_key][] = array(
+                    'status' => $ps->status_name,
+                    'created' => $ps->created
+                );
+            } else if ($ps->tipe_transaksi == 'PACKER') {
+                if (!isset($packer_status_map[$map_key])) {
+                    $packer_status_map[$map_key] = array();
+                }
+                $packer_status_map[$map_key][] = array(
+                    'status' => $ps->status_name,
+                    'created' => $ps->created
+                );
+            }
+        }
 
         $i = $data['start'] + 1;
         $data = array();
@@ -379,11 +411,11 @@ class Report extends MY_Controller
                 empty($row->tanggal_resiambilbarang) ? null: date('Y-m-d', strtotime($row->tanggal_resiambilbarang)),
                 empty($row->tanggal_resiambilbarang) ? null: date('H:i:s', strtotime($row->tanggal_resiambilbarang)),
                 $row->admin_picker,
-                !empty($row->picker_status) ? $row->picker_status : (empty($row->tanggal_resiambilbarang) ? '' : 'Normal'),
+                $this->get_picker_status($row->picker_user_id, $row->tanggal_resiambilbarang, $picker_status_map),
                 empty($row->tanggal_packing) ? null : date('Y-m-d', strtotime($row->tanggal_packing)),
                 empty($row->tanggal_packing) ? null : date('H:i:s', strtotime($row->tanggal_packing)),
                 $row->admin_packer,
-                !empty($row->packer_status) ? $row->packer_status : (empty($row->tanggal_packing) ? '' : 'Normal'),
+                $this->get_packer_status($row->packer_pegawai, $row->tanggal_packing, $packer_status_map),
                 empty($row->tanggal_resikeluar) ? null : date('Y-m-d', strtotime($row->tanggal_resikeluar)),
                 empty($row->tanggal_resikeluar) ? null : date('H:i:s', strtotime($row->tanggal_resikeluar)),
                 $row->admin_ho,
@@ -1146,5 +1178,64 @@ class Report extends MY_Controller
         header("Content-Disposition: attachment; filename=Laporan_Produksi_Packer.xls");
 
         $this->load->view('template_report/production_team_report_tab1', $data);
+    }
+    
+    private function get_picker_status($user_id, $tanggal_scan, $picker_status_map) {
+        if (empty($user_id) || empty($tanggal_scan)) {
+            return '';
+        }
+        
+        $tanggal_only = date('Y-m-d', strtotime($tanggal_scan));
+        $map_key = $user_id . '_' . $tanggal_only;
+        $scan_time = strtotime($tanggal_scan);
+        
+        if (isset($picker_status_map[$map_key]) && is_array($picker_status_map[$map_key])) {
+            // Cari status yang created <= waktu scan resi (paling terakhir)
+            $last_status = null;
+            $last_created = null;
+            foreach ($picker_status_map[$map_key] as $status_data) {
+                $created_time = strtotime($status_data['created']);
+                if ($created_time <= $scan_time) {
+                    if ($last_created === null || $created_time > $last_created) {
+                        $last_status = $status_data['status'];
+                        $last_created = $created_time;
+                    }
+                }
+            }
+            // Jika tidak ada status yang created <= waktu scan, return kosong
+            // (bukan 'Normal', karena user belum punya status performa di waktu itu)
+            return $last_status !== null ? $last_status : '';
+        }
+        
+        return '';
+    }
+    
+    private function get_packer_status($user_id, $tanggal_packing, $packer_status_map) {
+        if (empty($user_id) || empty($tanggal_packing)) {
+            return '';
+        }
+        
+        $tanggal_only = date('Y-m-d', strtotime($tanggal_packing));
+        $map_key = $user_id . '_' . $tanggal_only;
+        $packing_time = strtotime($tanggal_packing);
+        
+        if (isset($packer_status_map[$map_key]) && is_array($packer_status_map[$map_key])) {
+            // Cari status yang created <= waktu packing (paling terakhir)
+            $last_status = null;
+            $last_created = null;
+            foreach ($packer_status_map[$map_key] as $status_data) {
+                $created_time = strtotime($status_data['created']);
+                if ($created_time <= $packing_time) {
+                    if ($last_created === null || $created_time > $last_created) {
+                        $last_status = $status_data['status'];
+                        $last_created = $created_time;
+                    }
+                }
+            }
+            // Jika tidak ada status yang created <= waktu packing, return kosong
+            return $last_status !== null ? $last_status : '';
+        }
+        
+        return '';
     }
 }

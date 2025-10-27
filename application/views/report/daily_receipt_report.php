@@ -63,6 +63,40 @@
             background-color: #fce4ec !important; /* Soft pink */
             color: #c2185b !important;
           }
+
+          /* Loading spinner untuk DataTable */
+          .dataTables_processing {
+            background-color: #fff !important;
+            border: 2px solid #337ab7 !important;
+            border-radius: 4px !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            padding: 20px !important;
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            z-index: 1000 !important;
+            font-weight: bold !important;
+            color: #337ab7 !important;
+          }
+
+          .dataTables_processing:before {
+            content: "" !important;
+            display: inline-block !important;
+            width: 30px !important;
+            height: 30px !important;
+            border: 4px solid #f3f3f3 !important;
+            border-top: 4px solid #337ab7 !important;
+            border-radius: 50% !important;
+            animation: spin 1s linear infinite !important;
+            margin-right: 10px !important;
+            vertical-align: middle !important;
+          }
+
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
         </style>
 
         <table class="table table-striped table-bordered" id="datatable-report-receipt-daily">
@@ -181,10 +215,18 @@
     },
   });
 
+  // Inisialisasi DataTable - hanya setelah user submit (check parameter)
+  <?php $has_search = $this->input->method() == 'post'; ?>
+  
+  <?php if($has_search): ?>
+  // User sudah klik search, initialize DataTable
   $('#datatable-report-receipt-daily').DataTable({
     'scrollX': true,
     'pageLength': 10,
     'processing': true,
+    'language': {
+      'processing': 'Memproses data...'
+    },
     'serverSide': true,
     'order': [
       [2, 'desc']
@@ -224,6 +266,7 @@
       }
     ]
   });
+  <?php endif; ?>
 
   $('#btn-search').on('click', function() {
     $('#form-report-receipt-daily').removeAttr("target");
