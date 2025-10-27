@@ -179,12 +179,11 @@ class Kpi_fcd extends CI_Model
             $data = array(
                 'id_statusperforma' => $status_id,
                 'jumlah_resi' => $existing->jumlah_resi + $jumlah_resi,
-                'total_transaksi' => $existing->total_transaksi + $jumlah_resi,
                 'updated' => date('Y-m-d H:i:s'),
                 'updatedby' => $user_id
             );
             
-            $this->db->where('id_log_transaksi', $existing->id_log_transaksi);
+            $this->db->where('id_log', $existing->id_log);
             return $this->db->update('tblkpi', $data);
         } else {
             // Insert new log
@@ -194,7 +193,6 @@ class Kpi_fcd extends CI_Model
                 'tanggal' => $tanggal,
                 'tipe_transaksi' => $tipe_transaksi,
                 'jumlah_resi' => $jumlah_resi,
-                'total_transaksi' => $jumlah_resi,
                 'createdby' => $user_id,
                 'created' => date('Y-m-d H:i:s')
             );

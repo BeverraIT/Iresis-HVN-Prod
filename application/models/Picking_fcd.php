@@ -233,6 +233,11 @@ class Picking_fcd extends CI_Model
      * Log KPI transaksi secara asynchronous (non-blocking)
      */
     private function log_kpi_transaksi_async($user_id, $status_performa_id = null, $id_resi = null) {
+        // Log status performa harian ke tblstatusperforma (untuk laporan harian)
+        if ($status_performa_id) {
+            $this->log_status_performa_harian($user_id, $status_performa_id);
+        }
+        
         // Log KPI langsung tanpa queue untuk menghindari duplikasi
         if ($status_performa_id) {
             $this->log_kpi_transaksi_with_status($user_id, 'PICKER', $status_performa_id, 1, $id_resi);
@@ -241,6 +246,49 @@ class Picking_fcd extends CI_Model
         }
         
         return true;
+    }
+    
+    /**
+     * Log status performa harian ke tblstatusperforma (untuk laporan harian)
+     */
+    private function log_status_performa_harian($user_id, $status_performa_id) {
+        try {
+            $tanggal = date('Y-m-d');
+            
+            // Cek apakah sudah ada log untuk user dan tanggal hari ini
+            $existing = $this->db->get_where('tblstatusperforma', [
+                'id_user' => $user_id,
+                'tanggal' => $tanggal
+            ])->row();
+            
+            if ($existing) {
+                // Update status performa jika berbeda
+                if ($existing->id_statusperforma != $status_performa_id) {
+                    $this->db->where('id_log', $existing->id_log);
+                    $this->db->update('tblstatusperforma', [
+                        'id_statusperforma' => $status_performa_id,
+                        'updated' => date('Y-m-d H:i:s'),
+                        'updatedby' => $user_id
+                    ]);
+                }
+            } else {
+                // Insert new log
+                $this->db->insert('tblstatusperforma', [
+                    'id_user' => $user_id,
+                    'id_statusperforma' => $status_performa_id,
+                    'tanggal' => $tanggal,
+                    'jam_login' => date('H:i:s'),
+                    'isactive' => 1,
+                    'createdby' => $user_id,
+                    'created' => date('Y-m-d H:i:s')
+                ]);
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            log_message('error', 'Error logging status performa harian: ' . $e->getMessage());
+            return false;
+        }
     }
     
     /**

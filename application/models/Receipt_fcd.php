@@ -500,11 +500,11 @@ class Receipt_fcd extends CI_Model
             , a.tanggal_printresi
             , t1.nama_pegawai admin_scan 
             , b.tanggal_resiambilbarang
+            , b.admin_pegawai picker_user_id
             , t2.nama_pegawai admin_picker
-            , (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = b.admin_pegawai AND DATE(k2.tanggal) = DATE(b.tanggal_resiambilbarang) AND k2.tipe_transaksi = "PICKER" AND k2.created <= b.tanggal_resiambilbarang ORDER BY k2.created DESC LIMIT 1) as picker_status
             , c.tanggal_packing
+            , c.packer_pegawai
             , t3.name admin_packer
-            , (SELECT sp3.status_name FROM tblstatusperforma lsp3 LEFT JOIN tblmasterstatusperforma sp3 ON sp3.id_statusperforma = lsp3.id_statusperforma WHERE lsp3.id_user = c.packer_pegawai AND DATE(lsp3.tanggal) = DATE(c.tanggal_packing) AND lsp3.isactive = 1 ORDER BY lsp3.created DESC LIMIT 1) as packer_status
             , d.tanggal_resikeluar
             , t4.nama_pegawai admin_ho
         ');
@@ -519,8 +519,24 @@ class Receipt_fcd extends CI_Model
         $this->db->join('tbluser t3', 't3.id_user = c.packer_pegawai ', 'left');
         $this->db->join('tblpegawai t4', 't4.kode_pegawai = d.id_pegawai', 'left');
 
+        // Search berdasarkan tanggal print resi, picker, packer, atau HO
+        // Resi akan muncul jika salah satu tanggal tersebut dalam range
+        $this->db->group_start();
         $this->db->where('a.tanggal_printresi >=', $start_date);
         $this->db->where('a.tanggal_printresi <=', $end_date);
+        $this->db->or_group_start();
+        $this->db->where('b.tanggal_resiambilbarang >=', $start_date);
+        $this->db->where('b.tanggal_resiambilbarang <=', $end_date);
+        $this->db->group_end();
+        $this->db->or_group_start();
+        $this->db->where('c.tanggal_packing >=', $start_date);
+        $this->db->where('c.tanggal_packing <=', $end_date);
+        $this->db->group_end();
+        $this->db->or_group_start();
+        $this->db->where('d.tanggal_resikeluar >=', $start_date);
+        $this->db->where('d.tanggal_resikeluar <=', $end_date);
+        $this->db->group_end();
+        $this->db->group_end();
 
         if (!empty($data['length'])) {
             $this->db->limit($data['length'], $data['start']);
@@ -561,8 +577,23 @@ class Receipt_fcd extends CI_Model
         $this->db->join('tbluser t3', 't3.id_user = c.packer_pegawai ', 'left');
         $this->db->join('tblpegawai t4', 't4.kode_pegawai = d.id_pegawai', 'left');
 
+        // Search berdasarkan tanggal print resi, picker, packer, atau HO
+        $this->db->group_start();
         $this->db->where('a.tanggal_printresi >=', $start_date);
         $this->db->where('a.tanggal_printresi <=', $end_date);
+        $this->db->or_group_start();
+        $this->db->where('b.tanggal_resiambilbarang >=', $start_date);
+        $this->db->where('b.tanggal_resiambilbarang <=', $end_date);
+        $this->db->group_end();
+        $this->db->or_group_start();
+        $this->db->where('c.tanggal_packing >=', $start_date);
+        $this->db->where('c.tanggal_packing <=', $end_date);
+        $this->db->group_end();
+        $this->db->or_group_start();
+        $this->db->where('d.tanggal_resikeluar >=', $start_date);
+        $this->db->where('d.tanggal_resikeluar <=', $end_date);
+        $this->db->group_end();
+        $this->db->group_end();
 
         $query = $this->db->select("COUNT(DISTINCT a.noresi) AS num")->get("tblprintresi a");
         $result = $query->row();
@@ -1703,7 +1734,7 @@ class Receipt_fcd extends CI_Model
             c.tanggal_packing,
             t3.name pegawai,
             COUNT(1) as total,
-            (SELECT sp3.status_name FROM tblstatusperforma lsp3 LEFT JOIN tblmasterstatusperforma sp3 ON sp3.id_statusperforma = lsp3.id_statusperforma WHERE lsp3.id_user = c.packer_pegawai AND DATE(lsp3.tanggal) = DATE(c.tanggal_packing) AND lsp3.isactive = 1 ORDER BY lsp3.created DESC LIMIT 1) as status_performa
+            (SELECT sp3.status_name FROM tblstatusperforma tsp3 LEFT JOIN tblmasterstatusperforma sp3 ON sp3.id_statusperforma = tsp3.id_statusperforma WHERE tsp3.id_user = c.packer_pegawai AND DATE(tsp3.tanggal) = DATE(c.tanggal_packing) AND tsp3.isactive = 1 LIMIT 1) as status_performa
         ');
 
         $this->db->join('tblpacking c', 'a.id_printresi = c.id_resi', 'left');
