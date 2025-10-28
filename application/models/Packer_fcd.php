@@ -59,7 +59,7 @@ class Packer_fcd extends CI_Model
         $this->db->update('tblresiambilbarang', ['pending' => '']);
 
         // Log transaksi ke tblkpi untuk KPI tracking
-        $this->log_kpi_transaksi($user['id_user'], 'PACKING');
+        $this->log_kpi_transaksi($user['id_user'], 'PACKER');
 
         $packer['affected_rows'] = $this->db->affected_rows();
 
