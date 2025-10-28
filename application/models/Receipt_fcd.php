@@ -149,7 +149,7 @@ class Receipt_fcd extends CI_Model
     {
         $this->db->select('t.noresi, t.tanggal_printresi, t2.nama_marketplace, t3.tanggal_resiambilbarang
             , t4.nama_pegawai picker, t5.tanggal_packing, t6.name packer
-            , t5.keterangan komputer_packer_no, t7.nama_kurir, t8.tanggal_cetak
+            , COALESCE(t6.nama_komputer, t5.keterangan) komputer_packer_no, t7.nama_kurir, t8.tanggal_cetak
             , t8.tanggal_resikeluar, t.status_pesanan, t.tanggal_retur, t.tanggal_bataskirim
             , (SELECT sp.status_name FROM tblkpi k LEFT JOIN tblmasterstatusperforma sp ON sp.id_statusperforma = k.id_statusperforma WHERE k.id_user = t3.admin_pegawai AND DATE(k.tanggal) = DATE(t3.tanggal_resiambilbarang) AND k.tipe_transaksi = "PICKER" AND k.created <= t3.tanggal_resiambilbarang ORDER BY k.created DESC LIMIT 1) as picker_status
             , (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = t5.packer_pegawai AND DATE(k2.tanggal) = DATE(t5.tanggal_packing) AND k2.tipe_transaksi = "PACKER" AND k2.created <= t5.tanggal_packing ORDER BY k2.created DESC LIMIT 1) as packer_status'
