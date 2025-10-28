@@ -1643,7 +1643,7 @@ class Receipt_fcd extends CI_Model
             b.tanggal_resiambilbarang,
             t2.nama_pegawai pegawai,
             COUNT(1) as total,
-            (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = b.admin_pegawai AND DATE(k2.tanggal) = DATE(b.tanggal_resiambilbarang) AND k2.tipe_transaksi = "PICKER" AND k2.created <= b.tanggal_resiambilbarang ORDER BY k2.created DESC LIMIT 1) as status_performa
+            (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = b.admin_pegawai AND DATE(k2.tanggal) = DATE(b.tanggal_resiambilbarang) AND k2.tipe_transaksi = "PICKING" AND k2.created <= b.tanggal_resiambilbarang ORDER BY k2.created DESC LIMIT 1) as status_performa
         ');
 
         $this->db->join('tblresiambilbarang b', 'a.id_printresi = b.id_resi', 'left');
