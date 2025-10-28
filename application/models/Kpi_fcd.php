@@ -117,10 +117,16 @@ class Kpi_fcd extends CI_Model
         ))->row();
         
         if ($existing) {
-            // Update existing log
+            // Nonaktifkan semua entry untuk user dan tanggal ini
+            $this->db->where('id_user', $user_id);
+            $this->db->where('tanggal', $tanggal);
+            $this->db->update('tblstatusperforma', array('isactive' => 0));
+            
+            // Update existing log dan aktifkan
             $data = array(
                 'id_statusperforma' => $status_id,
                 'jam_login' => date('H:i:s'),
+                'isactive' => 1,
                 'updated' => date('Y-m-d H:i:s'),
                 'updatedby' => $user_id
             );
