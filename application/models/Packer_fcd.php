@@ -175,9 +175,11 @@ class Packer_fcd extends CI_Model
             ])
             ->row();
         
+        log_message('info', "LOG PACKER DEBUG: user_id={$user_id}, tanggal={$tanggal}, status_log=" . ($status_log ? $status_log->id_statusperforma : 'NULL'));
+        
         if (!$status_log) {
             // Jika tidak ada log status performa, skip
-            log_message('warning', "User {$user_id} melakukan {$tipe_transaksi} tanpa status performa");
+            log_message('warning', "User {$user_id} melakukan {$tipe_transaksi} tanpa status performa. tanggal={$tanggal}");
             return false;
         }
         
