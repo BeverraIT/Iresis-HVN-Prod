@@ -152,7 +152,7 @@ class Receipt_fcd extends CI_Model
             , t5.keterangan komputer_packer_no, t7.nama_kurir, t8.tanggal_cetak
             , t8.tanggal_resikeluar, t.status_pesanan, t.tanggal_retur, t.tanggal_bataskirim
             , (SELECT sp.status_name FROM tblkpi k LEFT JOIN tblmasterstatusperforma sp ON sp.id_statusperforma = k.id_statusperforma WHERE k.id_user = t3.admin_pegawai AND DATE(k.tanggal) = DATE(t3.tanggal_resiambilbarang) AND k.tipe_transaksi = "PICKER" AND k.created <= t3.tanggal_resiambilbarang ORDER BY k.created DESC LIMIT 1) as picker_status
-            , (SELECT sp2.status_name FROM tblstatusperforma lsp2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = lsp2.id_statusperforma WHERE lsp2.id_user = t5.packer_pegawai AND DATE(lsp2.tanggal) = DATE(t5.tanggal_packing) AND lsp2.isactive = 1 ORDER BY lsp2.created DESC LIMIT 1) as packer_status'
+            , (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = t5.packer_pegawai AND DATE(k2.tanggal) = DATE(t5.tanggal_packing) AND k2.tipe_transaksi = "PACKER" AND k2.created <= t5.tanggal_packing ORDER BY k2.created DESC LIMIT 1) as packer_status'
         );
 
         $this->db->join('tblmarketplace t2', 't2.id_marketplace = t.id_marketplace', 'left');
@@ -1615,8 +1615,8 @@ class Receipt_fcd extends CI_Model
                 $this->db->order_by($data['valid_columns'][$order['column']]['col'], $order['dir'], FALSE);
             }
         } else {
-            $this->db->order_by('CONCAT(b.nama_pegawai, \' - \', b.kode_pegawai)', 'asc', FALSE);
-            $this->db->order_by('date(a.tanggal_resiambilbarang)', 'asc', FALSE);
+            $this->db->order_by('CONCAT(t2.nama_pegawai)', 'asc', FALSE);
+            $this->db->order_by('date(b.tanggal_resiambilbarang)', 'asc', FALSE);
         }
 
         if (!empty($data['search'])) {
@@ -1640,24 +1640,25 @@ class Receipt_fcd extends CI_Model
         }
 
         $this->db->select('
-            b.tanggal_resiambilbarang,
+            MAX(b.tanggal_resiambilbarang) as tanggal_resiambilbarang,
+            MAX(b.admin_pegawai) as admin_pegawai,
             t2.nama_pegawai pegawai,
             COUNT(1) as total,
-            (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = b.admin_pegawai AND DATE(k2.tanggal) = DATE(b.tanggal_resiambilbarang) AND k2.tipe_transaksi = "PICKING" AND k2.created <= b.tanggal_resiambilbarang ORDER BY k2.created DESC LIMIT 1) as status_performa
+            (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = MAX(b.admin_pegawai) AND DATE(k2.tanggal) = DATE(MAX(b.tanggal_resiambilbarang)) AND k2.tipe_transaksi = "PICKER" ORDER BY k2.created DESC LIMIT 1) as status_performa
         ');
 
         $this->db->join('tblresiambilbarang b', 'a.id_printresi = b.id_resi', 'left');
         $this->db->join('tblpegawai t2', 't2.kode_pegawai = b.yangambil_pegawai', 'left');
 
-        $this->db->where('a.tanggal_printresi >=', $start_date);
-        $this->db->where('a.tanggal_printresi <=', $end_date);
+        $this->db->where('b.tanggal_resiambilbarang >=', $start_date);
+        $this->db->where('b.tanggal_resiambilbarang <=', $end_date);
         $this->db->where('b.tanggal_resiambilbarang IS NOT NULL');
 
         if (!empty($data['length'])) {
             $this->db->limit($data['length'], $data['start']);
         }
 
-        $this->db->group_by('DATE(b.tanggal_resiambilbarang), t2.nama_pegawai, b.admin_pegawai, b.tanggal_resiambilbarang');
+        $this->db->group_by('DATE(b.tanggal_resiambilbarang), t2.nama_pegawai');
 
         return $this->db->get('tblprintresi a');
     }
@@ -1687,11 +1688,11 @@ class Receipt_fcd extends CI_Model
         $this->db->join('tblresiambilbarang b', 'a.id_printresi = b.id_resi', 'left');
         $this->db->join('tblpegawai t2', 't2.kode_pegawai = b.yangambil_pegawai', 'left');
 
-        $this->db->where('a.tanggal_printresi >=', $start_date);
-        $this->db->where('a.tanggal_printresi <=', $end_date);
+        $this->db->where('b.tanggal_resiambilbarang >=', $start_date);
+        $this->db->where('b.tanggal_resiambilbarang <=', $end_date);
         $this->db->where('b.tanggal_resiambilbarang IS NOT NULL');
 
-        $this->db->group_by('DATE(b.tanggal_resiambilbarang), t2.nama_pegawai, b.admin_pegawai, b.tanggal_resiambilbarang');
+        $this->db->group_by('DATE(b.tanggal_resiambilbarang), t2.nama_pegawai');
 
         $query = $this->db->select("count(1) as num")->get("tblprintresi a");
         $result = $query->num_rows();
