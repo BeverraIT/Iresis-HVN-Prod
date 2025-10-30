@@ -93,7 +93,7 @@ class Packer_fcd extends CI_Model
             pr.noresi,
             u.name AS nama_pegawai,
             p.tanggal_packing,
-            p.keterangan
+            COALESCE(u.nama_komputer, p.keterangan) AS keterangan
         ');
 
         $this->db->from('tblpacking p');

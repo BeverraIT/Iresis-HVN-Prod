@@ -51,7 +51,7 @@
                       <div><strong>Picker: <?= $nama_picker ?></strong></div>
                   </div>
                   <div class="col-md-4 text-center">
-                      <div><strong>Komputer: <?= $komputer_picker ?></strong></div>
+                      <div><strong>Komputer: <?= $komputer_packer ?></strong></div>
                   </div>
               </div>
               <div class="row justify-content-center">
