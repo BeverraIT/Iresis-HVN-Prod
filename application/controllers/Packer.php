@@ -22,6 +22,7 @@ class Packer extends MY_Controller
         $data['total_scan'] = 0;
         $data['nama_picker'] = '-';
         $data['komputer_picker'] = '-';
+        $data['komputer_packer'] = isset($this->data['nama_pk']) ? $this->data['nama_pk'] : (isset($this->data['user']['nama_komputer']) ? $this->data['user']['nama_komputer'] : '-');
 
         if ($this->input->method() == 'post') {
             $noresi = $this->input->post('noresi');
