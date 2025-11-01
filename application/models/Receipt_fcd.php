@@ -519,24 +519,9 @@ class Receipt_fcd extends CI_Model
         $this->db->join('tbluser t3', 't3.id_user = c.packer_pegawai ', 'left');
         $this->db->join('tblpegawai t4', 't4.kode_pegawai = d.id_pegawai', 'left');
 
-        // Search berdasarkan tanggal print resi, picker, packer, atau HO
-        // Resi akan muncul jika salah satu tanggal tersebut dalam range
-        $this->db->group_start();
+        // Filter berdasarkan tanggal print resi
         $this->db->where('a.tanggal_printresi >=', $start_date);
         $this->db->where('a.tanggal_printresi <=', $end_date);
-        $this->db->or_group_start();
-        $this->db->where('b.tanggal_resiambilbarang >=', $start_date);
-        $this->db->where('b.tanggal_resiambilbarang <=', $end_date);
-        $this->db->group_end();
-        $this->db->or_group_start();
-        $this->db->where('c.tanggal_packing >=', $start_date);
-        $this->db->where('c.tanggal_packing <=', $end_date);
-        $this->db->group_end();
-        $this->db->or_group_start();
-        $this->db->where('d.tanggal_resikeluar >=', $start_date);
-        $this->db->where('d.tanggal_resikeluar <=', $end_date);
-        $this->db->group_end();
-        $this->db->group_end();
 
         if (!empty($data['length'])) {
             $this->db->limit($data['length'], $data['start']);
@@ -577,23 +562,9 @@ class Receipt_fcd extends CI_Model
         $this->db->join('tbluser t3', 't3.id_user = c.packer_pegawai ', 'left');
         $this->db->join('tblpegawai t4', 't4.kode_pegawai = d.id_pegawai', 'left');
 
-        // Search berdasarkan tanggal print resi, picker, packer, atau HO
-        $this->db->group_start();
+        // Filter berdasarkan tanggal print resi
         $this->db->where('a.tanggal_printresi >=', $start_date);
         $this->db->where('a.tanggal_printresi <=', $end_date);
-        $this->db->or_group_start();
-        $this->db->where('b.tanggal_resiambilbarang >=', $start_date);
-        $this->db->where('b.tanggal_resiambilbarang <=', $end_date);
-        $this->db->group_end();
-        $this->db->or_group_start();
-        $this->db->where('c.tanggal_packing >=', $start_date);
-        $this->db->where('c.tanggal_packing <=', $end_date);
-        $this->db->group_end();
-        $this->db->or_group_start();
-        $this->db->where('d.tanggal_resikeluar >=', $start_date);
-        $this->db->where('d.tanggal_resikeluar <=', $end_date);
-        $this->db->group_end();
-        $this->db->group_end();
 
         $query = $this->db->select("COUNT(DISTINCT a.noresi) AS num")->get("tblprintresi a");
         $result = $query->row();
