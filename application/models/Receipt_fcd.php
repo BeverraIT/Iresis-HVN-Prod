@@ -1707,8 +1707,8 @@ class Receipt_fcd extends CI_Model
                 $this->db->order_by($data['valid_columns'][$order['column']]['col'], $order['dir'], FALSE);
             }
         } else {
-            $this->db->order_by('CONCAT(b.name, \' - \', b.id_user)', 'asc', FALSE);
-            $this->db->order_by('date(a.tanggal_packing)', 'asc', FALSE);
+            $this->db->order_by('CONCAT(t3.name, \' - \', t3.id_user)', 'asc', FALSE);
+            $this->db->order_by('date(c.tanggal_packing)', 'asc', FALSE);
         }
 
         if (!empty($data['search'])) {
@@ -1732,10 +1732,10 @@ class Receipt_fcd extends CI_Model
         }
 
         $this->db->select('
-            c.tanggal_packing,
+            MAX(c.tanggal_packing) as tanggal_packing,
             t3.name pegawai,
             COUNT(1) as total,
-            (SELECT sp3.status_name FROM tblstatusperforma tsp3 LEFT JOIN tblmasterstatusperforma sp3 ON sp3.id_statusperforma = tsp3.id_statusperforma WHERE tsp3.id_user = c.packer_pegawai AND DATE(tsp3.tanggal) = DATE(c.tanggal_packing) AND tsp3.isactive = 1 LIMIT 1) as status_performa
+            (SELECT sp3.status_name FROM tblstatusperforma tsp3 LEFT JOIN tblmasterstatusperforma sp3 ON sp3.id_statusperforma = tsp3.id_statusperforma WHERE tsp3.id_user = c.packer_pegawai AND DATE(tsp3.tanggal) = DATE(MAX(c.tanggal_packing)) AND tsp3.isactive = 1 LIMIT 1) as status_performa
         ');
 
         $this->db->join('tblpacking c', 'a.id_printresi = c.id_resi', 'left');
@@ -1749,7 +1749,7 @@ class Receipt_fcd extends CI_Model
             $this->db->limit($data['length'], $data['start']);
         }
 
-        $this->db->group_by('DATE(c.tanggal_packing), t3.name, c.packer_pegawai, c.tanggal_packing');
+        $this->db->group_by('DATE(c.tanggal_packing), t3.name, c.packer_pegawai');
 
         return $this->db->get('tblprintresi a');
     }
@@ -1783,7 +1783,7 @@ class Receipt_fcd extends CI_Model
         $this->db->where('c.tanggal_packing <=', $end_date);
         $this->db->where('c.tanggal_packing IS NOT NULL');
 
-        $this->db->group_by('DATE(c.tanggal_packing), t3.name, c.packer_pegawai, c.tanggal_packing');
+        $this->db->group_by('DATE(c.tanggal_packing), t3.name, c.packer_pegawai');
 
         $query = $this->db->select("count(1) as num")->get("tblprintresi a");
         $result = $query->num_rows();
