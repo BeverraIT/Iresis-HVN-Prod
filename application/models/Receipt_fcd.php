@@ -1741,8 +1741,8 @@ class Receipt_fcd extends CI_Model
         $this->db->join('tblpacking c', 'a.id_printresi = c.id_resi', 'left');
         $this->db->join('tbluser t3', 't3.id_user = c.packer_pegawai', 'left');
 
-        $this->db->where('a.tanggal_printresi >=', $start_date);
-        $this->db->where('a.tanggal_printresi <=', $end_date);
+        $this->db->where('c.tanggal_packing >=', $start_date);
+        $this->db->where('c.tanggal_packing <=', $end_date);
         $this->db->where('c.tanggal_packing IS NOT NULL');
 
         if (!empty($data['length'])) {
@@ -1779,8 +1779,8 @@ class Receipt_fcd extends CI_Model
         $this->db->join('tblpacking c', 'a.id_printresi = c.id_resi', 'left');
         $this->db->join('tbluser t3', 't3.id_user = c.packer_pegawai', 'left');
 
-        $this->db->where('a.tanggal_printresi >=', $start_date);
-        $this->db->where('a.tanggal_printresi <=', $end_date);
+        $this->db->where('c.tanggal_packing >=', $start_date);
+        $this->db->where('c.tanggal_packing <=', $end_date);
         $this->db->where('c.tanggal_packing IS NOT NULL');
 
         $this->db->group_by('DATE(c.tanggal_packing), t3.name, c.packer_pegawai, c.tanggal_packing');
