@@ -922,8 +922,8 @@ class Receipt_fcd extends CI_Model
         $this->db->join('tblresikeluar t2', 't2.id_resi = t.id_printresi');
         $this->db->join('tblkurir t3', 't3.id_kurir = t.id_kurir', 'left');
 
-        $this->db->where('t.tanggal_printresi >=', $start_date);
-        $this->db->where('t.tanggal_printresi <=', $end_date);
+        $this->db->where('t2.tanggal_resikeluar >=', $start_date);
+        $this->db->where('t2.tanggal_resikeluar <=', $end_date);
 
         if (!empty($data['length'])) {
             $this->db->limit($data['length'], $data['start']);
@@ -958,8 +958,8 @@ class Receipt_fcd extends CI_Model
 
         $this->db->join('tblkurir t3', 't3.id_kurir = t.id_kurir', 'left');
 
-        $this->db->where('t.tanggal_printresi >=', $start_date);
-        $this->db->where('t.tanggal_printresi <=', $end_date);
+        $this->db->where('t2.tanggal_resikeluar >=', $start_date);
+        $this->db->where('t2.tanggal_resikeluar <=', $end_date);
 
         $query = $this->db->select("COUNT(DISTINCT t.noresi) AS num")->get("tblprintresi t");
         $result = $query->row();
