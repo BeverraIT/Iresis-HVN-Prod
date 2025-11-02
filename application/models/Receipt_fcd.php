@@ -1274,7 +1274,7 @@ class Receipt_fcd extends CI_Model
                 $kurirRaw = $row['S'] ?? '';
                 $kurir = $detectCourier($kurirRaw);
                 // Override: if marketplace is Lazada but detected courier is Ninja, force Lazada courier
-                if ($marketplace === 'lazada' && $kurir === 'ninja') {
+                if ($marketplace === 'lazada' && $kurir === 'jne') {
                     $kurir = 'lazada';
                 }
                 $id_kurir = $kurir_map[$kurir] ?? 99;
