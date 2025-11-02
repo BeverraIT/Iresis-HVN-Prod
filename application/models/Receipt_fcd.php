@@ -1233,6 +1233,10 @@ class Receipt_fcd extends CI_Model
                         // Normalize courier
                         $kurirRaw = $row['S'] ?? '';
                         $kurir = $detectCourier($kurirRaw);
+                        // Override: if marketplace is Lazada but detected courier is Ninja, force Lazada courier
+                        if ($marketplace === 'lazada' && $kurir === 'ninja') {
+                            $kurir = 'lazada';
+                        }
                         $id_kurir = $kurir_map[$kurir] ?? 99;
 
                         $batch_update_map[$noresi] = [
@@ -1269,6 +1273,10 @@ class Receipt_fcd extends CI_Model
                 // Normalize courier
                 $kurirRaw = $row['S'] ?? '';
                 $kurir = $detectCourier($kurirRaw);
+                // Override: if marketplace is Lazada but detected courier is Ninja, force Lazada courier
+                if ($marketplace === 'lazada' && $kurir === 'ninja') {
+                    $kurir = 'lazada';
+                }
                 $id_kurir = $kurir_map[$kurir] ?? 99;
 
                 // Always set detail_key
