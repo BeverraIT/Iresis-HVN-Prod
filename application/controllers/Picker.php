@@ -196,7 +196,7 @@ class Picker extends MY_Controller
             $this->set_message('Warning', NOTHING_TO_SAVE, 'warning');
         }
 
-        $this->show_index();
+        redirect('picker/master_picker');
     }
 
     public function delete_master_picker($id_namaambilbarang)
@@ -209,7 +209,7 @@ class Picker extends MY_Controller
             $this->set_message('Warning', NOTHING_TO_SAVE, 'warning');
         }
 
-        $this->show_index();
+        redirect('picker/master_picker');
     }
 
     public function pending_picker()

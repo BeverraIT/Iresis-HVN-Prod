@@ -363,38 +363,6 @@ class Report extends MY_Controller
         $list_resi = $this->receipt_fcd->get_data_daily_report($data, $start_date, $end_date);
 
         $total = $this->receipt_fcd->get_total_data_daily_report($data, $start_date, $end_date);
-        
-        // Get status performa for picker and packer separately since subquery may not work
-        $this->db->select('k.id_user, k.tanggal, k.created, sp.status_name, k.tipe_transaksi');
-        $this->db->join('tblmasterstatusperforma sp', 'sp.id_statusperforma = k.id_statusperforma');
-        $this->db->where('k.tanggal >=', $start_date);
-        $this->db->where('k.tanggal <=', $end_date);
-        $this->db->order_by('k.created', 'ASC'); // ASC untuk ambil dari yang paling awal
-        $all_statuses = $this->db->get('tblkpi k')->result();
-        
-        $picker_status_map = array();
-        $packer_status_map = array();
-        
-        foreach ($all_statuses as $ps) {
-            $map_key = $ps->id_user . '_' . $ps->tanggal;
-            if ($ps->tipe_transaksi == 'PICKER') {
-                if (!isset($picker_status_map[$map_key])) {
-                    $picker_status_map[$map_key] = array();
-                }
-                $picker_status_map[$map_key][] = array(
-                    'status' => $ps->status_name,
-                    'created' => $ps->created
-                );
-            } else if ($ps->tipe_transaksi == 'PACKER') {
-                if (!isset($packer_status_map[$map_key])) {
-                    $packer_status_map[$map_key] = array();
-                }
-                $packer_status_map[$map_key][] = array(
-                    'status' => $ps->status_name,
-                    'created' => $ps->created
-                );
-            }
-        }
 
         $i = $data['start'] + 1;
         $data = array();
@@ -411,11 +379,11 @@ class Report extends MY_Controller
                 empty($row->tanggal_resiambilbarang) ? null: date('Y-m-d', strtotime($row->tanggal_resiambilbarang)),
                 empty($row->tanggal_resiambilbarang) ? null: date('H:i:s', strtotime($row->tanggal_resiambilbarang)),
                 $row->admin_picker,
-                $this->get_picker_status($row->picker_user_id, $row->tanggal_resiambilbarang, $picker_status_map),
+                !empty($row->picker_status) ? $row->picker_status : '-',
                 empty($row->tanggal_packing) ? null : date('Y-m-d', strtotime($row->tanggal_packing)),
                 empty($row->tanggal_packing) ? null : date('H:i:s', strtotime($row->tanggal_packing)),
                 $row->admin_packer,
-                $this->get_packer_status($row->packer_pegawai, $row->tanggal_packing, $packer_status_map),
+                !empty($row->packer_status) ? $row->packer_status : '-',
                 empty($row->tanggal_resikeluar) ? null : date('Y-m-d', strtotime($row->tanggal_resikeluar)),
                 empty($row->tanggal_resikeluar) ? null : date('H:i:s', strtotime($row->tanggal_resikeluar)),
                 $row->admin_ho,
@@ -1007,24 +975,26 @@ class Report extends MY_Controller
         $data = array();
         $grouped_data = array();
         
-        // Kelompokkan data berdasarkan user dan status performa
+        // Kelompokkan data berdasarkan pegawai, tanggal, dan status performa
+        // Sekarang setiap row adalah satu resi individual dengan status performa yang akurat
         foreach ($list_resi->result() as $row) {
-            $key = $row->pegawai . '|' . $row->status_performa;
+            $key = $row->pegawai . '|' . $row->tanggal_resiambilbarang . '|' . ($row->status_performa ?: 'Normal');
             if (!isset($grouped_data[$key])) {
                 $grouped_data[$key] = array(
                     'pegawai' => $row->pegawai,
                     'tanggal' => $row->tanggal_resiambilbarang,
+                    'waktu_scan' => $row->waktu_scan_picker, // Waktu scan pertama kali
                     'total' => 0,
-                    'status_performa' => $row->status_performa
+                    'status_performa' => $row->status_performa ?: 'Normal'
                 );
             }
-            $grouped_data[$key]['total'] += $row->total;
+            $grouped_data[$key]['total'] += 1; // Hitung per resi, bukan menggunakan $row->total
         }
         
         foreach ($grouped_data as $item) {
             $data[] = array(
                 $item['pegawai'] . ' - ' . $item['total'],
-                $item['tanggal'],
+                $item['waktu_scan'] ?: $item['tanggal'], // Tampilkan waktu scan atau tanggal jika null
                 $item['total']
             );
             
@@ -1075,24 +1045,26 @@ class Report extends MY_Controller
         $data = array();
         $grouped_data = array();
         
-        // Kelompokkan data berdasarkan user dan status performa
+        // Kelompokkan data berdasarkan pegawai, tanggal, dan status performa
+        // Sekarang setiap row adalah satu resi individual dengan status performa yang akurat
         foreach ($list_resi->result() as $row) {
-            $key = $row->pegawai . '|' . $row->status_performa;
+            $key = $row->pegawai . '|' . $row->tanggal_packing . '|' . ($row->status_performa ?: 'Normal');
             if (!isset($grouped_data[$key])) {
                 $grouped_data[$key] = array(
                     'pegawai' => $row->pegawai,
                     'tanggal' => $row->tanggal_packing,
+                    'waktu_scan' => $row->waktu_scan_packer, // Waktu scan pertama kali
                     'total' => 0,
-                    'status_performa' => $row->status_performa
+                    'status_performa' => $row->status_performa ?: 'Normal'
                 );
             }
-            $grouped_data[$key]['total'] += $row->total;
+            $grouped_data[$key]['total'] += 1; // Hitung per resi, bukan menggunakan $row->total
         }
         
         foreach ($grouped_data as $item) {
             $data[] = array(
                 $item['pegawai'] . ' - ' . $item['total'],
-                $item['tanggal'],
+                $item['waktu_scan'] ?: $item['tanggal'], // Tampilkan waktu scan atau tanggal jika null
                 $item['total']
             );
             
@@ -1131,15 +1103,40 @@ class Report extends MY_Controller
         $data['list_data'] = [];
 
         $grand_total = 0;
+        $grouped_data = [];
         $pickers = $this->receipt_fcd->get_data_production_team_tab0([], $start_date, $end_date)->result_array();
+        
+        // Kelompokkan data berdasarkan pegawai, tanggal, dan status performa
         foreach ($pickers as $picker) {
-            $data['list_data'][$picker['pegawai']][] = [
-                'tanggal' => $picker['tanggal_resiambilbarang'], 
-                'total' => $picker['total'],
-                'status_performa' => $picker['status_performa']
-            ];
-            $grand_total += $picker['total'];
+            $pegawai = $picker['pegawai'];
+            $tanggal = $picker['tanggal_resiambilbarang'];
+            $waktu_scan = $picker['waktu_scan_picker']; // Waktu scan pertama kali
+            $status = $picker['status_performa'] ?: 'Normal';
+            
+            $key = $pegawai . '|' . $tanggal . '|' . $status;
+            
+            if (!isset($grouped_data[$key])) {
+                $grouped_data[$key] = [
+                    'pegawai' => $pegawai,
+                    'tanggal' => $tanggal,
+                    'waktu_scan' => $waktu_scan,
+                    'total' => 0,
+                    'status_performa' => $status
+                ];
+            }
+            $grouped_data[$key]['total'] += 1; // Hitung per resi
+            $grand_total += 1;
         }
+        
+        // Konversi ke format yang dibutuhkan template
+        foreach ($grouped_data as $item) {
+            $data['list_data'][$item['pegawai']][] = [
+                'tanggal' => $item['waktu_scan'] ?: $item['tanggal'], // Tampilkan waktu scan atau tanggal
+                'total' => $item['total'],
+                'status_performa' => $item['status_performa']
+            ];
+        }
+        
         $data['grand_total'] = $grand_total;
 
         header("Content-type: application/vnd-ms-excel");
@@ -1163,15 +1160,40 @@ class Report extends MY_Controller
         $data['list_data'] = [];
 
         $grand_total = 0;
-        $pickers = $this->receipt_fcd->get_data_production_team_tab1([], $start_date, $end_date)->result_array();
-        foreach ($pickers as $picker) {
-            $data['list_data'][$picker['pegawai']][] = [
-                'tanggal' => $picker['tanggal_packing'], 
-                'total' => $picker['total'],
-                'status_performa' => $picker['status_performa']
-            ];
-            $grand_total += $picker['total'];
+        $grouped_data = [];
+        $packers = $this->receipt_fcd->get_data_production_team_tab1([], $start_date, $end_date)->result_array();
+        
+        // Kelompokkan data berdasarkan pegawai, tanggal, dan status performa
+        foreach ($packers as $packer) {
+            $pegawai = $packer['pegawai'];
+            $tanggal = $packer['tanggal_packing'];
+            $waktu_scan = $packer['waktu_scan_packer']; // Waktu scan pertama kali
+            $status = $packer['status_performa'] ?: 'Normal';
+            
+            $key = $pegawai . '|' . $tanggal . '|' . $status;
+            
+            if (!isset($grouped_data[$key])) {
+                $grouped_data[$key] = [
+                    'pegawai' => $pegawai,
+                    'tanggal' => $tanggal,
+                    'waktu_scan' => $waktu_scan,
+                    'total' => 0,
+                    'status_performa' => $status
+                ];
+            }
+            $grouped_data[$key]['total'] += 1; // Hitung per resi
+            $grand_total += 1;
         }
+        
+        // Konversi ke format yang dibutuhkan template
+        foreach ($grouped_data as $item) {
+            $data['list_data'][$item['pegawai']][] = [
+                'tanggal' => $item['waktu_scan'] ?: $item['tanggal'], // Tampilkan waktu scan atau tanggal
+                'total' => $item['total'],
+                'status_performa' => $item['status_performa']
+            ];
+        }
+        
         $data['grand_total'] = $grand_total;
 
         header("Content-type: application/vnd-ms-excel");
