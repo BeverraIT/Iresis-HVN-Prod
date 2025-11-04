@@ -233,12 +233,9 @@ class Picking_fcd extends CI_Model
      * Log KPI transaksi secara asynchronous (non-blocking)
      */
     private function log_kpi_transaksi_async($user_id, $status_performa_id = null, $id_resi = null) {
-        // Log status performa harian ke tblstatusperforma (untuk laporan harian)
-        if ($status_performa_id) {
-            $this->log_status_performa_harian($user_id, $status_performa_id);
-        }
-        
         // Log KPI langsung tanpa queue untuk menghindari duplikasi
+        // PENTING: JANGAN update tblstatusperforma di sini karena itu adalah status LOGIN (untuk PACKER)
+        // Status picker disimpan langsung ke tblkpi saja
         if ($status_performa_id) {
             $this->log_kpi_transaksi_with_status($user_id, 'PICKER', $status_performa_id, 1, $id_resi);
         } else {
@@ -246,49 +243,6 @@ class Picking_fcd extends CI_Model
         }
         
         return true;
-    }
-    
-    /**
-     * Log status performa harian ke tblstatusperforma (untuk laporan harian)
-     */
-    private function log_status_performa_harian($user_id, $status_performa_id) {
-        try {
-            $tanggal = date('Y-m-d');
-            
-            // Cek apakah sudah ada log untuk user dan tanggal hari ini
-            $existing = $this->db->get_where('tblstatusperforma', [
-                'id_user' => $user_id,
-                'tanggal' => $tanggal
-            ])->row();
-            
-            if ($existing) {
-                // Update status performa jika berbeda
-                if ($existing->id_statusperforma != $status_performa_id) {
-                    $this->db->where('id_log', $existing->id_log);
-                    $this->db->update('tblstatusperforma', [
-                        'id_statusperforma' => $status_performa_id,
-                        'updated' => date('Y-m-d H:i:s'),
-                        'updatedby' => $user_id
-                    ]);
-                }
-            } else {
-                // Insert new log
-                $this->db->insert('tblstatusperforma', [
-                    'id_user' => $user_id,
-                    'id_statusperforma' => $status_performa_id,
-                    'tanggal' => $tanggal,
-                    'jam_login' => date('H:i:s'),
-                    'isactive' => 1,
-                    'createdby' => $user_id,
-                    'created' => date('Y-m-d H:i:s')
-                ]);
-            }
-            
-            return true;
-        } catch (Exception $e) {
-            log_message('error', 'Error logging status performa harian: ' . $e->getMessage());
-            return false;
-        }
     }
     
     /**
@@ -354,24 +308,35 @@ class Picking_fcd extends CI_Model
                 return false;
             }
             
-            // Gunakan INSERT ... ON DUPLICATE KEY UPDATE untuk performa yang lebih baik
-            $this->db->query("
-                INSERT INTO tblkpi (id_user, id_statusperforma, tanggal, tipe_transaksi, jumlah_resi, createdby, created)
-                VALUES (?, ?, ?, ?, 1, ?, ?)
-                ON DUPLICATE KEY UPDATE 
-                jumlah_resi = jumlah_resi + 1,
-                updated = ?,
-                updatedby = ?
-            ", [
-                $user_id, 
-                $status_log->id_statusperforma, 
-                $tanggal, 
-                $tipe_transaksi, 
-                $user_id, 
-                date('Y-m-d H:i:s'),
-                date('Y-m-d H:i:s'),
-                $user_id
-            ]);
+            // Cek apakah sudah ada log transaksi untuk kombinasi ini
+            $existing_log = $this->db
+                ->get_where('tblkpi', [
+                    'id_user' => $user_id,
+                    'id_statusperforma' => $status_log->id_statusperforma,
+                    'tanggal' => $tanggal,
+                    'tipe_transaksi' => $tipe_transaksi
+                ])
+                ->row();
+            
+            if ($existing_log) {
+                // Update: increment jumlah_resi, waktu created TETAP (scan pertama kali)
+                $this->db->where('id_log', $existing_log->id_log);
+                $this->db->set('jumlah_resi', 'jumlah_resi + 1', FALSE);
+                $this->db->set('updated', date('Y-m-d H:i:s'));
+                $this->db->set('updatedby', $user_id);
+                $this->db->update('tblkpi');
+            } else {
+                // Insert: log transaksi baru (scan pertama kali untuk kombinasi ini)
+                $this->db->insert('tblkpi', [
+                    'id_user' => $user_id,
+                    'id_statusperforma' => $status_log->id_statusperforma,
+                    'tanggal' => $tanggal,
+                    'tipe_transaksi' => $tipe_transaksi,
+                    'jumlah_resi' => 1,
+                    'createdby' => $user_id,
+                    'created' => date('Y-m-d H:i:s')
+                ]);
+            }
             
             return true;
         } catch (Exception $e) {
@@ -389,21 +354,37 @@ class Picking_fcd extends CI_Model
             
             log_message('debug', 'Logging KPI: user_id=' . $user_id . ', status_performa_id=' . $status_performa_id . ', tipe=' . $tipe_transaksi . ', tanggal=' . $tanggal . ', count=' . $count . ', id_resi=' . $id_resi);
             
-            // Insert individual record untuk setiap scan (tidak menggunakan ON DUPLICATE KEY UPDATE)
-            $this->db->query("
-                INSERT INTO tblkpi (id_user, id_statusperforma, tanggal, tipe_transaksi, jumlah_resi, createdby, created)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ", [
-                $user_id, 
-                $status_performa_id, 
-                $tanggal, 
-                $tipe_transaksi, 
-                $count,
-                $user_id, 
-                date('Y-m-d H:i:s')
-            ]);
+            // Cek apakah sudah ada log transaksi untuk kombinasi ini
+            $existing_log = $this->db
+                ->get_where('tblkpi', [
+                    'id_user' => $user_id,
+                    'id_statusperforma' => $status_performa_id,
+                    'tanggal' => $tanggal,
+                    'tipe_transaksi' => $tipe_transaksi
+                ])
+                ->row();
             
-            log_message('debug', 'KPI logged successfully: affected_rows=' . $this->db->affected_rows());
+            if ($existing_log) {
+                // Update: increment jumlah_resi, waktu created TETAP (scan pertama kali)
+                $this->db->where('id_log', $existing_log->id_log);
+                $this->db->set('jumlah_resi', 'jumlah_resi + ' . $count, FALSE);
+                $this->db->set('updated', date('Y-m-d H:i:s'));
+                $this->db->set('updatedby', $user_id);
+                $this->db->update('tblkpi');
+                log_message('debug', 'KPI updated: affected_rows=' . $this->db->affected_rows());
+            } else {
+                // Insert: log transaksi baru (scan pertama kali untuk kombinasi ini)
+                $this->db->insert('tblkpi', [
+                    'id_user' => $user_id,
+                    'id_statusperforma' => $status_performa_id,
+                    'tanggal' => $tanggal,
+                    'tipe_transaksi' => $tipe_transaksi,
+                    'jumlah_resi' => $count,
+                    'createdby' => $user_id,
+                    'created' => date('Y-m-d H:i:s')
+                ]);
+                log_message('debug', 'KPI inserted: affected_rows=' . $this->db->affected_rows());
+            }
             return true;
         } catch (Exception $e) {
             // Log error tapi jangan stop proses

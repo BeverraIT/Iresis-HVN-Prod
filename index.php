@@ -42,6 +42,15 @@ if ( function_exists( 'date_default_timezone_set' ) ) {
 
 /*
  *---------------------------------------------------------------
+ * COMPOSER AUTOLOAD
+ *---------------------------------------------------------------
+ *
+ * Load Composer's autoloader for third-party libraries
+ */
+require_once __DIR__ . '/vendor/autoload.php';
+
+/*
+ *---------------------------------------------------------------
  * APPLICATION ENVIRONMENT
  *---------------------------------------------------------------
  *

@@ -194,14 +194,14 @@ class Packer_fcd extends CI_Model
             ->row();
         
         if ($existing_log) {
-            // Update: increment jumlah_resi
+            // Update: increment jumlah_resi, waktu created TETAP (scan pertama kali)
             $this->db->where('id_log', $existing_log->id_log);
             $this->db->set('jumlah_resi', 'jumlah_resi + 1', FALSE);
             $this->db->set('updated', date('Y-m-d H:i:s'));
             $this->db->set('updatedby', $user_id);
             $this->db->update('tblkpi');
         } else {
-            // Insert: log transaksi baru
+            // Insert: log transaksi baru (scan pertama kali untuk kombinasi ini)
             $this->db->insert('tblkpi', [
                 'id_user' => $user_id,
                 'id_statusperforma' => $status_log->id_statusperforma,
