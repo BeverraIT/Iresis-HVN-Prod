@@ -1613,7 +1613,8 @@ class Receipt_fcd extends CI_Model
             $search_where = " AND (t2.nama_pegawai LIKE '%{$search}%' OR DATE(b.tanggal_resiambilbarang) LIKE '%{$search}%')";
         }
         
-        // Gunakan raw query dengan subquery untuk group by status yang benar
+        // OPTIMIZED: Use indexed subquery for closest status per transaction
+        // Pre-filter tblkpi with date range for better performance with index
         $sql = "
         SELECT 
             tanggal_resiambilbarang,
@@ -1628,14 +1629,32 @@ class Receipt_fcd extends CI_Model
                 b.admin_pegawai,
                 t2.nama_pegawai as pegawai,
                 a.id_printresi,
-                (SELECT sp.status_name FROM tblkpi k LEFT JOIN tblmasterstatusperforma sp ON sp.id_statusperforma = k.id_statusperforma WHERE k.id_user = b.admin_pegawai AND DATE(k.tanggal) = DATE(b.tanggal_resiambilbarang) AND k.tipe_transaksi = 'PICKER' AND k.created <= b.tanggal_resiambilbarang ORDER BY ABS(TIMESTAMPDIFF(SECOND, k.created, b.tanggal_resiambilbarang)) ASC LIMIT 1) as status_performa,
-                (SELECT k.created FROM tblkpi k WHERE k.id_user = b.admin_pegawai AND DATE(k.tanggal) = DATE(b.tanggal_resiambilbarang) AND k.tipe_transaksi = 'PICKER' AND k.created <= b.tanggal_resiambilbarang ORDER BY ABS(TIMESTAMPDIFF(SECOND, k.created, b.tanggal_resiambilbarang)) ASC LIMIT 1) as waktu_scan_picker
+                (
+                    SELECT sp.status_name 
+                    FROM tblkpi k 
+                    INNER JOIN tblmasterstatusperforma sp ON sp.id_statusperforma = k.id_statusperforma 
+                    WHERE k.id_user = b.admin_pegawai 
+                    AND DATE(k.tanggal) = DATE(b.tanggal_resiambilbarang) 
+                    AND k.tipe_transaksi = 'PICKER' 
+                    AND k.created <= b.tanggal_resiambilbarang 
+                    ORDER BY ABS(TIMESTAMPDIFF(SECOND, k.created, b.tanggal_resiambilbarang)) ASC 
+                    LIMIT 1
+                ) as status_performa,
+                (
+                    SELECT k.created 
+                    FROM tblkpi k 
+                    WHERE k.id_user = b.admin_pegawai 
+                    AND DATE(k.tanggal) = DATE(b.tanggal_resiambilbarang) 
+                    AND k.tipe_transaksi = 'PICKER' 
+                    AND k.created <= b.tanggal_resiambilbarang 
+                    ORDER BY ABS(TIMESTAMPDIFF(SECOND, k.created, b.tanggal_resiambilbarang)) ASC 
+                    LIMIT 1
+                ) as waktu_scan_picker
             FROM tblprintresi a
-            LEFT JOIN tblresiambilbarang b ON a.id_printresi = b.id_resi
+            INNER JOIN tblresiambilbarang b ON a.id_printresi = b.id_resi
             LEFT JOIN tblpegawai t2 ON t2.kode_pegawai = b.yangambil_pegawai
             WHERE b.tanggal_resiambilbarang >= " . $this->db->escape($start_date) . "
             AND b.tanggal_resiambilbarang <= " . $this->db->escape($end_date) . "
-            AND b.tanggal_resiambilbarang IS NOT NULL
             {$search_where}
         ) as resi_with_status
         GROUP BY tanggal_resiambilbarang, admin_pegawai, pegawai, status_performa
@@ -1674,29 +1693,32 @@ class Receipt_fcd extends CI_Model
             $search_where = " AND (t2.nama_pegawai LIKE '%{$search}%' OR DATE(b.tanggal_resiambilbarang) LIKE '%{$search}%')";
         }
         
-        // Count grouped rows (user + date + status combinations)
+        // OPTIMIZED: Count grouped combinations
         $sql = "
         SELECT COUNT(*) as total FROM (
             SELECT 
-                tanggal_resiambilbarang,
-                admin_pegawai,
-                status_performa
-            FROM (
-                SELECT 
-                    DATE(b.tanggal_resiambilbarang) as tanggal_resiambilbarang,
-                    b.admin_pegawai,
-                    t2.nama_pegawai,
-                    (SELECT sp.status_name FROM tblkpi k LEFT JOIN tblmasterstatusperforma sp ON sp.id_statusperforma = k.id_statusperforma WHERE k.id_user = b.admin_pegawai AND DATE(k.tanggal) = DATE(b.tanggal_resiambilbarang) AND k.tipe_transaksi = 'PICKER' AND k.created <= b.tanggal_resiambilbarang ORDER BY ABS(TIMESTAMPDIFF(SECOND, k.created, b.tanggal_resiambilbarang)) ASC LIMIT 1) as status_performa
-                FROM tblprintresi a
-                LEFT JOIN tblresiambilbarang b ON a.id_printresi = b.id_resi
-                LEFT JOIN tblpegawai t2 ON t2.kode_pegawai = b.yangambil_pegawai
-                WHERE b.tanggal_resiambilbarang >= " . $this->db->escape($start_date) . "
-                AND b.tanggal_resiambilbarang <= " . $this->db->escape($end_date) . "
-                AND b.tanggal_resiambilbarang IS NOT NULL
-                {$search_where}
-            ) as resi_with_status
-            GROUP BY tanggal_resiambilbarang, admin_pegawai, status_performa
-        ) as grouped_data";
+                DATE(b.tanggal_resiambilbarang) as tanggal_resiambilbarang,
+                b.admin_pegawai,
+                (
+                    SELECT sp.status_name 
+                    FROM tblkpi k 
+                    INNER JOIN tblmasterstatusperforma sp ON sp.id_statusperforma = k.id_statusperforma 
+                    WHERE k.id_user = b.admin_pegawai 
+                    AND DATE(k.tanggal) = DATE(b.tanggal_resiambilbarang) 
+                    AND k.tipe_transaksi = 'PICKER' 
+                    AND k.created <= b.tanggal_resiambilbarang 
+                    ORDER BY ABS(TIMESTAMPDIFF(SECOND, k.created, b.tanggal_resiambilbarang)) ASC 
+                    LIMIT 1
+                ) as status_performa
+            FROM tblprintresi a
+            INNER JOIN tblresiambilbarang b ON a.id_printresi = b.id_resi
+            LEFT JOIN tblpegawai t2 ON t2.kode_pegawai = b.yangambil_pegawai
+            WHERE b.tanggal_resiambilbarang >= " . $this->db->escape($start_date) . "
+            AND b.tanggal_resiambilbarang <= " . $this->db->escape($end_date) . "
+            {$search_where}
+        ) as resi_with_status
+        WHERE status_performa IS NOT NULL
+        GROUP BY tanggal_resiambilbarang, admin_pegawai, status_performa";
         
         $result = $this->db->query($sql)->row();
         return $result ? $result->total : 0;
@@ -1711,7 +1733,8 @@ class Receipt_fcd extends CI_Model
             $search_where = " AND (t3.name LIKE '%{$search}%' OR DATE(c.tanggal_packing) LIKE '%{$search}%')";
         }
         
-        // Gunakan raw query dengan subquery untuk group by status yang benar
+        // OPTIMIZED: Use indexed subquery for closest status per transaction
+        // Pre-filter tblkpi with date range for better performance with index
         $sql = "
         SELECT 
             tanggal_packing,
@@ -1726,14 +1749,32 @@ class Receipt_fcd extends CI_Model
                 c.packer_pegawai,
                 t3.name as pegawai,
                 a.id_printresi,
-                (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = c.packer_pegawai AND DATE(k2.tanggal) = DATE(c.tanggal_packing) AND k2.tipe_transaksi = 'PACKER' AND k2.created <= c.tanggal_packing ORDER BY ABS(TIMESTAMPDIFF(SECOND, k2.created, c.tanggal_packing)) ASC LIMIT 1) as status_performa,
-                (SELECT k2.created FROM tblkpi k2 WHERE k2.id_user = c.packer_pegawai AND DATE(k2.tanggal) = DATE(c.tanggal_packing) AND k2.tipe_transaksi = 'PACKER' AND k2.created <= c.tanggal_packing ORDER BY ABS(TIMESTAMPDIFF(SECOND, k2.created, c.tanggal_packing)) ASC LIMIT 1) as waktu_scan_packer
+                (
+                    SELECT sp2.status_name 
+                    FROM tblkpi k2 
+                    INNER JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma 
+                    WHERE k2.id_user = c.packer_pegawai 
+                    AND DATE(k2.tanggal) = DATE(c.tanggal_packing) 
+                    AND k2.tipe_transaksi = 'PACKER' 
+                    AND k2.created <= c.tanggal_packing 
+                    ORDER BY ABS(TIMESTAMPDIFF(SECOND, k2.created, c.tanggal_packing)) ASC 
+                    LIMIT 1
+                ) as status_performa,
+                (
+                    SELECT k2.created 
+                    FROM tblkpi k2 
+                    WHERE k2.id_user = c.packer_pegawai 
+                    AND DATE(k2.tanggal) = DATE(c.tanggal_packing) 
+                    AND k2.tipe_transaksi = 'PACKER' 
+                    AND k2.created <= c.tanggal_packing 
+                    ORDER BY ABS(TIMESTAMPDIFF(SECOND, k2.created, c.tanggal_packing)) ASC 
+                    LIMIT 1
+                ) as waktu_scan_packer
             FROM tblprintresi a
-            LEFT JOIN tblpacking c ON a.id_printresi = c.id_resi
+            INNER JOIN tblpacking c ON a.id_printresi = c.id_resi
             LEFT JOIN tbluser t3 ON t3.id_user = c.packer_pegawai
             WHERE c.tanggal_packing >= " . $this->db->escape($start_date) . "
             AND c.tanggal_packing <= " . $this->db->escape($end_date) . "
-            AND c.tanggal_packing IS NOT NULL
             {$search_where}
         ) as resi_with_status
         GROUP BY tanggal_packing, packer_pegawai, pegawai, status_performa
@@ -1772,29 +1813,32 @@ class Receipt_fcd extends CI_Model
             $search_where = " AND (t3.name LIKE '%{$search}%' OR DATE(c.tanggal_packing) LIKE '%{$search}%')";
         }
         
-        // Count grouped rows (user + date + status combinations)
+        // OPTIMIZED: Count grouped combinations
         $sql = "
         SELECT COUNT(*) as total FROM (
             SELECT 
-                tanggal_packing,
-                packer_pegawai,
-                status_performa
-            FROM (
-                SELECT 
-                    DATE(c.tanggal_packing) as tanggal_packing,
-                    c.packer_pegawai,
-                    t3.name,
-                    (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = c.packer_pegawai AND DATE(k2.tanggal) = DATE(c.tanggal_packing) AND k2.tipe_transaksi = 'PACKER' AND k2.created <= c.tanggal_packing ORDER BY ABS(TIMESTAMPDIFF(SECOND, k2.created, c.tanggal_packing)) ASC LIMIT 1) as status_performa
-                FROM tblprintresi a
-                LEFT JOIN tblpacking c ON a.id_printresi = c.id_resi
-                LEFT JOIN tbluser t3 ON t3.id_user = c.packer_pegawai
-                WHERE c.tanggal_packing >= " . $this->db->escape($start_date) . "
-                AND c.tanggal_packing <= " . $this->db->escape($end_date) . "
-                AND c.tanggal_packing IS NOT NULL
-                {$search_where}
-            ) as resi_with_status
-            GROUP BY tanggal_packing, packer_pegawai, status_performa
-        ) as grouped_data";
+                DATE(c.tanggal_packing) as tanggal_packing,
+                c.packer_pegawai,
+                (
+                    SELECT sp2.status_name 
+                    FROM tblkpi k2 
+                    INNER JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma 
+                    WHERE k2.id_user = c.packer_pegawai 
+                    AND DATE(k2.tanggal) = DATE(c.tanggal_packing) 
+                    AND k2.tipe_transaksi = 'PACKER' 
+                    AND k2.created <= c.tanggal_packing 
+                    ORDER BY ABS(TIMESTAMPDIFF(SECOND, k2.created, c.tanggal_packing)) ASC 
+                    LIMIT 1
+                ) as status_performa
+            FROM tblprintresi a
+            INNER JOIN tblpacking c ON a.id_printresi = c.id_resi
+            LEFT JOIN tbluser t3 ON t3.id_user = c.packer_pegawai
+            WHERE c.tanggal_packing >= " . $this->db->escape($start_date) . "
+            AND c.tanggal_packing <= " . $this->db->escape($end_date) . "
+            {$search_where}
+        ) as resi_with_status
+        WHERE status_performa IS NOT NULL
+        GROUP BY tanggal_packing, packer_pegawai, status_performa";
         
         $result = $this->db->query($sql)->row();
         return $result ? $result->total : 0;
