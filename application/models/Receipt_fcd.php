@@ -492,6 +492,7 @@ class Receipt_fcd extends CI_Model
             $this->db->group_end();
         }
 
+        // Optimized with indexes: Subquery will be faster with proper indexes
         $this->db->select('
             f.nama_marketplace
             , e.nama_kurir
@@ -1620,6 +1621,7 @@ class Receipt_fcd extends CI_Model
             $this->db->group_end();
         }
 
+        // Optimized with indexes: Subquery will be much faster with proper indexes installed
         $this->db->select('
             DATE(b.tanggal_resiambilbarang) as tanggal_resiambilbarang,
             b.admin_pegawai,
@@ -1713,6 +1715,7 @@ class Receipt_fcd extends CI_Model
             $this->db->group_end();
         }
 
+        // Optimized with indexes: Subquery will be much faster with proper indexes installed
         $this->db->select('
             DATE(c.tanggal_packing) as tanggal_packing,
             c.packer_pegawai,
