@@ -1584,14 +1584,7 @@ class Receipt_fcd extends CI_Model
 
     function get_data_production_team_tab0($data, $start_date, $end_date)
     {
-        if (!empty($data) && $data['order'] != null) {
-            foreach ($data['order'] as $order) {
-                $this->db->order_by($data['valid_columns'][$order['column']]['col'], $order['dir'], FALSE);
-            }
-        } else {
-            $this->db->order_by('CONCAT(t2.nama_pegawai)', 'asc', FALSE);
-            $this->db->order_by('date(b.tanggal_resiambilbarang)', 'asc', FALSE);
-        }
+        // Order by akan dihandle di bawah setelah GROUP BY untuk compatibility
 
         if (!empty($data['search'])) {
             $x = 0;
@@ -1613,161 +1606,198 @@ class Receipt_fcd extends CI_Model
             $this->db->group_end();
         }
 
-        // Optimized with indexes: Subquery will be much faster with proper indexes installed
-        $this->db->select('
-            DATE(b.tanggal_resiambilbarang) as tanggal_resiambilbarang,
-            b.admin_pegawai,
-            t2.nama_pegawai pegawai,
-            a.noresi,
-            a.id_printresi,
-            (SELECT sp.status_name FROM tblkpi k LEFT JOIN tblmasterstatusperforma sp ON sp.id_statusperforma = k.id_statusperforma WHERE k.id_user = b.admin_pegawai AND DATE(k.tanggal) = DATE(b.tanggal_resiambilbarang) AND k.tipe_transaksi = "PICKER" AND k.created <= b.tanggal_resiambilbarang ORDER BY ABS(TIMESTAMPDIFF(SECOND, k.created, b.tanggal_resiambilbarang)) ASC LIMIT 1) as status_performa,
-            (SELECT k.created FROM tblkpi k WHERE k.id_user = b.admin_pegawai AND DATE(k.tanggal) = DATE(b.tanggal_resiambilbarang) AND k.tipe_transaksi = "PICKER" AND k.created <= b.tanggal_resiambilbarang ORDER BY ABS(TIMESTAMPDIFF(SECOND, k.created, b.tanggal_resiambilbarang)) ASC LIMIT 1) as waktu_scan_picker
-        ');
-
-        $this->db->join('tblresiambilbarang b', 'a.id_printresi = b.id_resi', 'left');
-        $this->db->join('tblpegawai t2', 't2.kode_pegawai = b.yangambil_pegawai', 'left');
-
-        $this->db->where('b.tanggal_resiambilbarang >=', $start_date);
-        $this->db->where('b.tanggal_resiambilbarang <=', $end_date);
-        $this->db->where('b.tanggal_resiambilbarang IS NOT NULL');
+        // Build search conditions for the subquery
+        $search_where = '';
+        if (!empty($data['search'])) {
+            $search = $this->db->escape_like_str($data['search']);
+            $search_where = " AND (t2.nama_pegawai LIKE '%{$search}%' OR DATE(b.tanggal_resiambilbarang) LIKE '%{$search}%')";
+        }
         
-        $this->db->order_by('t2.nama_pegawai', 'ASC');
-        $this->db->order_by('DATE(b.tanggal_resiambilbarang)', 'ASC');
-
+        // Gunakan raw query dengan subquery untuk group by status yang benar
+        $sql = "
+        SELECT 
+            tanggal_resiambilbarang,
+            admin_pegawai,
+            pegawai,
+            status_performa,
+            COUNT(*) as total,
+            MIN(waktu_scan_picker) as waktu_scan_picker
+        FROM (
+            SELECT 
+                DATE(b.tanggal_resiambilbarang) as tanggal_resiambilbarang,
+                b.admin_pegawai,
+                t2.nama_pegawai as pegawai,
+                a.id_printresi,
+                (SELECT sp.status_name FROM tblkpi k LEFT JOIN tblmasterstatusperforma sp ON sp.id_statusperforma = k.id_statusperforma WHERE k.id_user = b.admin_pegawai AND DATE(k.tanggal) = DATE(b.tanggal_resiambilbarang) AND k.tipe_transaksi = 'PICKER' AND k.created <= b.tanggal_resiambilbarang ORDER BY ABS(TIMESTAMPDIFF(SECOND, k.created, b.tanggal_resiambilbarang)) ASC LIMIT 1) as status_performa,
+                (SELECT k.created FROM tblkpi k WHERE k.id_user = b.admin_pegawai AND DATE(k.tanggal) = DATE(b.tanggal_resiambilbarang) AND k.tipe_transaksi = 'PICKER' AND k.created <= b.tanggal_resiambilbarang ORDER BY ABS(TIMESTAMPDIFF(SECOND, k.created, b.tanggal_resiambilbarang)) ASC LIMIT 1) as waktu_scan_picker
+            FROM tblprintresi a
+            LEFT JOIN tblresiambilbarang b ON a.id_printresi = b.id_resi
+            LEFT JOIN tblpegawai t2 ON t2.kode_pegawai = b.yangambil_pegawai
+            WHERE b.tanggal_resiambilbarang >= " . $this->db->escape($start_date) . "
+            AND b.tanggal_resiambilbarang <= " . $this->db->escape($end_date) . "
+            AND b.tanggal_resiambilbarang IS NOT NULL
+            {$search_where}
+        ) as resi_with_status
+        GROUP BY tanggal_resiambilbarang, admin_pegawai, pegawai, status_performa
+        ";
+        
+        // Add ORDER BY
+        if (!empty($data) && !empty($data['order'])) {
+            $order_col = ['pegawai', 'tanggal_resiambilbarang', 'total'];
+            $order_clauses = [];
+            foreach ($data['order'] as $order) {
+                if (isset($order_col[$order['column']])) {
+                    $order_clauses[] = $order_col[$order['column']] . ' ' . strtoupper($order['dir']);
+                }
+            }
+            if (!empty($order_clauses)) {
+                $sql .= " ORDER BY " . implode(', ', $order_clauses);
+            }
+        } else {
+            $sql .= " ORDER BY pegawai ASC, tanggal_resiambilbarang ASC";
+        }
+        
+        // Add LIMIT/OFFSET
         if (!empty($data['length'])) {
-            $this->db->limit($data['length'], $data['start']);
+            $sql .= " LIMIT " . intval($data['length']) . " OFFSET " . intval($data['start']);
         }
 
-        return $this->db->get('tblprintresi a');
+        return $this->db->query($sql);
     }
 
     function get_total_data_production_team_tab0($data, $start_date, $end_date)
     {
+        // Build search conditions
+        $search_where = '';
         if (!empty($data['search'])) {
-            $x = 0;
-
-            $this->db->group_start();
-
-            foreach ($data['valid_columns'] as $sterm) {
-                if (empty($sterm) || !$sterm['searchable']) continue;
-
-                if ($x == 0) {
-                    $this->db->like($sterm['col'], $data['search']);
-                } else {
-                    $this->db->or_like($sterm['col'], $data['search']);
-                }
-
-                $x++;
-            }
-
-            $this->db->group_end();
+            $search = $this->db->escape_like_str($data['search']);
+            $search_where = " AND (t2.nama_pegawai LIKE '%{$search}%' OR DATE(b.tanggal_resiambilbarang) LIKE '%{$search}%')";
         }
-
-        $this->db->join('tblresiambilbarang b', 'a.id_printresi = b.id_resi', 'left');
-        $this->db->join('tblpegawai t2', 't2.kode_pegawai = b.yangambil_pegawai', 'left');
-
-        $this->db->where('b.tanggal_resiambilbarang >=', $start_date);
-        $this->db->where('b.tanggal_resiambilbarang <=', $end_date);
-        $this->db->where('b.tanggal_resiambilbarang IS NOT NULL');
-
-        $query = $this->db->select("COUNT(DISTINCT a.id_printresi) as num")->get("tblprintresi a");
-        $result = $query->row();
-
-        return isset($result) ? $result->num : 0;
+        
+        // Count grouped rows (user + date + status combinations)
+        $sql = "
+        SELECT COUNT(*) as total FROM (
+            SELECT 
+                tanggal_resiambilbarang,
+                admin_pegawai,
+                status_performa
+            FROM (
+                SELECT 
+                    DATE(b.tanggal_resiambilbarang) as tanggal_resiambilbarang,
+                    b.admin_pegawai,
+                    t2.nama_pegawai,
+                    (SELECT sp.status_name FROM tblkpi k LEFT JOIN tblmasterstatusperforma sp ON sp.id_statusperforma = k.id_statusperforma WHERE k.id_user = b.admin_pegawai AND DATE(k.tanggal) = DATE(b.tanggal_resiambilbarang) AND k.tipe_transaksi = 'PICKER' AND k.created <= b.tanggal_resiambilbarang ORDER BY ABS(TIMESTAMPDIFF(SECOND, k.created, b.tanggal_resiambilbarang)) ASC LIMIT 1) as status_performa
+                FROM tblprintresi a
+                LEFT JOIN tblresiambilbarang b ON a.id_printresi = b.id_resi
+                LEFT JOIN tblpegawai t2 ON t2.kode_pegawai = b.yangambil_pegawai
+                WHERE b.tanggal_resiambilbarang >= " . $this->db->escape($start_date) . "
+                AND b.tanggal_resiambilbarang <= " . $this->db->escape($end_date) . "
+                AND b.tanggal_resiambilbarang IS NOT NULL
+                {$search_where}
+            ) as resi_with_status
+            GROUP BY tanggal_resiambilbarang, admin_pegawai, status_performa
+        ) as grouped_data";
+        
+        $result = $this->db->query($sql)->row();
+        return $result ? $result->total : 0;
     }
 
     function get_data_production_team_tab1($data, $start_date, $end_date)
     {
-        if (!empty($data) && $data['order'] != null) {
+        // Build search conditions for the subquery
+        $search_where = '';
+        if (!empty($data['search'])) {
+            $search = $this->db->escape_like_str($data['search']);
+            $search_where = " AND (t3.name LIKE '%{$search}%' OR DATE(c.tanggal_packing) LIKE '%{$search}%')";
+        }
+        
+        // Gunakan raw query dengan subquery untuk group by status yang benar
+        $sql = "
+        SELECT 
+            tanggal_packing,
+            packer_pegawai,
+            pegawai,
+            status_performa,
+            COUNT(*) as total,
+            MIN(waktu_scan_packer) as waktu_scan_packer
+        FROM (
+            SELECT 
+                DATE(c.tanggal_packing) as tanggal_packing,
+                c.packer_pegawai,
+                t3.name as pegawai,
+                a.id_printresi,
+                (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = c.packer_pegawai AND DATE(k2.tanggal) = DATE(c.tanggal_packing) AND k2.tipe_transaksi = 'PACKER' AND k2.created <= c.tanggal_packing ORDER BY ABS(TIMESTAMPDIFF(SECOND, k2.created, c.tanggal_packing)) ASC LIMIT 1) as status_performa,
+                (SELECT k2.created FROM tblkpi k2 WHERE k2.id_user = c.packer_pegawai AND DATE(k2.tanggal) = DATE(c.tanggal_packing) AND k2.tipe_transaksi = 'PACKER' AND k2.created <= c.tanggal_packing ORDER BY ABS(TIMESTAMPDIFF(SECOND, k2.created, c.tanggal_packing)) ASC LIMIT 1) as waktu_scan_packer
+            FROM tblprintresi a
+            LEFT JOIN tblpacking c ON a.id_printresi = c.id_resi
+            LEFT JOIN tbluser t3 ON t3.id_user = c.packer_pegawai
+            WHERE c.tanggal_packing >= " . $this->db->escape($start_date) . "
+            AND c.tanggal_packing <= " . $this->db->escape($end_date) . "
+            AND c.tanggal_packing IS NOT NULL
+            {$search_where}
+        ) as resi_with_status
+        GROUP BY tanggal_packing, packer_pegawai, pegawai, status_performa
+        ";
+        
+        // Add ORDER BY
+        if (!empty($data) && !empty($data['order'])) {
+            $order_col = ['pegawai', 'tanggal_packing', 'total'];
+            $order_clauses = [];
             foreach ($data['order'] as $order) {
-                $this->db->order_by($data['valid_columns'][$order['column']]['col'], $order['dir'], FALSE);
+                if (isset($order_col[$order['column']])) {
+                    $order_clauses[] = $order_col[$order['column']] . ' ' . strtoupper($order['dir']);
+                }
+            }
+            if (!empty($order_clauses)) {
+                $sql .= " ORDER BY " . implode(', ', $order_clauses);
             }
         } else {
-            $this->db->order_by('CONCAT(t3.name, \' - \', t3.id_user)', 'asc', FALSE);
-            $this->db->order_by('date(c.tanggal_packing)', 'asc', FALSE);
+            $sql .= " ORDER BY pegawai ASC, tanggal_packing ASC";
         }
-
-        if (!empty($data['search'])) {
-            $x = 0;
-
-            $this->db->group_start();
-
-            foreach ($data['valid_columns'] as $sterm) {
-                if (empty($sterm) || !$sterm['searchable']) continue;
-
-                if ($x == 0) {
-                    $this->db->like($sterm['col'], $data['search']);
-                } else {
-                    $this->db->or_like($sterm['col'], $data['search']);
-                }
-
-                $x++;
-            }
-
-            $this->db->group_end();
-        }
-
-        // Optimized with indexes: Subquery will be much faster with proper indexes installed
-        $this->db->select('
-            DATE(c.tanggal_packing) as tanggal_packing,
-            c.packer_pegawai,
-            t3.name pegawai,
-            a.noresi,
-            a.id_printresi,
-            (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = c.packer_pegawai AND DATE(k2.tanggal) = DATE(c.tanggal_packing) AND k2.tipe_transaksi = "PACKER" AND k2.created <= c.tanggal_packing ORDER BY ABS(TIMESTAMPDIFF(SECOND, k2.created, c.tanggal_packing)) ASC LIMIT 1) as status_performa,
-            (SELECT k2.created FROM tblkpi k2 WHERE k2.id_user = c.packer_pegawai AND DATE(k2.tanggal) = DATE(c.tanggal_packing) AND k2.tipe_transaksi = "PACKER" AND k2.created <= c.tanggal_packing ORDER BY ABS(TIMESTAMPDIFF(SECOND, k2.created, c.tanggal_packing)) ASC LIMIT 1) as waktu_scan_packer
-        ');
-
-        $this->db->join('tblpacking c', 'a.id_printresi = c.id_resi', 'left');
-        $this->db->join('tbluser t3', 't3.id_user = c.packer_pegawai', 'left');
-
-        $this->db->where('c.tanggal_packing >=', $start_date);
-        $this->db->where('c.tanggal_packing <=', $end_date);
-        $this->db->where('c.tanggal_packing IS NOT NULL');
         
-        $this->db->order_by('t3.name', 'ASC');
-        $this->db->order_by('DATE(c.tanggal_packing)', 'ASC');
-
+        // Add LIMIT/OFFSET
         if (!empty($data['length'])) {
-            $this->db->limit($data['length'], $data['start']);
+            $sql .= " LIMIT " . intval($data['length']) . " OFFSET " . intval($data['start']);
         }
 
-        return $this->db->get('tblprintresi a');
+        return $this->db->query($sql);
     }
 
     function get_total_data_production_team_tab1($data, $start_date, $end_date)
     {
+        // Build search conditions
+        $search_where = '';
         if (!empty($data['search'])) {
-            $x = 0;
-
-            $this->db->group_start();
-
-            foreach ($data['valid_columns'] as $sterm) {
-                if (empty($sterm) || !$sterm['searchable']) continue;
-
-                if ($x == 0) {
-                    $this->db->like($sterm['col'], $data['search']);
-                } else {
-                    $this->db->or_like($sterm['col'], $data['search']);
-                }
-
-                $x++;
-            }
-
-            $this->db->group_end();
+            $search = $this->db->escape_like_str($data['search']);
+            $search_where = " AND (t3.name LIKE '%{$search}%' OR DATE(c.tanggal_packing) LIKE '%{$search}%')";
         }
-
-        $this->db->join('tblpacking c', 'a.id_printresi = c.id_resi', 'left');
-        $this->db->join('tbluser t3', 't3.id_user = c.packer_pegawai', 'left');
-
-        $this->db->where('c.tanggal_packing >=', $start_date);
-        $this->db->where('c.tanggal_packing <=', $end_date);
-        $this->db->where('c.tanggal_packing IS NOT NULL');
-
-        $query = $this->db->select("COUNT(DISTINCT a.id_printresi) as num")->get("tblprintresi a");
-        $result = $query->row();
-
-        return isset($result) ? $result->num : 0;
+        
+        // Count grouped rows (user + date + status combinations)
+        $sql = "
+        SELECT COUNT(*) as total FROM (
+            SELECT 
+                tanggal_packing,
+                packer_pegawai,
+                status_performa
+            FROM (
+                SELECT 
+                    DATE(c.tanggal_packing) as tanggal_packing,
+                    c.packer_pegawai,
+                    t3.name,
+                    (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = c.packer_pegawai AND DATE(k2.tanggal) = DATE(c.tanggal_packing) AND k2.tipe_transaksi = 'PACKER' AND k2.created <= c.tanggal_packing ORDER BY ABS(TIMESTAMPDIFF(SECOND, k2.created, c.tanggal_packing)) ASC LIMIT 1) as status_performa
+                FROM tblprintresi a
+                LEFT JOIN tblpacking c ON a.id_printresi = c.id_resi
+                LEFT JOIN tbluser t3 ON t3.id_user = c.packer_pegawai
+                WHERE c.tanggal_packing >= " . $this->db->escape($start_date) . "
+                AND c.tanggal_packing <= " . $this->db->escape($end_date) . "
+                AND c.tanggal_packing IS NOT NULL
+                {$search_where}
+            ) as resi_with_status
+            GROUP BY tanggal_packing, packer_pegawai, status_performa
+        ) as grouped_data";
+        
+        $result = $this->db->query($sql)->row();
+        return $result ? $result->total : 0;
     }
 
     // KPI Methods

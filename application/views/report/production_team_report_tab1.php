@@ -17,15 +17,28 @@
 
 <hr>
 
-<table class="table table-striped" id="datatable-production-team-tab1">
-    <thead>
-    <tr>
-        <th>Nama</th>
-        <th>Tanggal</th>
-        <th>Total</th>
-    </tr>
-    </thead>
-</table>
+<!-- Loading Overlay -->
+<div id="loading-overlay-tab1" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 30px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem; margin-bottom: 15px;">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <h4 style="margin: 0; color: #333;">Memuat Data Packer...</h4>
+        <p style="margin: 10px 0 0 0; color: #666;">Mohon tunggu sebentar</p>
+    </div>
+</div>
+
+<div style="position: relative;">
+    <table class="table table-striped" id="datatable-production-team-tab1">
+        <thead>
+        <tr>
+            <th>Nama</th>
+            <th>Tanggal</th>
+            <th>Total</th>
+        </tr>
+        </thead>
+    </table>
+</div>
 
 <script type="text/javascript">
     $('#reportrange-production-team-tab1').daterangepicker({
@@ -53,6 +66,10 @@
         'destroy': true,
     });
     $('#btn-search-production-team-tab1').on('click', function() {
+        // Show loading overlay
+        $('#loading-overlay-tab1').css('display', 'flex');
+        $('#btn-search-production-team-tab1').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Loading...');
+        
         table_production_team_tab1 = $('#datatable-production-team-tab1').DataTable({
             dom: '<if<t>lp>',
             'destroy': true,
@@ -74,6 +91,19 @@
                     d.end_date = $('#reportrange-production-team-tab1').val().split(" - ")[1];
                 }
             },
+            'initComplete': function() {
+                // Hide loading overlay when data loaded
+                $('#loading-overlay-tab1').hide();
+                $('#btn-search-production-team-tab1').prop('disabled', false).html('Tampilkan');
+            },
+            'preDrawCallback': function() {
+                // Show loading on pagination/sorting
+                $('#loading-overlay-tab1').css('display', 'flex');
+            },
+            'drawCallback': function() {
+                // Hide loading after draw
+                $('#loading-overlay-tab1').hide();
+            }
         });
     });
 </script>

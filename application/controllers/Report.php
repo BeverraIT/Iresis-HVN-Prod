@@ -973,35 +973,19 @@ class Report extends MY_Controller
         $total = $this->receipt_fcd->get_total_data_production_team_tab0($data, $start_date, $end_date);
 
         $data = array();
-        $grouped_data = array();
         
-        // Kelompokkan data berdasarkan pegawai, tanggal, dan status performa
-        // Sekarang setiap row adalah satu resi individual dengan status performa yang akurat
+        // Data sudah ter-group by status, tinggal tampilkan langsung
         foreach ($list_resi->result() as $row) {
-            $key = $row->pegawai . '|' . $row->tanggal_resiambilbarang . '|' . ($row->status_performa ?: 'Normal');
-            if (!isset($grouped_data[$key])) {
-                $grouped_data[$key] = array(
-                    'pegawai' => $row->pegawai,
-                    'tanggal' => $row->tanggal_resiambilbarang,
-                    'waktu_scan' => $row->waktu_scan_picker, // Waktu scan pertama kali
-                    'total' => 0,
-                    'status_performa' => $row->status_performa ?: 'Normal'
-                );
-            }
-            $grouped_data[$key]['total'] += 1; // Hitung per resi, bukan menggunakan $row->total
-        }
-        
-        foreach ($grouped_data as $item) {
             $data[] = array(
-                $item['pegawai'] . ' - ' . $item['total'],
-                $item['waktu_scan'] ?: $item['tanggal'], // Tampilkan waktu scan atau tanggal jika null
-                $item['total']
+                $row->pegawai . ' - ' . $row->total,
+                $row->waktu_scan_picker ?: $row->tanggal_resiambilbarang,
+                $row->total
             );
             
-            // Tambahkan baris status performa jika ada
-            if (!empty($item['status_performa']) && $item['status_performa'] !== 'N/A' && $item['status_performa'] !== 'Normal') {
+            // Tambahkan baris status performa
+            if (!empty($row->status_performa)) {
                 $data[] = array(
-                    '&emsp;&emsp;&emsp;&emsp;&emsp;' . $item['status_performa'],
+                    '&emsp;&emsp;&emsp;&emsp;&emsp;' . $row->status_performa,
                     '',
                     ''
                 );
@@ -1043,35 +1027,19 @@ class Report extends MY_Controller
         $total = $this->receipt_fcd->get_total_data_production_team_tab1($data, $start_date, $end_date);
 
         $data = array();
-        $grouped_data = array();
         
-        // Kelompokkan data berdasarkan pegawai, tanggal, dan status performa
-        // Sekarang setiap row adalah satu resi individual dengan status performa yang akurat
+        // Data sudah ter-group by status, tinggal tampilkan langsung
         foreach ($list_resi->result() as $row) {
-            $key = $row->pegawai . '|' . $row->tanggal_packing . '|' . ($row->status_performa ?: 'Normal');
-            if (!isset($grouped_data[$key])) {
-                $grouped_data[$key] = array(
-                    'pegawai' => $row->pegawai,
-                    'tanggal' => $row->tanggal_packing,
-                    'waktu_scan' => $row->waktu_scan_packer, // Waktu scan pertama kali
-                    'total' => 0,
-                    'status_performa' => $row->status_performa ?: 'Normal'
-                );
-            }
-            $grouped_data[$key]['total'] += 1; // Hitung per resi, bukan menggunakan $row->total
-        }
-        
-        foreach ($grouped_data as $item) {
             $data[] = array(
-                $item['pegawai'] . ' - ' . $item['total'],
-                $item['waktu_scan'] ?: $item['tanggal'], // Tampilkan waktu scan atau tanggal jika null
-                $item['total']
+                $row->pegawai . ' - ' . $row->total,
+                $row->waktu_scan_packer ?: $row->tanggal_packing,
+                $row->total
             );
             
-            // Tambahkan baris status performa jika ada
-            if (!empty($item['status_performa']) && $item['status_performa'] !== 'N/A' && $item['status_performa'] !== 'Normal') {
+            // Tambahkan baris status performa
+            if (!empty($row->status_performa)) {
                 $data[] = array(
-                    '&emsp;&emsp;&emsp;&emsp;&emsp;' . $item['status_performa'],
+                    '&emsp;&emsp;&emsp;&emsp;&emsp;' . $row->status_performa,
                     '',
                     ''
                 );
@@ -1106,26 +1074,24 @@ class Report extends MY_Controller
         $grouped_data = [];
         $pickers = $this->receipt_fcd->get_data_production_team_tab0([], $start_date, $end_date)->result_array();
         
-        // Kelompokkan data berdasarkan pegawai, tanggal, dan status performa
+        // Data sudah ter-group by status dari database, tinggal format untuk Excel
         foreach ($pickers as $picker) {
             $pegawai = $picker['pegawai'];
             $tanggal = $picker['tanggal_resiambilbarang'];
-            $waktu_scan = $picker['waktu_scan_picker']; // Waktu scan pertama kali
-            $status = $picker['status_performa'] ?: 'Normal';
+            $waktu_scan = $picker['waktu_scan_picker'];
+            $status = $picker['status_performa'] ?: '';
+            $total = $picker['total'];
             
             $key = $pegawai . '|' . $tanggal . '|' . $status;
             
-            if (!isset($grouped_data[$key])) {
-                $grouped_data[$key] = [
-                    'pegawai' => $pegawai,
-                    'tanggal' => $tanggal,
-                    'waktu_scan' => $waktu_scan,
-                    'total' => 0,
-                    'status_performa' => $status
-                ];
-            }
-            $grouped_data[$key]['total'] += 1; // Hitung per resi
-            $grand_total += 1;
+            $grouped_data[$key] = [
+                'pegawai' => $pegawai,
+                'tanggal' => $waktu_scan ?: $tanggal,
+                'waktu_scan' => $waktu_scan,
+                'total' => $total,
+                'status_performa' => $status
+            ];
+            $grand_total += $total;
         }
         
         // Konversi ke format yang dibutuhkan template
@@ -1163,26 +1129,24 @@ class Report extends MY_Controller
         $grouped_data = [];
         $packers = $this->receipt_fcd->get_data_production_team_tab1([], $start_date, $end_date)->result_array();
         
-        // Kelompokkan data berdasarkan pegawai, tanggal, dan status performa
+        // Data sudah ter-group by status dari database, tinggal format untuk Excel
         foreach ($packers as $packer) {
             $pegawai = $packer['pegawai'];
             $tanggal = $packer['tanggal_packing'];
-            $waktu_scan = $packer['waktu_scan_packer']; // Waktu scan pertama kali
-            $status = $packer['status_performa'] ?: 'Normal';
+            $waktu_scan = $packer['waktu_scan_packer'];
+            $status = $packer['status_performa'] ?: '';
+            $total = $packer['total'];
             
             $key = $pegawai . '|' . $tanggal . '|' . $status;
             
-            if (!isset($grouped_data[$key])) {
-                $grouped_data[$key] = [
-                    'pegawai' => $pegawai,
-                    'tanggal' => $tanggal,
-                    'waktu_scan' => $waktu_scan,
-                    'total' => 0,
-                    'status_performa' => $status
-                ];
-            }
-            $grouped_data[$key]['total'] += 1; // Hitung per resi
-            $grand_total += 1;
+            $grouped_data[$key] = [
+                'pegawai' => $pegawai,
+                'tanggal' => $waktu_scan ?: $tanggal,
+                'waktu_scan' => $waktu_scan,
+                'total' => $total,
+                'status_performa' => $status
+            ];
+            $grand_total += $total;
         }
         
         // Konversi ke format yang dibutuhkan template
