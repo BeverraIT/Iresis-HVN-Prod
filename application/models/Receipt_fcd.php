@@ -1701,9 +1701,10 @@ class Receipt_fcd extends CI_Model
             $search_where = " AND (t2.nama_pegawai LIKE '%{$search}%' OR DATE(b.tanggal_resiambilbarang) LIKE '%{$search}%')";
         }
         
-        // OPTIMIZED: Count grouped combinations
+        // OPTIMIZED: Count grouped combinations - use same query structure as main query
         $sql = "
-        SELECT COUNT(*) as total FROM (
+        SELECT COUNT(DISTINCT CONCAT(tanggal_resiambilbarang, '-', admin_pegawai, '-', COALESCE(status_performa, 'NULL'))) as total
+        FROM (
             SELECT 
                 DATE(b.tanggal_resiambilbarang) as tanggal_resiambilbarang,
                 b.admin_pegawai,
@@ -1724,9 +1725,7 @@ class Receipt_fcd extends CI_Model
             WHERE b.tanggal_resiambilbarang >= " . $this->db->escape($start_date) . "
             AND b.tanggal_resiambilbarang <= " . $this->db->escape($end_date) . "
             {$search_where}
-        ) as resi_with_status
-        WHERE status_performa IS NOT NULL
-        GROUP BY tanggal_resiambilbarang, admin_pegawai, status_performa";
+        ) as resi_with_status";
         
         $result = $this->db->query($sql)->row();
         return $result ? $result->total : 0;
@@ -1821,9 +1820,10 @@ class Receipt_fcd extends CI_Model
             $search_where = " AND (t3.name LIKE '%{$search}%' OR DATE(c.tanggal_packing) LIKE '%{$search}%')";
         }
         
-        // OPTIMIZED: Count grouped combinations
+        // OPTIMIZED: Count grouped combinations - use same query structure as main query
         $sql = "
-        SELECT COUNT(*) as total FROM (
+        SELECT COUNT(DISTINCT CONCAT(tanggal_packing, '-', packer_pegawai, '-', COALESCE(status_performa, 'NULL'))) as total
+        FROM (
             SELECT 
                 DATE(c.tanggal_packing) as tanggal_packing,
                 c.packer_pegawai,
@@ -1844,9 +1844,7 @@ class Receipt_fcd extends CI_Model
             WHERE c.tanggal_packing >= " . $this->db->escape($start_date) . "
             AND c.tanggal_packing <= " . $this->db->escape($end_date) . "
             {$search_where}
-        ) as resi_with_status
-        WHERE status_performa IS NOT NULL
-        GROUP BY tanggal_packing, packer_pegawai, status_performa";
+        ) as resi_with_status";
         
         $result = $this->db->query($sql)->row();
         return $result ? $result->total : 0;
