@@ -492,7 +492,7 @@ class Receipt_fcd extends CI_Model
             $this->db->group_end();
         }
 
-        // Optimized query: Use JOIN instead of subquery for better performance
+        // Optimized with indexes: Subquery will be faster with proper indexes
         $this->db->select('
             f.nama_marketplace
             , e.nama_kurir
@@ -503,11 +503,11 @@ class Receipt_fcd extends CI_Model
             , b.tanggal_resiambilbarang
             , b.admin_pegawai picker_user_id
             , t2.nama_pegawai admin_picker
-            , sp_picker.status_name as picker_status
+            , (SELECT sp.status_name FROM tblkpi k LEFT JOIN tblmasterstatusperforma sp ON sp.id_statusperforma = k.id_statusperforma WHERE k.id_user = b.admin_pegawai AND DATE(k.tanggal) = DATE(b.tanggal_resiambilbarang) AND k.tipe_transaksi = "PICKER" AND k.created <= b.tanggal_resiambilbarang ORDER BY ABS(TIMESTAMPDIFF(SECOND, k.created, b.tanggal_resiambilbarang)) ASC LIMIT 1) as picker_status
             , c.tanggal_packing
             , c.packer_pegawai
             , t3.name admin_packer
-            , sp_packer.status_name as packer_status
+            , (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = c.packer_pegawai AND DATE(k2.tanggal) = DATE(c.tanggal_packing) AND k2.tipe_transaksi = "PACKER" AND k2.created <= c.tanggal_packing ORDER BY ABS(TIMESTAMPDIFF(SECOND, k2.created, c.tanggal_packing)) ASC LIMIT 1) as packer_status
             , d.tanggal_resikeluar
             , t4.nama_pegawai admin_ho
         ');
@@ -521,32 +521,6 @@ class Receipt_fcd extends CI_Model
         $this->db->join('tblpegawai t2', 't2.kode_pegawai = b.yangambil_pegawai ', 'left');
         $this->db->join('tbluser t3', 't3.id_user = c.packer_pegawai ', 'left');
         $this->db->join('tblpegawai t4', 't4.kode_pegawai = d.id_pegawai', 'left');
-        
-        // Optimized: JOIN for picker status (using indexed lookup)
-        $this->db->join('tblkpi kpi_picker', 'kpi_picker.id_user = b.admin_pegawai AND DATE(kpi_picker.tanggal) = DATE(b.tanggal_resiambilbarang) AND kpi_picker.tipe_transaksi = "PICKER" AND kpi_picker.created = (
-            SELECT k_p.created 
-            FROM tblkpi k_p 
-            WHERE k_p.id_user = b.admin_pegawai 
-            AND DATE(k_p.tanggal) = DATE(b.tanggal_resiambilbarang) 
-            AND k_p.tipe_transaksi = "PICKER" 
-            AND k_p.created <= b.tanggal_resiambilbarang 
-            ORDER BY ABS(TIMESTAMPDIFF(SECOND, k_p.created, b.tanggal_resiambilbarang)) ASC 
-            LIMIT 1
-        )', 'left');
-        $this->db->join('tblmasterstatusperforma sp_picker', 'sp_picker.id_statusperforma = kpi_picker.id_statusperforma', 'left');
-        
-        // Optimized: JOIN for packer status (using indexed lookup)
-        $this->db->join('tblkpi kpi_packer', 'kpi_packer.id_user = c.packer_pegawai AND DATE(kpi_packer.tanggal) = DATE(c.tanggal_packing) AND kpi_packer.tipe_transaksi = "PACKER" AND kpi_packer.created = (
-            SELECT k_pk.created 
-            FROM tblkpi k_pk 
-            WHERE k_pk.id_user = c.packer_pegawai 
-            AND DATE(k_pk.tanggal) = DATE(c.tanggal_packing) 
-            AND k_pk.tipe_transaksi = "PACKER" 
-            AND k_pk.created <= c.tanggal_packing 
-            ORDER BY ABS(TIMESTAMPDIFF(SECOND, k_pk.created, c.tanggal_packing)) ASC 
-            LIMIT 1
-        )', 'left');
-        $this->db->join('tblmasterstatusperforma sp_packer', 'sp_packer.id_statusperforma = kpi_packer.id_statusperforma', 'left');
 
         // Filter berdasarkan tanggal print resi
         $this->db->where('a.tanggal_printresi >=', $start_date);
@@ -1639,34 +1613,19 @@ class Receipt_fcd extends CI_Model
             $this->db->group_end();
         }
 
-        // Optimized query: Use JOIN instead of subquery for better performance with large datasets
+        // Optimized with indexes: Subquery will be much faster with proper indexes installed
         $this->db->select('
             DATE(b.tanggal_resiambilbarang) as tanggal_resiambilbarang,
             b.admin_pegawai,
             t2.nama_pegawai pegawai,
             a.noresi,
             a.id_printresi,
-            sp.status_name as status_performa,
-            kpi.created as waktu_scan_picker
+            (SELECT sp.status_name FROM tblkpi k LEFT JOIN tblmasterstatusperforma sp ON sp.id_statusperforma = k.id_statusperforma WHERE k.id_user = b.admin_pegawai AND DATE(k.tanggal) = DATE(b.tanggal_resiambilbarang) AND k.tipe_transaksi = "PICKER" AND k.created <= b.tanggal_resiambilbarang ORDER BY ABS(TIMESTAMPDIFF(SECOND, k.created, b.tanggal_resiambilbarang)) ASC LIMIT 1) as status_performa,
+            (SELECT k.created FROM tblkpi k WHERE k.id_user = b.admin_pegawai AND DATE(k.tanggal) = DATE(b.tanggal_resiambilbarang) AND k.tipe_transaksi = "PICKER" AND k.created <= b.tanggal_resiambilbarang ORDER BY ABS(TIMESTAMPDIFF(SECOND, k.created, b.tanggal_resiambilbarang)) ASC LIMIT 1) as waktu_scan_picker
         ');
 
         $this->db->join('tblresiambilbarang b', 'a.id_printresi = b.id_resi', 'left');
         $this->db->join('tblpegawai t2', 't2.kode_pegawai = b.yangambil_pegawai', 'left');
-        
-        // Optimized: JOIN with pre-filtered KPI data
-        // Find the closest KPI record for each picker scan
-        $this->db->join('tblkpi kpi', 'kpi.id_user = b.admin_pegawai AND DATE(kpi.tanggal) = DATE(b.tanggal_resiambilbarang) AND kpi.tipe_transaksi = "PICKER" AND kpi.created = (
-            SELECT k2.created 
-            FROM tblkpi k2 
-            WHERE k2.id_user = b.admin_pegawai 
-            AND DATE(k2.tanggal) = DATE(b.tanggal_resiambilbarang) 
-            AND k2.tipe_transaksi = "PICKER" 
-            AND k2.created <= b.tanggal_resiambilbarang 
-            ORDER BY ABS(TIMESTAMPDIFF(SECOND, k2.created, b.tanggal_resiambilbarang)) ASC 
-            LIMIT 1
-        )', 'left');
-        
-        $this->db->join('tblmasterstatusperforma sp', 'sp.id_statusperforma = kpi.id_statusperforma', 'left');
 
         $this->db->where('b.tanggal_resiambilbarang >=', $start_date);
         $this->db->where('b.tanggal_resiambilbarang <=', $end_date);
@@ -1748,34 +1707,19 @@ class Receipt_fcd extends CI_Model
             $this->db->group_end();
         }
 
-        // Optimized query: Use JOIN instead of subquery for better performance with large datasets
+        // Optimized with indexes: Subquery will be much faster with proper indexes installed
         $this->db->select('
             DATE(c.tanggal_packing) as tanggal_packing,
             c.packer_pegawai,
             t3.name pegawai,
             a.noresi,
             a.id_printresi,
-            sp2.status_name as status_performa,
-            kpi2.created as waktu_scan_packer
+            (SELECT sp2.status_name FROM tblkpi k2 LEFT JOIN tblmasterstatusperforma sp2 ON sp2.id_statusperforma = k2.id_statusperforma WHERE k2.id_user = c.packer_pegawai AND DATE(k2.tanggal) = DATE(c.tanggal_packing) AND k2.tipe_transaksi = "PACKER" AND k2.created <= c.tanggal_packing ORDER BY ABS(TIMESTAMPDIFF(SECOND, k2.created, c.tanggal_packing)) ASC LIMIT 1) as status_performa,
+            (SELECT k2.created FROM tblkpi k2 WHERE k2.id_user = c.packer_pegawai AND DATE(k2.tanggal) = DATE(c.tanggal_packing) AND k2.tipe_transaksi = "PACKER" AND k2.created <= c.tanggal_packing ORDER BY ABS(TIMESTAMPDIFF(SECOND, k2.created, c.tanggal_packing)) ASC LIMIT 1) as waktu_scan_packer
         ');
 
         $this->db->join('tblpacking c', 'a.id_printresi = c.id_resi', 'left');
         $this->db->join('tbluser t3', 't3.id_user = c.packer_pegawai', 'left');
-        
-        // Optimized: JOIN with pre-filtered KPI data
-        // Find the closest KPI record for each packer scan
-        $this->db->join('tblkpi kpi2', 'kpi2.id_user = c.packer_pegawai AND DATE(kpi2.tanggal) = DATE(c.tanggal_packing) AND kpi2.tipe_transaksi = "PACKER" AND kpi2.created = (
-            SELECT k3.created 
-            FROM tblkpi k3 
-            WHERE k3.id_user = c.packer_pegawai 
-            AND DATE(k3.tanggal) = DATE(c.tanggal_packing) 
-            AND k3.tipe_transaksi = "PACKER" 
-            AND k3.created <= c.tanggal_packing 
-            ORDER BY ABS(TIMESTAMPDIFF(SECOND, k3.created, c.tanggal_packing)) ASC 
-            LIMIT 1
-        )', 'left');
-        
-        $this->db->join('tblmasterstatusperforma sp2', 'sp2.id_statusperforma = kpi2.id_statusperforma', 'left');
 
         $this->db->where('c.tanggal_packing >=', $start_date);
         $this->db->where('c.tanggal_packing <=', $end_date);
