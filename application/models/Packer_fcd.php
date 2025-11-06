@@ -49,7 +49,8 @@ class Packer_fcd extends CI_Model
             'id_resi' => $receipt->id_printresi,
             'tanggal_packing' => date('Y-m-d H:i:s'),
             'packer_pegawai' => $user['id_user'],
-            'keterangan' => $user['nama_komputer']
+            'keterangan' => $user['nama_komputer'],
+            'status_performa_id' => $packer['status_performa_id'] ?? null
         ];
 
         $this->db->insert('tblpacking', $insert_data);

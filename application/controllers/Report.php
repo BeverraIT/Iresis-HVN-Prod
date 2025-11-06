@@ -974,7 +974,7 @@ class Report extends MY_Controller
 
         $data = array();
         
-        // Data sudah ter-group by status, tinggal tampilkan langsung
+        // Data DIPISAH per picker per hari PER STATUS
         foreach ($list_resi->result() as $row) {
             $data[] = array(
                 $row->pegawai . ' - ' . $row->total,
@@ -982,14 +982,12 @@ class Report extends MY_Controller
                 $row->total
             );
             
-            // Tambahkan baris status performa
-            if (!empty($row->status_performa)) {
-                $data[] = array(
-                    '&emsp;&emsp;&emsp;&emsp;&emsp;' . $row->status_performa,
-                    '',
-                    ''
-                );
-            }
+            // Tampilkan status performa di baris terpisah
+            $data[] = array(
+                '&emsp;&emsp;&emsp;&emsp;&emsp;' . ($row->status_performa ?: 'Tanpa Status'),
+                '',
+                ''
+            );
         }
 
         $output = array(
@@ -1071,36 +1069,23 @@ class Report extends MY_Controller
         $data['list_data'] = [];
 
         $grand_total = 0;
-        $grouped_data = [];
         $pickers = $this->receipt_fcd->get_data_production_team_tab0([], $start_date, $end_date)->result_array();
         
-        // Data sudah ter-group by status dari database, tinggal format untuk Excel
+        // Data sudah dipisah per picker per hari per status performa
         foreach ($pickers as $picker) {
             $pegawai = $picker['pegawai'];
             $tanggal = $picker['tanggal_resiambilbarang'];
             $waktu_scan = $picker['waktu_scan_picker'];
-            $status = $picker['status_performa'] ?: '';
             $total = $picker['total'];
+            $status_performa = $picker['status_performa'] ?? '';
             
-            $key = $pegawai . '|' . $tanggal . '|' . $status;
-            
-            $grouped_data[$key] = [
-                'pegawai' => $pegawai,
+            $data['list_data'][$pegawai][] = [
                 'tanggal' => $waktu_scan ?: $tanggal,
-                'waktu_scan' => $waktu_scan,
                 'total' => $total,
-                'status_performa' => $status
+                'status_performa' => $status_performa
             ];
+            
             $grand_total += $total;
-        }
-        
-        // Konversi ke format yang dibutuhkan template
-        foreach ($grouped_data as $item) {
-            $data['list_data'][$item['pegawai']][] = [
-                'tanggal' => $item['waktu_scan'] ?: $item['tanggal'], // Tampilkan waktu scan atau tanggal
-                'total' => $item['total'],
-                'status_performa' => $item['status_performa']
-            ];
         }
         
         $data['grand_total'] = $grand_total;
