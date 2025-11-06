@@ -54,11 +54,11 @@
                 <td><?= empty($item['tanggal']) ? null : date('Y-m-d H:i:s', strtotime($item['tanggal'])) ?></td>
                 <td align="right"><?= $item['total'] ?></td>
             </tr>
-            <?php if (isset($item['status_performa']) && $item['status_performa'] !== 'N/A'): ?>
+            <?php if (isset($item['status_performa']) && !empty($item['status_performa'])): ?>
             <tr>
                 <td></td>
                 <td></td>
-                <td style="padding-left: 20px;"><?= $item['status_performa'] ?></td>
+                <td style="padding-left: 20px; font-style: italic; color: #666;"><?= $item['status_performa'] ?></td>
                 <td></td>
             </tr>
             <?php endif; ?>

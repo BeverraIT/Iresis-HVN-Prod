@@ -72,6 +72,7 @@ class Picking_fcd extends CI_Model
                     'yangambil_pegawai' => $picking['yangambil_pegawai'],
                     'nama_komputer' => $user['nama_komputer'],
                     'pending' => $picking['pending'],
+                    'status_performa_id' => $picking['status_performa_id'] ?? null,
                 ];
 
                 $this->db->insert('tblresiambilbarang', $insert_data);
