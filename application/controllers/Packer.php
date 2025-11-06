@@ -191,6 +191,33 @@ class Packer extends MY_Controller
 		}
 
 		$packer['noresi'] = $this->input->post('noresi');
+		
+		// Prioritas: 1) Status dari POST, 2) Status dari session user, 3) Default NORMAL
+		$status_performa_code = $this->input->post('status_performa');
+		
+		if (!empty($status_performa_code)) {
+			// Jika user memilih status dari dropdown
+			$this->load->model('kpi_fcd');
+			$status_id = $this->kpi_fcd->get_status_id_by_name($status_performa_code);
+			if ($status_id) {
+				$packer['status_performa_id'] = $status_id;
+			}
+		} else {
+			// Cek status dari session user (yang di-set saat login)
+			$user_status_performa = $this->session->userdata('user_status_performa');
+			
+			if ($user_status_performa && isset($user_status_performa->id_statusperforma)) {
+				// Gunakan status dari session
+				$packer['status_performa_id'] = $user_status_performa->id_statusperforma;
+			} else {
+				// Fallback ke NORMAL jika tidak ada status sama sekali
+				$this->load->model('kpi_fcd');
+				$normal_status_id = $this->kpi_fcd->get_status_id_by_name('NORMAL_PACKER');
+				if ($normal_status_id) {
+					$packer['status_performa_id'] = $normal_status_id;
+				}
+			}
+		}
 
 		$save = $this->packer_fcd->save($packer, $this->data['user']);
 

@@ -476,11 +476,13 @@
           return;
       }
 
-      // Kirim pakai Ajax
+      // Kirim pakai Ajax (status_performa otomatis dari session di controller)
       $.ajax({
         url: 'packer/save-packer', // Ganti sesuai route kamu
         method: 'POST',
-        data: { noresi: noresi },
+        data: { 
+          noresi: noresi
+        },
         success: function(response) {
           // alert("Data berhasil disubmit!");
           $('#successModal').fadeIn();
