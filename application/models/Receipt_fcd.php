@@ -488,16 +488,34 @@ class Receipt_fcd extends CI_Model
         // Build ORDER BY clause
         $order_by = '';
         if (!empty($data) && !empty($data['order'])) {
-            $order_by = " ORDER BY " . $this->db->escape_str($data['order']) . " " . strtoupper($data['dir']);
+            // Map column names to SELECT aliases for ORDER BY compatibility
+            $column_mapping = [
+                'f.nama_marketplace' => 'nama_marketplace',
+                'e.nama_kurir' => 'nama_kurir',
+                'a.noresi' => 'noresi',
+                'a.nomorpicklist' => 'nomorpicklist',
+                'a.tanggal_printresi' => 'tanggal_printresi',
+                't1.nama_pegawai' => 'admin_scan',
+                'b.tanggal_resiambilbarang' => 'tanggal_resiambilbarang',
+                't2.nama_pegawai' => 'admin_picker',
+                'c.tanggal_packing' => 'tanggal_packing',
+                't3.name' => 'admin_packer',
+                'd.tanggal_resikeluar' => 'tanggal_resikeluar',
+                't4.nama_pegawai' => 'admin_ho',
+            ];
+            
+            $order_column = isset($column_mapping[$data['order']]) ? $column_mapping[$data['order']] : 'tanggal_printresi';
+            $order_by = " ORDER BY " . $order_column . " " . strtoupper($data['dir']);
         } else {
             // Default: Urutkan berdasarkan aktivitas terakhir (scan terbaru di atas)
             // Gunakan GREATEST untuk mendapatkan tanggal terbaru dari semua proses
+            // Harus menggunakan MAX() eksplisit untuk kompatibilitas dengan GROUP BY
             $order_by = " ORDER BY GREATEST(
-                COALESCE(a.tanggal_printresi, '1970-01-01'),
-                COALESCE(b.tanggal_resiambilbarang, '1970-01-01'),
-                COALESCE(c.tanggal_packing, '1970-01-01'),
-                COALESCE(d.tanggal_resikeluar, '1970-01-01')
-            ) DESC, a.tanggal_printresi DESC";
+                COALESCE(MAX(a.tanggal_printresi), '1970-01-01'),
+                COALESCE(MAX(b.tanggal_resiambilbarang), '1970-01-01'),
+                COALESCE(MAX(c.tanggal_packing), '1970-01-01'),
+                COALESCE(MAX(d.tanggal_resikeluar), '1970-01-01')
+            ) DESC, MAX(a.tanggal_printresi) DESC";
         }
 
         // Build LIMIT clause
@@ -506,25 +524,25 @@ class Receipt_fcd extends CI_Model
             $limit_clause = " LIMIT " . intval($data['length']) . " OFFSET " . intval($data['start']);
         }
 
-        // OPTIMIZED V2: Pre-aggregate tblkpi for PICKER and PACKER status ONCE
+        // OPTIMIZED V3: Pre-aggregate tblkpi for PICKER and PACKER status with single row per user/date
         $sql = "
         SELECT 
-            f.nama_marketplace,
-            e.nama_kurir,
+            MAX(f.nama_marketplace) as nama_marketplace,
+            MAX(e.nama_kurir) as nama_kurir,
             a.noresi,
-            a.nomorpicklist,
-            a.tanggal_printresi,
-            t1.nama_pegawai as admin_scan,
-            b.tanggal_resiambilbarang,
-            b.admin_pegawai as picker_user_id,
-            t2.nama_pegawai as admin_picker,
-            COALESCE(sp_picker.status_name, '') as picker_status,
-            c.tanggal_packing,
-            c.packer_pegawai,
-            t3.name as admin_packer,
-            COALESCE(sp_packer.status_name, '') as packer_status,
-            d.tanggal_resikeluar,
-            t4.nama_pegawai as admin_ho
+            MAX(a.nomorpicklist) as nomorpicklist,
+            MAX(a.tanggal_printresi) as tanggal_printresi,
+            MAX(t1.nama_pegawai) as admin_scan,
+            MAX(b.tanggal_resiambilbarang) as tanggal_resiambilbarang,
+            MAX(b.admin_pegawai) as picker_user_id,
+            MAX(t2.nama_pegawai) as admin_picker,
+            MAX(COALESCE(sp_picker.status_name, '')) as picker_status,
+            MAX(c.tanggal_packing) as tanggal_packing,
+            MAX(c.packer_pegawai) as packer_pegawai,
+            MAX(t3.name) as admin_packer,
+            MAX(COALESCE(sp_packer.status_name, '')) as packer_status,
+            MAX(d.tanggal_resikeluar) as tanggal_resikeluar,
+            MAX(t4.nama_pegawai) as admin_ho
         FROM tblprintresi a
         LEFT JOIN tblresiambilbarang b ON a.id_printresi = b.id_resi
         LEFT JOIN tblpacking c ON a.id_printresi = c.id_resi
@@ -536,40 +554,59 @@ class Receipt_fcd extends CI_Model
         LEFT JOIN tbluser t3 ON t3.id_user = c.packer_pegawai
         LEFT JOIN tblpegawai t4 ON t4.kode_pegawai = d.id_pegawai
         LEFT JOIN (
-            -- Pre-aggregate PICKER status
+            -- Pre-aggregate PICKER status - get the FIRST status of the day
             SELECT 
                 k.id_user,
                 DATE(k.tanggal) as tanggal_date,
                 k.id_statusperforma,
-                MIN(k.created) as created
+                k.created
             FROM tblkpi k
+            INNER JOIN (
+                SELECT 
+                    id_user,
+                    DATE(tanggal) as tanggal_date,
+                    MIN(created) as min_created
+                FROM tblkpi
+                WHERE tipe_transaksi = 'PICKER'
+                AND tanggal >= " . $this->db->escape($start_date) . "
+                AND tanggal <= " . $this->db->escape($end_date) . "
+                GROUP BY id_user, DATE(tanggal)
+            ) first_status ON k.id_user = first_status.id_user 
+                AND DATE(k.tanggal) = first_status.tanggal_date 
+                AND k.created = first_status.min_created
             WHERE k.tipe_transaksi = 'PICKER'
-            AND k.tanggal >= " . $this->db->escape($start_date) . "
-            AND k.tanggal <= " . $this->db->escape($end_date) . "
-            GROUP BY k.id_user, DATE(k.tanggal), k.id_statusperforma
         ) kpi_picker ON kpi_picker.id_user = b.admin_pegawai 
             AND kpi_picker.tanggal_date = DATE(b.tanggal_resiambilbarang)
-            AND kpi_picker.created <= b.tanggal_resiambilbarang
         LEFT JOIN tblmasterstatusperforma sp_picker ON sp_picker.id_statusperforma = kpi_picker.id_statusperforma
         LEFT JOIN (
-            -- Pre-aggregate PACKER status
+            -- Pre-aggregate PACKER status - get the FIRST status of the day
             SELECT 
                 k.id_user,
                 DATE(k.tanggal) as tanggal_date,
                 k.id_statusperforma,
-                MIN(k.created) as created
+                k.created
             FROM tblkpi k
+            INNER JOIN (
+                SELECT 
+                    id_user,
+                    DATE(tanggal) as tanggal_date,
+                    MIN(created) as min_created
+                FROM tblkpi
+                WHERE tipe_transaksi = 'PACKER'
+                AND tanggal >= " . $this->db->escape($start_date) . "
+                AND tanggal <= " . $this->db->escape($end_date) . "
+                GROUP BY id_user, DATE(tanggal)
+            ) first_status ON k.id_user = first_status.id_user 
+                AND DATE(k.tanggal) = first_status.tanggal_date 
+                AND k.created = first_status.min_created
             WHERE k.tipe_transaksi = 'PACKER'
-            AND k.tanggal >= " . $this->db->escape($start_date) . "
-            AND k.tanggal <= " . $this->db->escape($end_date) . "
-            GROUP BY k.id_user, DATE(k.tanggal), k.id_statusperforma
         ) kpi_packer ON kpi_packer.id_user = c.packer_pegawai 
             AND kpi_packer.tanggal_date = DATE(c.tanggal_packing)
-            AND kpi_packer.created <= c.tanggal_packing
         LEFT JOIN tblmasterstatusperforma sp_packer ON sp_packer.id_statusperforma = kpi_packer.id_statusperforma
         WHERE a.tanggal_printresi >= " . $this->db->escape($start_date) . "
         AND a.tanggal_printresi <= " . $this->db->escape($end_date) . "
         {$search_where}
+        GROUP BY a.id_printresi, a.noresi
         {$order_by}
         {$limit_clause}
         ";
