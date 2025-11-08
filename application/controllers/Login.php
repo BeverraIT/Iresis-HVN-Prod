@@ -51,16 +51,25 @@ class Login extends CI_Controller
         //$nama_komputer = $this->input->post('nama_komputer');
         //$using_scanner = $this->input->post('using_scanner');
         $nama_pk = $this->input->post('nama_pk');
-
-        if (empty($nama_pk)) {
-            $this->session->set_flashdata('message', EMPTY_PK_NAME);
-            redirect('login');
-            return;
-        }
+        $status_performa_name = $this->input->post('status_performa');
 
         $user = $this->login_fcd->auth($username, $password)->row_array();
 
         if (!empty($user) && ($user['password'] == $password || $user['bypass'])) {
+            // Validasi: Nama PK wajib dipilih
+            if (empty($nama_pk)) {
+                $this->session->set_flashdata('message', EMPTY_PK_NAME);
+                redirect('login');
+                return;
+            }
+
+            // Validasi: Status Performa wajib dipilih untuk menghindari human error
+            if (empty($status_performa_name)) {
+                $this->session->set_flashdata('message', 'Status Performa wajib dipilih! Silakan pilih status performa untuk memastikan data laporan produksi tercatat dengan benar.');
+                redirect('login');
+                return;
+            }
+
             $this->load->model('access_fcd');
             $this->load->helper('menu_helper');
 
@@ -72,21 +81,23 @@ class Login extends CI_Controller
             $html_menu_tree = tree_to_html_menu($list_menu_tree['child']);
 
             // Simpan status performa ke database untuk tracking KPI
-            $status_performa_name = $this->input->post('status_performa');
-            if (!empty($status_performa_name)) {
-                $this->load->model('kpi_fcd');
+            $this->load->model('kpi_fcd');
+            
+            // Ambil ID status performa berdasarkan nama
+            $status_id = $this->kpi_fcd->get_status_id_by_name($status_performa_name);
+            
+            if ($status_id) {
+                // Log status performa ke database
+                $this->kpi_fcd->log_status_performa($user['id_user'], $status_id);
                 
-                // Ambil ID status performa berdasarkan nama
-                $status_id = $this->kpi_fcd->get_status_id_by_name($status_performa_name);
-                
-                if ($status_id) {
-                    // Log status performa ke database
-                    $this->kpi_fcd->log_status_performa($user['id_user'], $status_id);
-                    
-                    // Ambil detail status performa untuk disimpan di session
-                    $status_detail = $this->kpi_fcd->get_user_status_performa($user['id_user']);
-                    $sess_data['user_status_performa'] = $status_detail;
-                }
+                // Ambil detail status performa untuk disimpan di session
+                $status_detail = $this->kpi_fcd->get_user_status_performa($user['id_user']);
+                $sess_data['user_status_performa'] = $status_detail;
+            } else {
+                // Jika status_id tidak valid, redirect dengan error
+                $this->session->set_flashdata('message', 'Status Performa tidak valid. Silakan pilih status performa yang benar.');
+                redirect('login');
+                return;
             }
 
             $sess_data['user'] = $user;

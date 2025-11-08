@@ -28,17 +28,47 @@
                     <div class="login-subtitle"><?= $message ?></div>
                 <?php endif; ?>
 
-                <form action="auth" class="form-horizontal" method="post">
+                <form action="auth" class="form-horizontal" method="post" id="loginScanForm" novalidate>
                     <input type="hidden" name="nama_komputer" value="<?= $machine_name ?>" />
                     <input type="hidden" name="using_scanner" value="<?= $machine_name ?>" />
                     <div class="form-group">
                         <div class="col-md-12">
-                            <input type="password" name="username" class="form-control" placeholder="Username" autofocus />
+                            <input type="password" name="username" id="username_scan" class="form-control" placeholder="Username" autofocus />
                         </div>
                     </div>
                     <div class="form-group">
                         <div class="col-md-12">
-                            <button class="btn btn-info btn-block">Log In</button>
+                            <select name="nama_pk" id="nama_pk_scan" class="form-control select" data-live-search="true" style="font-weight: bold;">
+                                <option value="" style="font-weight: bold;" selected disabled>-- Pilih Komputer --</option>
+                                <?php foreach ($list_pk as $pk) : ?>
+                                    <option
+                                            value="<?= $pk['nama_pk'] ?>"
+                                            style="font-weight: bold;"
+                                            <?= ($machine_name == $pk['nama_pk']) ? 'selected' : '' ?>>
+                                            <?= $pk['nama_pk'] ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-12">
+                            <select name="status_performa" id="status_performa_scan" class="form-control select" data-live-search="true" style="font-weight: bold;">
+                                <option value="" style="font-weight: bold;" selected disabled>-- Pilih Status Performa --</option>
+                                <?php foreach ($list_status_performa as $role => $statuses) : ?>
+                                    <!-- <optgroup label="<?= $role ?>"> -->
+                                        <?php foreach ($statuses as $status) : ?>
+                                            <option value="<?= $status['status_name'] ?>"><?= $status['status_name'] ?></option>
+                                        <?php endforeach; ?>
+                                    <!-- </optgroup> -->
+                                <?php endforeach; ?>
+                            </select>
+                            <span class="help-block" style="color: #d9534f; margin-top: 5px; font-size: 12px;"><strong>* Status Performa wajib dipilih</strong></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-12">
+                            <button type="submit" class="btn btn-info btn-block">Log In</button>
                         </div>
                     </div>
                 </form>
@@ -57,6 +87,7 @@
         </div>
 
     </div>
+
 
 </body>
 

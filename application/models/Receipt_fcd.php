@@ -489,6 +489,15 @@ class Receipt_fcd extends CI_Model
         $order_by = '';
         if (!empty($data) && !empty($data['order'])) {
             $order_by = " ORDER BY " . $this->db->escape_str($data['order']) . " " . strtoupper($data['dir']);
+        } else {
+            // Default: Urutkan berdasarkan aktivitas terakhir (scan terbaru di atas)
+            // Gunakan GREATEST untuk mendapatkan tanggal terbaru dari semua proses
+            $order_by = " ORDER BY GREATEST(
+                COALESCE(a.tanggal_printresi, '1970-01-01'),
+                COALESCE(b.tanggal_resiambilbarang, '1970-01-01'),
+                COALESCE(c.tanggal_packing, '1970-01-01'),
+                COALESCE(d.tanggal_resikeluar, '1970-01-01')
+            ) DESC, a.tanggal_printresi DESC";
         }
 
         // Build LIMIT clause

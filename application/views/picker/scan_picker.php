@@ -67,6 +67,38 @@
   $("#noresi").focus();
   var total_scan = document.getElementById('total_scan');
 
+  // REQUEST QUEUE untuk handle scan cepat
+  var requestQueue = [];
+  var isProcessing = false;
+
+  // Function untuk process queue
+  function processQueue() {
+    if (isProcessing || requestQueue.length === 0) {
+      return;
+    }
+
+    isProcessing = true;
+    var request = requestQueue.shift(); // Ambil request pertama
+    
+    $.ajax({
+      url: request.url,
+      type: 'post',
+      data: request.data,
+      timeout: 10000,
+      cache: false,
+      success: function(data) {
+        request.success(data);
+        isProcessing = false;
+        processQueue(); // Process next request in queue
+      },
+      error: function(xhr, status, error) {
+        request.error(xhr, status, error);
+        isProcessing = false;
+        processQueue(); // Process next request in queue
+      }
+    });
+  }
+
   $('#id_pegawaipicker').on('change', function() {
     $("#noresi").focus();
   });
@@ -88,24 +120,19 @@
       var formData = new FormData(form);
       var noresiValue = form.noresi.value;
 
-      // Disable form dan tampilkan loading
-      form.noresi.disabled = true;
-      form.querySelector('button[type="submit"]').disabled = true;
-      
-      // Immediate feedback - update UI sebelum AJAX
+      // Immediate feedback - update UI
       $("#div_container_latest_receipt").removeClass("tile-danger").addClass("tile-default");
       $("#span_latest_receipt").text(noresiValue);
-      $("#p_latest_receipt_message").text("Memproses scan...");
+      $("#p_latest_receipt_message").text("Dalam antrian...");
       
       // Increment counter immediately
       total_scan.value = Number(total_scan.value) + 1;
 
-      $.ajax({
+      // Tambahkan ke queue
+      requestQueue.push({
         url: form.action,
-        type: 'post',
         data: Object.fromEntries(formData),
-        timeout: 10000, // 10 second timeout
-        cache: false, // Disable cache for real-time data
+        noresiValue: noresiValue,
         success: function(data) {
           // Success feedback
           $("#div_container_latest_receipt").removeClass("tile-danger").addClass("tile-default");
@@ -116,12 +143,6 @@
           if (document.getElementById('audio-alert')) {
             document.getElementById('audio-alert').play();
           }
-
-          // Reset form
-          form.noresi.value = "";
-          form.noresi.disabled = false;
-          form.querySelector('button[type="submit"]').disabled = false;
-          form.noresi.focus();
         },
         error: function(xhr, status, error) {
           // Error feedback
@@ -132,6 +153,9 @@
             response.message = "Terjadi kesalahan pada server";
           }
 
+          // Rollback counter on error
+          total_scan.value = Number(total_scan.value) - 1;
+
           $("#span_latest_receipt").text(noresiValue);
           $("#div_container_latest_receipt").removeClass("tile-default").addClass("tile-danger");
           $("#p_latest_receipt_message").text(response.message);
@@ -140,16 +164,17 @@
           if (document.getElementById('audio-fail')) {
             document.getElementById('audio-fail').play();
           }
-
-          // Reset form
-          form.noresi.value = "";
-          form.noresi.disabled = false;
-          form.querySelector('button[type="submit"]').disabled = false;
-          form.noresi.focus();
         }
       });
+
+      // Process queue
+      processQueue();
+
+      // Reset form immediately untuk scan berikutnya
+      form.noresi.value = "";
+      form.noresi.focus();
       
-      return false; // required to block normal submit since you used ajax
+      return false;
     }
   });
 

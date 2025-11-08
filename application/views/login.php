@@ -28,22 +28,22 @@
                     <div class="login-subtitle"><?= $message ?></div>
                 <?php endif; ?>
 
-                <form action="auth" class="form-horizontal" method="post">
+                <form action="auth" class="form-horizontal" method="post" id="loginForm" novalidate>
                     <input type="hidden" name="nama_komputer" value="<?= $machine_name ?>" />
                     <div class="form-group">
                         <div class="col-md-12">
-                            <input type="text" name="username" class="form-control" placeholder="Username" />
+                            <input type="text" name="username" id="username" class="form-control" placeholder="Username" />
                         </div>
                     </div>
                     <div class="form-group">
                         <div class="col-md-12">
-                            <input type="password" name="password" class="form-control" placeholder="Password" />
+                            <input type="password" name="password" id="password" class="form-control" placeholder="Password" />
                         </div>
                     </div>
                     <div class="form-group">
                         <div class="col-md-12">
                             <select name="nama_pk" id="nama_pk" class="form-control select" data-live-search="true" style="font-weight: bold;">
-                                <option value="" style="font-weight: bold;" selected disabled>-- Select Computer --</option>
+                                <option value="" style="font-weight: bold;" selected disabled>-- Pilih Komputer --</option>
                                 <?php foreach ($list_pk as $pk) : ?>
                                     <option
                                             value="<?= $pk['nama_pk'] ?>"
@@ -58,7 +58,7 @@
                     <div class="form-group">
                         <div class="col-md-12">
                             <select name="status_performa" id="status_performa" class="form-control select" data-live-search="true" style="font-weight: bold;">
-                                <option value="" style="font-weight: bold;" selected disabled>-- Select Status Performa --</option>
+                                <option value="" style="font-weight: bold;" selected disabled>-- Pilih Status Performa --</option>
                                 <?php foreach ($list_status_performa as $role => $statuses) : ?>
                                     <!-- <optgroup label="<?= $role ?>"> -->
                                         <?php foreach ($statuses as $status) : ?>
@@ -67,11 +67,12 @@
                                     <!-- </optgroup> -->
                                 <?php endforeach; ?>
                             </select>
+                            <span class="help-block" style="color: #d9534f; margin-top: 5px; font-size: 12px;"><strong>* Status Performa wajib dipilih untuk menghindari kesalahan data</strong></span>
                         </div>
                     </div>
                     <div class="form-group">
                         <div class="col-md-12">
-                            <button class="btn btn-info btn-block">Log In</button>
+                            <button type="submit" class="btn btn-info btn-block">Log In</button>
                         </div>
                     </div>
                 </form>
@@ -87,6 +88,7 @@
         </div>
 
     </div>
+
 
 </body>
 
