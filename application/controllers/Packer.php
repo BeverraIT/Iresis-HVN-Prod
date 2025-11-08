@@ -294,4 +294,17 @@ class Packer extends MY_Controller
         echo json_encode($output);
         exit();
     }
+
+	// Keepalive endpoint untuk prevent session timeout
+	public function keepalive()
+	{
+		// Simple endpoint to keep session alive
+		// Just accessing session data will refresh the session timeout
+		if ($this->session->userdata('user')) {
+			echo json_encode(['status' => 'alive', 'timestamp' => time()]);
+		} else {
+			set_status_header(401);
+			echo json_encode(['status' => 'expired']);
+		}
+	}
 }
