@@ -75,6 +75,10 @@ class Login extends CI_Controller
 
             $this->login_fcd->update_last_login_and_nama_komputer($user['id_user'], $nama_pk);
 
+            // IMPORTANT: Update nama_komputer in user array to sync with database
+            // This prevents mismatch between session data and database when user logs in from different computer
+            $user['nama_komputer'] = $nama_pk;
+
             $list_menu = $this->access_fcd->get_access_menu($user['hakakses'])->result_array();
 
             $list_menu_tree = menu_to_tree($list_menu, $list_menu[0]);

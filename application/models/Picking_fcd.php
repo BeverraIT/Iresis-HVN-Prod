@@ -65,12 +65,13 @@ class Picking_fcd extends CI_Model
                 }
 
                 // Insert single record
+                // Note: nama_komputer is now synced with database from login fix
                 $insert_data = [
                     'id_resi' => $id_resi,
                     'tanggal_resiambilbarang' => date('Y-m-d H:i:s'),
                     'admin_pegawai' => $user['id_user'],
                     'yangambil_pegawai' => $picking['yangambil_pegawai'],
-                    'nama_komputer' => $user['nama_komputer'],
+                    'nama_komputer' => $user['nama_komputer'], // Synced with database from login
                     'pending' => $picking['pending'],
                     'status_performa_id' => $picking['status_performa_id'] ?? null,
                 ];
@@ -88,11 +89,12 @@ class Picking_fcd extends CI_Model
                 }
 
                 // Update single record
+                // Note: nama_komputer is now synced with database from login fix
                 $update_data = [
                     'tanggal_resiambilbarang' => date('Y-m-d H:i:s'),
                     'admin_pegawai' => $user['id_user'],
                     'yangambil_pegawai' => $picking['yangambil_pegawai'],
-                    'nama_komputer' => $user['nama_komputer']
+                    'nama_komputer' => $user['nama_komputer'] // Synced with database from login
                 ];
 
                 $this->db->where('id_resiambilbarang', $picking_exist->id_resiambilbarang);

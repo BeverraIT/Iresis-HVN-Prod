@@ -45,11 +45,13 @@ class Packer_fcd extends CI_Model
         }
 
         // Insert packing record
+        // Priority: use nama_komputer from $user array (should be synced with database since login fix)
+        // This ensures packer computer number is accurately recorded
         $insert_data = [
             'id_resi' => $receipt->id_printresi,
             'tanggal_packing' => date('Y-m-d H:i:s'),
             'packer_pegawai' => $user['id_user'],
-            'keterangan' => $user['nama_komputer'],
+            'keterangan' => $user['nama_komputer'], // Now synced with database from login
             'status_performa_id' => $packer['status_performa_id'] ?? null
         ];
 
@@ -94,7 +96,7 @@ class Packer_fcd extends CI_Model
             pr.noresi,
             u.name AS nama_pegawai,
             p.tanggal_packing,
-            COALESCE(u.nama_komputer, p.keterangan) AS keterangan
+            COALESCE(p.keterangan, u.nama_komputer) AS keterangan
         ');
 
         $this->db->from('tblpacking p');
