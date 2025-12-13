@@ -17,11 +17,12 @@ class Receipt_reprint_fcd extends CI_Model
             return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi sudah diambil. Silakan Cek data'];
         }
 
+        // Note: nama_komputer is now synced with database from login fix
         $insert_data = [
             'id_resi' => $receipt_data['id_printresi'],
             'tanggal_resiprintulang' => date('Y-m-d H:i:s'),
             'admin_pegawai' => $user['id_user'],
-            'nama_komputer' => $user['nama_komputer']
+            'nama_komputer' => $user['nama_komputer'] // Synced with database from login
         ];
 
         $this->db->insert('tblresiprintulang', $insert_data);

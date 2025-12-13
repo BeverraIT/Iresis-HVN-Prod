@@ -33,6 +33,9 @@ class Kpi_reports extends MY_Controller
 
     public function index()
     {
+        // Load menu helper
+        $this->load->helper('menu_helper');
+        
         $data['message'] = $this->session->flashdata('message');
 
         // Set default date range untuk KPI Reports
@@ -41,14 +44,548 @@ class Kpi_reports extends MY_Controller
             $data['reportrange'] = $this->input->post('reportrange');
         }
 
-        // Set data untuk main view - ikuti pola Welcome controller
+        // Set all template data (same pattern as Welcome controller)
         $this->data['user'] = $this->session->userdata('user');
         $this->data['nama_pk'] = $this->session->userdata('nama_pk');
         $this->data['status_performa'] = $this->session->userdata('status_performa');
         $this->data['html_menu_tree'] = $this->session->userdata('html_menu_tree');
         $this->data['content'] = $this->load->view('kpi_reports_index', $data, TRUE);
         
+        // Load main template
         $this->load->view('main', $this->data);
+    }
+
+    public function dashboard_picker()
+    {
+        // Load menu helper
+        $this->load->helper('menu_helper');
+        
+        $data['message'] = $this->session->flashdata('message');
+        $user = $this->session->userdata('user');
+
+        // Set default date range untuk Dashboard KPI Picker (today)
+        $data['reportrange'] = date('Y-m-d 00:00:00') . ' - ' . date('Y-m-d H:i:s');
+        if ($this->input->method() == 'post' && $this->input->post('reportrange')) {
+            $data['reportrange'] = $this->input->post('reportrange');
+        }
+
+        // Parse date range with validation
+        $dates = explode(' - ', $data['reportrange']);
+        if (count($dates) >= 2) {
+            $start_date = trim($dates[0]);
+            $end_date = trim($dates[1]);
+        } else {
+            // Fallback to default if format is invalid
+            $start_date = date('Y-m-d 00:00:00');
+            $end_date = date('Y-m-d H:i:s');
+            $data['reportrange'] = $start_date . ' - ' . $end_date;
+        }
+
+        // Get picker dashboard statistics (dengan target)
+        $data['dashboard_stats'] = $this->get_picker_dashboard_stats($start_date, $end_date);
+        $data['tanggal_filter'] = date('Y-m-d', strtotime($start_date));
+        
+        // Check if this is AJAX request (from menu click OR form submission)
+        if ($this->input->is_ajax_request() || $this->input->get('ajax')) {
+            // Return JSON for AJAX (like other menu pages)
+            header('Content-Type: application/json');
+            echo json_encode(array(
+                'view' => $this->load->view('kpi_dashboard_picker', $data, TRUE),
+                'message' => empty($data['message']) ? null : $data['message'],
+            ));
+            exit;
+        } else {
+            // Return full HTML for direct access
+            $this->data['user'] = $this->session->userdata('user');
+            $this->data['nama_pk'] = $this->session->userdata('nama_pk');
+            $this->data['status_performa'] = $this->session->userdata('status_performa');
+            $this->data['html_menu_tree'] = $this->session->userdata('html_menu_tree');
+            $this->data['content'] = $this->load->view('kpi_dashboard_picker', $data, TRUE);
+            
+            // Load main template
+            $this->load->view('main', $this->data);
+        }
+    }
+
+    public function export_excel_picker()
+    {
+        ini_set('memory_limit', '-1');
+        
+        // Get date range
+        $reportrange = date('Y-m-d 00:00:00') . ' - ' . date('Y-m-d H:i:s');
+        if ($this->input->method() == 'post' || $this->input->method() == 'get') {
+            $reportrange = $this->input->post('reportrange') ?: $this->input->get('reportrange');
+        }
+
+        $dates = explode(' - ', $reportrange);
+        $start_date = $dates[0];
+        $end_date = $dates[1];
+
+        $data['reportrange'] = $reportrange;
+        $data['start_date'] = $start_date;
+        $data['end_date'] = $end_date;
+        
+        // Calculate number of days in period
+        $start = new DateTime($start_date);
+        $end = new DateTime($end_date);
+        $interval = $start->diff($end);
+        $data['num_days'] = $interval->days + 1; // +1 to include both start and end date
+        
+        $dashboard_stats = $this->get_picker_dashboard_stats($start_date, $end_date);
+        
+        // Extract data for view
+        $data['top_pickers_inti'] = $dashboard_stats['top_pickers_inti'] ?? [];
+        $data['top_pickers_others'] = $dashboard_stats['top_pickers_others'] ?? [];
+
+        // Set Excel headers
+        header("Content-type: application/vnd-ms-excel");
+        header("Content-Disposition: attachment; filename=Laporan_Picker_" . date('Y-m-d_His') . ".xls");
+        header("Pragma: no-cache");
+        header("Expires: 0");
+
+        $this->load->view('template_report/kpi_picker_excel_v2', $data);
+    }
+
+    public function dashboard_packer()
+    {
+        // Load menu helper
+        $this->load->helper('menu_helper');
+        
+        $data['message'] = $this->session->flashdata('message');
+        $user = $this->session->userdata('user');
+
+        // Set default date range untuk Dashboard KPI Packer (today)
+        $data['reportrange'] = date('Y-m-d 00:00:00') . ' - ' . date('Y-m-d H:i:s');
+        if ($this->input->method() == 'post' && $this->input->post('reportrange')) {
+            $data['reportrange'] = $this->input->post('reportrange');
+        }
+
+        // Parse date range with validation
+        $dates = explode(' - ', $data['reportrange']);
+        if (count($dates) >= 2) {
+            $start_date = trim($dates[0]);
+            $end_date = trim($dates[1]);
+        } else {
+            // Fallback to default if format is invalid
+            $start_date = date('Y-m-d 00:00:00');
+            $end_date = date('Y-m-d H:i:s');
+            $data['reportrange'] = $start_date . ' - ' . $end_date;
+        }
+
+        // Get packer dashboard statistics (dengan target)
+        $data['dashboard_stats'] = $this->get_packer_dashboard_stats($start_date, $end_date);
+        $data['tanggal_filter'] = date('Y-m-d', strtotime($start_date));
+        
+        // Check if this is AJAX request (from menu click OR form submission)
+        if ($this->input->is_ajax_request() || $this->input->get('ajax')) {
+            // Return JSON for AJAX (like other menu pages)
+            header('Content-Type: application/json');
+            echo json_encode(array(
+                'view' => $this->load->view('kpi_dashboard_packer', $data, TRUE),
+                'message' => empty($data['message']) ? null : $data['message'],
+            ));
+            exit;
+        } else {
+            // Return full HTML for direct access
+            $this->data['user'] = $this->session->userdata('user');
+            $this->data['nama_pk'] = $this->session->userdata('nama_pk');
+            $this->data['status_performa'] = $this->session->userdata('status_performa');
+            $this->data['html_menu_tree'] = $this->session->userdata('html_menu_tree');
+            $this->data['content'] = $this->load->view('kpi_dashboard_packer', $data, TRUE);
+            
+            // Load main template
+            $this->load->view('main', $this->data);
+        }
+    }
+
+    public function export_excel_packer()
+    {
+        ini_set('memory_limit', '-1');
+        
+        // Get date range
+        $reportrange = date('Y-m-d 00:00:00') . ' - ' . date('Y-m-d H:i:s');
+        if ($this->input->method() == 'post' || $this->input->method() == 'get') {
+            $reportrange = $this->input->post('reportrange') ?: $this->input->get('reportrange');
+        }
+
+        $dates = explode(' - ', $reportrange);
+        $start_date = $dates[0];
+        $end_date = $dates[1];
+
+        $data['reportrange'] = $reportrange;
+        $data['start_date'] = $start_date;
+        $data['end_date'] = $end_date;
+        
+        // Calculate number of days in period
+        $start = new DateTime($start_date);
+        $end = new DateTime($end_date);
+        $interval = $start->diff($end);
+        $data['num_days'] = $interval->days + 1; // +1 to include both start and end date
+        
+        $data['dashboard_stats'] = $this->get_packer_dashboard_stats($start_date, $end_date);
+
+        // Set Excel headers
+        header("Content-type: application/vnd-ms-excel");
+        header("Content-Disposition: attachment; filename=KPI_Packer_" . date('Y-m-d_His') . ".xls");
+        header("Pragma: no-cache");
+        header("Expires: 0");
+
+        $this->load->view('template_report/kpi_packer_excel', $data);
+    }
+
+    private function get_picker_dashboard_stats($start_date, $end_date)
+    {
+        $stats = array();
+
+        try {
+            // Total Picking
+            $picking_query = $this->db->query("
+                SELECT COUNT(DISTINCT id_resi) as total
+                FROM tblresiambilbarang
+                WHERE tanggal_resiambilbarang BETWEEN ? AND ?
+            ", array($start_date, $end_date));
+            $stats['total_picking'] = $picking_query->row()->total ?? 0;
+
+            // Total SKU Picked (dari tbldetailprintresi)
+            $sku_query = $this->db->query("
+                SELECT 
+                    COUNT(DISTINCT dr.sku) as total_sku_unique,
+                    SUM(CAST(dr.jumlah AS UNSIGNED)) as total_sku_qty
+                FROM tblresiambilbarang rab
+                INNER JOIN tbldetailprintresi dr ON dr.id_resi = rab.id_resi
+                WHERE rab.tanggal_resiambilbarang BETWEEN ? AND ?
+            ", array($start_date, $end_date));
+            $sku_result = $sku_query->row();
+            $stats['total_sku'] = $sku_result->total_sku_qty ?? 0;
+            $stats['total_sku_unique'] = $sku_result->total_sku_unique ?? 0;
+
+            // Average SKU per Picker
+            $stats['avg_sku_per_picker'] = $stats['total_picking'] > 0 
+                ? round($stats['total_sku'] / $stats['total_picking'], 2) 
+                : 0;
+
+            // Total Active Pickers
+            $pickers_query = $this->db->query("
+                SELECT COUNT(DISTINCT yangambil_pegawai) as total
+                FROM tblresiambilbarang
+                WHERE tanggal_resiambilbarang BETWEEN ? AND ?
+                AND yangambil_pegawai IS NOT NULL
+            ", array($start_date, $end_date));
+            $stats['total_active_pickers'] = $pickers_query->row()->total ?? 0;
+
+            // Top Pickers - TIM INTI (yang terdaftar di tblnamaambilbarang) - DENGAN TARGET & JAM KERJA
+            $top_pickers_query = $this->db->query("
+                SELECT 
+                    u.id_user,
+                    u.username,
+                    peg.nama_pegawai,
+                    t.target_resi,
+                    COUNT(DISTINCT rab.id_resi) as total_resi,
+                    COUNT(DISTINCT dr.sku) as total_sku_unique,
+                    SUM(CAST(dr.jumlah AS UNSIGNED)) as total_sku,
+                    ROUND(SUM(CAST(dr.jumlah AS UNSIGNED)) / COUNT(DISTINCT rab.id_resi), 2) as avg_sku_per_resi,
+                    (COUNT(DISTINCT rab.id_resi) - COALESCE(t.target_resi, 0)) as selisih,
+                    CASE 
+                        WHEN t.target_resi > 0 THEN ROUND((COUNT(DISTINCT rab.id_resi) / t.target_resi) * 100, 1)
+                        ELSE NULL
+                    END as pct_capai,
+                    MIN(TIME(rab.tanggal_resiambilbarang)) as jam_in,
+                    MAX(TIME(rab.tanggal_resiambilbarang)) as jam_out,
+                    TIMESTAMPDIFF(HOUR, 
+                        MIN(rab.tanggal_resiambilbarang), 
+                        MAX(rab.tanggal_resiambilbarang)
+                    ) as total_jam,
+                    ROUND(COUNT(DISTINCT rab.id_resi) / 
+                        NULLIF(TIMESTAMPDIFF(HOUR, 
+                            MIN(rab.tanggal_resiambilbarang), 
+                            MAX(rab.tanggal_resiambilbarang)
+                        ), 0), 2) as paket_per_jam,
+                    ROUND(SUM(CAST(dr.jumlah AS UNSIGNED)) / 
+                        NULLIF(TIMESTAMPDIFF(HOUR, 
+                            MIN(rab.tanggal_resiambilbarang), 
+                            MAX(rab.tanggal_resiambilbarang)
+                        ), 0), 2) as sku_per_jam,
+                    'TIM INTI' as tim
+                FROM tblresiambilbarang rab
+                INNER JOIN tblnamaambilbarang nab ON nab.id_pegawai = rab.yangambil_pegawai
+                LEFT JOIN tbldetailprintresi dr ON dr.id_resi = rab.id_resi
+                LEFT JOIN tblpegawai peg ON peg.kode_pegawai = rab.yangambil_pegawai
+                LEFT JOIN tbluser u ON u.id_pegawai = peg.kode_pegawai
+                LEFT JOIN tbltargetkpiharian t ON t.id_user = u.id_user 
+                    AND t.tanggal = DATE(rab.tanggal_resiambilbarang)
+                    AND t.role = 'PICKER'
+                WHERE rab.tanggal_resiambilbarang BETWEEN ? AND ?
+                AND rab.yangambil_pegawai IS NOT NULL
+                GROUP BY u.id_user, u.username, peg.nama_pegawai, t.target_resi
+                ORDER BY total_resi DESC
+            ", array($start_date, $end_date));
+            $stats['top_pickers_inti'] = $top_pickers_query->result_array();
+
+            // Get SKU breakdown per picker - TIM INTI
+            foreach ($stats['top_pickers_inti'] as &$picker) {
+                $breakdown_query = $this->db->query("
+                    SELECT 
+                        SUM(CASE WHEN sku_count = 1 THEN 1 ELSE 0 END) as paket_1_sku,
+                        SUM(CASE WHEN sku_count BETWEEN 2 AND 5 THEN 1 ELSE 0 END) as paket_5_sku,
+                        SUM(CASE WHEN sku_count BETWEEN 6 AND 10 THEN 1 ELSE 0 END) as paket_10_sku,
+                        SUM(CASE WHEN sku_count BETWEEN 11 AND 20 THEN 1 ELSE 0 END) as paket_20_sku,
+                        SUM(CASE WHEN sku_count BETWEEN 21 AND 30 THEN 1 ELSE 0 END) as paket_30_sku,
+                        SUM(CASE WHEN sku_count BETWEEN 31 AND 40 THEN 1 ELSE 0 END) as paket_40_sku,
+                        SUM(CASE WHEN sku_count BETWEEN 41 AND 50 THEN 1 ELSE 0 END) as paket_50_sku,
+                        SUM(CASE WHEN sku_count > 50 THEN 1 ELSE 0 END) as paket_50plus_sku
+                    FROM (
+                        SELECT 
+                            rab.id_resi,
+                            COUNT(DISTINCT dr.sku) as sku_count
+                        FROM tblresiambilbarang rab
+                        LEFT JOIN tbldetailprintresi dr ON dr.id_resi = rab.id_resi
+                        LEFT JOIN tblpegawai peg ON peg.kode_pegawai = rab.yangambil_pegawai
+                        LEFT JOIN tbluser u ON u.id_pegawai = peg.kode_pegawai
+                        WHERE rab.tanggal_resiambilbarang BETWEEN ? AND ?
+                        AND u.id_user = ?
+                        GROUP BY rab.id_resi
+                    ) as sku_breakdown
+                ", array($start_date, $end_date, $picker['id_user']));
+                
+                $breakdown = $breakdown_query->row_array();
+                $picker['paket_1_sku'] = $breakdown['paket_1_sku'] ?? 0;
+                $picker['paket_5_sku'] = $breakdown['paket_5_sku'] ?? 0;
+                $picker['paket_10_sku'] = $breakdown['paket_10_sku'] ?? 0;
+                $picker['paket_20_sku'] = $breakdown['paket_20_sku'] ?? 0;
+                $picker['paket_30_sku'] = $breakdown['paket_30_sku'] ?? 0;
+                $picker['paket_40_sku'] = $breakdown['paket_40_sku'] ?? 0;
+                $picker['paket_50_sku'] = $breakdown['paket_50_sku'] ?? 0;
+                $picker['paket_50plus_sku'] = $breakdown['paket_50plus_sku'] ?? 0;
+            }
+            unset($picker); // Break reference
+
+            // Top Pickers - TIM OTHERS (user lain yang bantu picking) - DENGAN TARGET & JAM KERJA
+            $top_pickers_others_query = $this->db->query("
+                SELECT 
+                    u.id_user,
+                    u.username,
+                    peg.nama_pegawai,
+                    t.target_resi,
+                    COUNT(DISTINCT rab.id_resi) as total_resi,
+                    COUNT(DISTINCT dr.sku) as total_sku_unique,
+                    SUM(CAST(dr.jumlah AS UNSIGNED)) as total_sku,
+                    ROUND(SUM(CAST(dr.jumlah AS UNSIGNED)) / COUNT(DISTINCT rab.id_resi), 2) as avg_sku_per_resi,
+                    (COUNT(DISTINCT rab.id_resi) - COALESCE(t.target_resi, 0)) as selisih,
+                    CASE 
+                        WHEN t.target_resi > 0 THEN ROUND((COUNT(DISTINCT rab.id_resi) / t.target_resi) * 100, 1)
+                        ELSE NULL
+                    END as pct_capai,
+                    MIN(TIME(rab.tanggal_resiambilbarang)) as jam_in,
+                    MAX(TIME(rab.tanggal_resiambilbarang)) as jam_out,
+                    TIMESTAMPDIFF(HOUR, 
+                        MIN(rab.tanggal_resiambilbarang), 
+                        MAX(rab.tanggal_resiambilbarang)
+                    ) as total_jam,
+                    ROUND(COUNT(DISTINCT rab.id_resi) / 
+                        NULLIF(TIMESTAMPDIFF(HOUR, 
+                            MIN(rab.tanggal_resiambilbarang), 
+                            MAX(rab.tanggal_resiambilbarang)
+                        ), 0), 2) as paket_per_jam,
+                    ROUND(SUM(CAST(dr.jumlah AS UNSIGNED)) / 
+                        NULLIF(TIMESTAMPDIFF(HOUR, 
+                            MIN(rab.tanggal_resiambilbarang), 
+                            MAX(rab.tanggal_resiambilbarang)
+                        ), 0), 2) as sku_per_jam,
+                    'TIM OTHERS' as tim
+                FROM tblresiambilbarang rab
+                LEFT JOIN tbldetailprintresi dr ON dr.id_resi = rab.id_resi
+                LEFT JOIN tblpegawai peg ON peg.kode_pegawai = rab.yangambil_pegawai
+                LEFT JOIN tbluser u ON u.id_pegawai = peg.kode_pegawai
+                LEFT JOIN tbltargetkpiharian t ON t.id_user = u.id_user 
+                    AND t.tanggal = DATE(rab.tanggal_resiambilbarang)
+                    AND t.role = 'PICKER'
+                WHERE rab.tanggal_resiambilbarang BETWEEN ? AND ?
+                AND rab.yangambil_pegawai IS NOT NULL
+                AND rab.yangambil_pegawai NOT IN (SELECT id_pegawai FROM tblnamaambilbarang WHERE isactive = 1)
+                GROUP BY u.id_user, u.username, peg.nama_pegawai, t.target_resi
+                ORDER BY total_resi DESC
+            ", array($start_date, $end_date));
+            $stats['top_pickers_others'] = $top_pickers_others_query->result_array();
+
+            // Get SKU breakdown per picker - TIM OTHERS
+            foreach ($stats['top_pickers_others'] as &$picker) {
+                $breakdown_query = $this->db->query("
+                    SELECT 
+                        SUM(CASE WHEN sku_count = 1 THEN 1 ELSE 0 END) as paket_1_sku,
+                        SUM(CASE WHEN sku_count BETWEEN 2 AND 5 THEN 1 ELSE 0 END) as paket_5_sku,
+                        SUM(CASE WHEN sku_count BETWEEN 6 AND 10 THEN 1 ELSE 0 END) as paket_10_sku,
+                        SUM(CASE WHEN sku_count BETWEEN 11 AND 20 THEN 1 ELSE 0 END) as paket_20_sku,
+                        SUM(CASE WHEN sku_count BETWEEN 21 AND 30 THEN 1 ELSE 0 END) as paket_30_sku,
+                        SUM(CASE WHEN sku_count BETWEEN 31 AND 40 THEN 1 ELSE 0 END) as paket_40_sku,
+                        SUM(CASE WHEN sku_count BETWEEN 41 AND 50 THEN 1 ELSE 0 END) as paket_50_sku,
+                        SUM(CASE WHEN sku_count > 50 THEN 1 ELSE 0 END) as paket_50plus_sku
+                    FROM (
+                        SELECT 
+                            rab.id_resi,
+                            COUNT(DISTINCT dr.sku) as sku_count
+                        FROM tblresiambilbarang rab
+                        LEFT JOIN tbldetailprintresi dr ON dr.id_resi = rab.id_resi
+                        LEFT JOIN tblpegawai peg ON peg.kode_pegawai = rab.yangambil_pegawai
+                        LEFT JOIN tbluser u ON u.id_pegawai = peg.kode_pegawai
+                        WHERE rab.tanggal_resiambilbarang BETWEEN ? AND ?
+                        AND u.id_user = ?
+                        GROUP BY rab.id_resi
+                    ) as sku_breakdown
+                ", array($start_date, $end_date, $picker['id_user']));
+                
+                $breakdown = $breakdown_query->row_array();
+                $picker['paket_1_sku'] = $breakdown['paket_1_sku'] ?? 0;
+                $picker['paket_5_sku'] = $breakdown['paket_5_sku'] ?? 0;
+                $picker['paket_10_sku'] = $breakdown['paket_10_sku'] ?? 0;
+                $picker['paket_20_sku'] = $breakdown['paket_20_sku'] ?? 0;
+                $picker['paket_30_sku'] = $breakdown['paket_30_sku'] ?? 0;
+                $picker['paket_40_sku'] = $breakdown['paket_40_sku'] ?? 0;
+                $picker['paket_50_sku'] = $breakdown['paket_50_sku'] ?? 0;
+                $picker['paket_50plus_sku'] = $breakdown['paket_50plus_sku'] ?? 0;
+            }
+            unset($picker); // Break reference
+
+            // Hourly performance (for chart)
+            $hourly_query = $this->db->query("
+                SELECT 
+                    HOUR(tanggal_resiambilbarang) as hour,
+                    COUNT(*) as total
+                FROM tblresiambilbarang
+                WHERE tanggal_resiambilbarang BETWEEN ? AND ?
+                GROUP BY HOUR(tanggal_resiambilbarang)
+                ORDER BY hour
+            ", array($start_date, $end_date));
+            $stats['hourly_performance'] = $hourly_query->result_array();
+
+        } catch (Exception $e) {
+            log_message('error', 'Error getting picker dashboard stats: ' . $e->getMessage());
+        }
+
+        return $stats;
+    }
+
+    private function get_packer_dashboard_stats($start_date, $end_date)
+    {
+        $stats = array();
+
+        try {
+            // Total Packing
+            $packing_query = $this->db->query("
+                SELECT COUNT(DISTINCT id_resi) as total
+                FROM tblpacking
+                WHERE tanggal_packing BETWEEN ? AND ?
+            ", array($start_date, $end_date));
+            $stats['total_packing'] = $packing_query->row()->total ?? 0;
+
+            // Total SKU Packed (dari tbldetailprintresi)
+            $sku_query = $this->db->query("
+                SELECT 
+                    COUNT(DISTINCT dr.sku) as total_sku_unique,
+                    SUM(CAST(dr.jumlah AS UNSIGNED)) as total_sku_qty
+                FROM tblpacking p
+                INNER JOIN tbldetailprintresi dr ON dr.id_resi = p.id_resi
+                WHERE p.tanggal_packing BETWEEN ? AND ?
+            ", array($start_date, $end_date));
+            $sku_result = $sku_query->row();
+            $stats['total_sku'] = $sku_result->total_sku_qty ?? 0;
+            $stats['total_sku_unique'] = $sku_result->total_sku_unique ?? 0;
+
+            // Average SKU per Packer
+            $stats['avg_sku_per_packer'] = $stats['total_packing'] > 0 
+                ? round($stats['total_sku'] / $stats['total_packing'], 2) 
+                : 0;
+
+            // Total Active Packers
+            $packers_query = $this->db->query("
+                SELECT COUNT(DISTINCT packer_pegawai) as total
+                FROM tblpacking
+                WHERE tanggal_packing BETWEEN ? AND ?
+                AND packer_pegawai IS NOT NULL
+            ", array($start_date, $end_date));
+            $stats['total_active_packers'] = $packers_query->row()->total ?? 0;
+
+            // Top Packers - TIM INTI (packer yang packer_pegawai ada di tblpegawai.kode_pegawai) - DENGAN TARGET
+            $top_packers_query = $this->db->query("
+                SELECT 
+                    u.id_user,
+                    u.username,
+                    peg.nama_pegawai,
+                    u.name as user_name,
+                    t.target_resi,
+                    COUNT(DISTINCT p.id_resi) as total_resi,
+                    COUNT(DISTINCT dr.sku) as total_sku_unique,
+                    SUM(CAST(dr.jumlah AS UNSIGNED)) as total_sku,
+                    ROUND(SUM(CAST(dr.jumlah AS UNSIGNED)) / COUNT(DISTINCT p.id_resi), 2) as avg_sku_per_resi,
+                    (COUNT(DISTINCT p.id_resi) - COALESCE(t.target_resi, 0)) as selisih,
+                    CASE 
+                        WHEN t.target_resi > 0 THEN ROUND((COUNT(DISTINCT p.id_resi) / t.target_resi) * 100, 1)
+                        ELSE NULL
+                    END as pct_capai,
+                    'TIM INTI' as tim
+                FROM tblpacking p
+                LEFT JOIN tbldetailprintresi dr ON dr.id_resi = p.id_resi
+                LEFT JOIN tblpegawai peg ON peg.kode_pegawai = p.packer_pegawai
+                LEFT JOIN tbluser u ON u.id_pegawai = peg.kode_pegawai
+                LEFT JOIN tbltargetkpiharian t ON t.id_user = u.id_user 
+                    AND t.tanggal = DATE(p.tanggal_packing)
+                    AND t.role = 'PACKER'
+                WHERE p.tanggal_packing BETWEEN ? AND ?
+                AND p.packer_pegawai IS NOT NULL
+                AND peg.kode_pegawai IS NOT NULL
+                GROUP BY u.id_user, u.username, peg.nama_pegawai, u.name, t.target_resi
+                ORDER BY total_resi DESC
+            ", array($start_date, $end_date));
+            $stats['top_packers_inti'] = $top_packers_query->result_array();
+
+            // Top Packers - TIM OTHERS (user lain yang packer_pegawai = id_user, bukan kode_pegawai) - DENGAN TARGET
+            $top_packers_others_query = $this->db->query("
+                SELECT 
+                    u.id_user,
+                    u.username,
+                    u.name as nama_pegawai,
+                    t.target_resi,
+                    COUNT(DISTINCT p.id_resi) as total_resi,
+                    COUNT(DISTINCT dr.sku) as total_sku_unique,
+                    SUM(CAST(dr.jumlah AS UNSIGNED)) as total_sku,
+                    ROUND(SUM(CAST(dr.jumlah AS UNSIGNED)) / COUNT(DISTINCT p.id_resi), 2) as avg_sku_per_resi,
+                    (COUNT(DISTINCT p.id_resi) - COALESCE(t.target_resi, 0)) as selisih,
+                    CASE 
+                        WHEN t.target_resi > 0 THEN ROUND((COUNT(DISTINCT p.id_resi) / t.target_resi) * 100, 1)
+                        ELSE NULL
+                    END as pct_capai,
+                    'TIM OTHERS' as tim
+                FROM tblpacking p
+                LEFT JOIN tbldetailprintresi dr ON dr.id_resi = p.id_resi
+                LEFT JOIN tbluser u ON u.id_user = p.packer_pegawai
+                LEFT JOIN tblpegawai peg ON peg.kode_pegawai = p.packer_pegawai
+                LEFT JOIN tbltargetkpiharian t ON t.id_user = u.id_user 
+                    AND t.tanggal = DATE(p.tanggal_packing)
+                    AND t.role = 'PACKER'
+                WHERE p.tanggal_packing BETWEEN ? AND ?
+                AND p.packer_pegawai IS NOT NULL
+                AND peg.kode_pegawai IS NULL
+                GROUP BY u.id_user, u.username, u.name, t.target_resi
+                ORDER BY total_resi DESC
+            ", array($start_date, $end_date));
+            $stats['top_packers_others'] = $top_packers_others_query->result_array();
+
+            // Hourly performance (for chart)
+            $hourly_query = $this->db->query("
+                SELECT 
+                    HOUR(tanggal_packing) as hour,
+                    COUNT(*) as total
+                FROM tblpacking
+                WHERE tanggal_packing BETWEEN ? AND ?
+                GROUP BY HOUR(tanggal_packing)
+                ORDER BY hour
+            ", array($start_date, $end_date));
+            $stats['hourly_performance'] = $hourly_query->result_array();
+
+        } catch (Exception $e) {
+            log_message('error', 'Error getting packer dashboard stats: ' . $e->getMessage());
+        }
+
+        return $stats;
     }
 
     public function export()
@@ -63,6 +600,8 @@ class Kpi_reports extends MY_Controller
             $this->export_to_excel();
         } else {
             // Jika tidak ada data POST, tampilkan halaman export
+            $this->load->helper('menu_helper');
+            
             $this->data['user'] = $this->session->userdata('user');
             $this->data['nama_pk'] = $this->session->userdata('nama_pk');
             $this->data['status_performa'] = $this->session->userdata('status_performa');

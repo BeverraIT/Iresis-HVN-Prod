@@ -1,3 +1,4 @@
+<!-- DEBUG MARKER: MAIN TEMPLATE START -->
 <!DOCTYPE html>
 <html lang="en">
 

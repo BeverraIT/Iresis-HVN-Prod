@@ -50,7 +50,16 @@ $(function() {
                     processData: false, // To send DOMDocument or non processed data file it is set to false
 
                     success: function(data) {
-                        data = JSON.parse(data);
+                        // Parse only if it's a string, not already an object
+                        if (typeof data === 'string') {
+                            try {
+                                data = JSON.parse(data);
+                            } catch (e) {
+                                console.error('JSON parse error:', e);
+                                noty({text: 'Invalid response format', timeout: 3000, layout: 'topRight', type: 'error'});
+                                return;
+                            }
+                        }
                         
                         $('.page-content-wrap').html(data.view);
         

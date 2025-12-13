@@ -64,7 +64,9 @@ if (!function_exists('tree_to_html_menu')) {
             }
 
             if (empty($menu['child'])) {
-                $html .= '<li><a href="'.$uri.'" class="link"><span class="'.$menu['icon'].'"></span> '.$menu['name'].'</a></li>';
+                // Fix: Add leading slash untuk absolute URL path
+                $absolute_uri = ($uri !== '#' && strpos($uri, '/') !== 0 && strpos($uri, 'http') !== 0) ? '/' . $uri : $uri;
+                $html .= '<li><a href="'.$absolute_uri.'" class="link"><span class="'.$menu['icon'].'"></span> '.$menu['name'].'</a></li>';
             } else {
                 $html .= '<li class="xn-openable"><a href="'.$uri.'"><span class="'.$menu['icon'].'"></span> <span class="xn-text">'.$menu['name'].'</span></a><ul>';
                 $html .= tree_to_html_menu($menu['child']);
