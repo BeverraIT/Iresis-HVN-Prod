@@ -638,4 +638,5 @@ function exportToExcel() {
     margin-bottom: 15px;
     color: #ddd;
 }
+
 </style>

@@ -218,4 +218,75 @@ class Packer_fcd extends CI_Model
         
         return true;
     }
+
+    /**
+     * Save masalah picker data to tblmasalahpicker
+     */
+    function save_masalah_picker($masalah_picker, $user)
+    {
+        try {
+            $this->db->trans_start();
+
+            // Validate that receipt exists
+            $receipt = $this->db
+                ->select('id_printresi, noresi')
+                ->get_where('tblprintresi', ['id_printresi' => $masalah_picker['id_printresi'], 'noresi' => $masalah_picker['noresi']])
+                ->row();
+
+            if (empty($receipt)) {
+                return ['error' => TRUE, 'code' => 400, 'message' => 'Nomor resi tidak ditemukan'];
+            }
+
+            // Check if masalah picker already exists for this SKU and receipt
+            $existing = $this->db
+                ->get_where('tblmasalahpicker', [
+                    'id_printresi' => $masalah_picker['id_printresi'],
+                    'sku' => $masalah_picker['sku']
+                ])
+                ->row();
+
+            $insert_data = [
+                'id_printresi' => $masalah_picker['id_printresi'],
+                'noresi' => $masalah_picker['noresi'],
+                'sku' => $masalah_picker['sku'],
+                'qty' => $masalah_picker['qty'],
+                'id_typemasalah' => $masalah_picker['id_typemasalah'],
+                'qty_bermasalah' => $masalah_picker['qty_bermasalah'],
+                'sku_salah' => $masalah_picker['sku_salah'],
+                'created_by' => $user['id_user'],
+                'created' => date('Y-m-d H:i:s')
+            ];
+
+            if ($existing) {
+                // Update existing record
+                $insert_data['updated_by'] = $user['id_user'];
+                $insert_data['updated'] = date('Y-m-d H:i:s');
+                $this->db->where('id_masalahpicker', $existing->id_masalahpicker);
+                $this->db->update('tblmasalahpicker', $insert_data);
+                // Get affected_rows before trans_complete
+                $affected_rows = $this->db->affected_rows();
+                // Jika affected_rows = 0, berarti data tidak berubah, tapi tetap dianggap sukses
+                // karena update berhasil (hanya tidak ada perubahan data)
+                $masalah_picker['affected_rows'] = $affected_rows > 0 ? $affected_rows : 1;
+            } else {
+                // Insert new record
+                $this->db->insert('tblmasalahpicker', $insert_data);
+                // Get affected_rows before trans_complete
+                $masalah_picker['affected_rows'] = $this->db->affected_rows();
+            }
+
+            $this->db->trans_complete();
+
+            if ($this->db->trans_status() === FALSE) {
+                return ['error' => TRUE, 'code' => 500, 'message' => 'Database transaction failed'];
+            }
+
+            return $masalah_picker;
+
+        } catch (Exception $e) {
+            $this->db->trans_rollback();
+            log_message('error', 'Error in save_masalah_picker: ' . $e->getMessage());
+            return ['error' => TRUE, 'code' => 500, 'message' => 'Internal server error: ' . $e->getMessage()];
+        }
+    }
 }

@@ -164,9 +164,26 @@
                 <div class="form-group">
                   <label class="col-md-3 col-xs-12 control-label">Quantity Bermasalah</label>
                   <div class="col-md-8 col-xs-12">
-                    <select name="qty_bermasalah" id="qty_bermasalah" class="form-control selectpicker" data-live-search="true">
-
-                    </select>
+                    <div id="qty_bermasalah_container">
+                      <select name="qty_bermasalah_level1" id="qty_bermasalah_level1" class="form-control qty-dropdown" style="margin-bottom: 5px;">
+                        <option value="">-- Pilih Range --</option>
+                        <option value="1">1</option>
+                        <option value="10">10</option>
+                        <option value="100">100</option>
+                        <option value="1000">1000</option>
+                      </select>
+                      <select name="qty_bermasalah_level2" id="qty_bermasalah_level2" class="form-control qty-dropdown hidden" style="margin-bottom: 5px;">
+                        <option value="">-- Pilih --</option>
+                      </select>
+                      <select name="qty_bermasalah_level3" id="qty_bermasalah_level3" class="form-control qty-dropdown hidden" style="margin-bottom: 5px;">
+                        <option value="">-- Pilih --</option>
+                      </select>
+                      <select name="qty_bermasalah_level4" id="qty_bermasalah_level4" class="form-control qty-dropdown hidden" style="margin-bottom: 5px;">
+                        <option value="">-- Pilih --</option>
+                      </select>
+                      <input type="hidden" name="qty_bermasalah" id="qty_bermasalah" value="1" required />
+                    </div>
+                    <small class="help-block text-muted">Pilih quantity bermasalah dari dropdown (1-1000)</small>
                   </div>
                 </div>
 
@@ -258,6 +275,8 @@
   var table;
   var idPrintResi;
   var noresi;
+  var sku;
+  var qty;
 
   $().ready(function() {
 
@@ -318,8 +337,8 @@
 
       // Get values from data attributes
       const namapicker = $(this).data("nama-picker");
-      const sku = $(this).data("sku");
-      const qty = $(this).data("qty");
+      sku = $(this).data("sku");
+      qty = $(this).data("qty");
       const noRak = $(this).data("no-rak");
 
       $('#modal_nama_picker').val(namapicker);
@@ -327,22 +346,26 @@
       $('#modal_qty').val(qty);
       $('#modal_no_rak').val(noRak);
 
-      // Update qty_bermasalah dropdown
-      const $qtyDropdown = $('#qty_bermasalah');
-      $qtyDropdown.empty();
-      for (let i = 1; i <= parseInt(qty); i++) {
-          $qtyDropdown.append(`<option value="${i}">${i}</option>`);
-      }
-
-      $qtyDropdown.selectpicker('refresh');
-
-      // supaya bisa cari dengan ketik
-      $('.selectpicker').selectpicker('render');
+      // Reset cascading dropdowns
+      $('#qty_bermasalah_level1').val('').trigger('change');
+      $('#qty_bermasalah_level2').addClass('hidden').val('');
+      $('#qty_bermasalah_level3').addClass('hidden').val('');
+      $('#qty_bermasalah_level4').addClass('hidden').val('');
+      $('#qty_bermasalah').val(1); // Default value
 
     });
 
     // tutup modal masalah picker
     $(document).on('click', '.btn-cancel-popup', function() {
+      // Reset form saat cancel
+      $("#from_scan_packer")[0].reset();
+      $('#div_sku_salah').addClass('hidden');
+      $('#qty_bermasalah_level1').val('').trigger('change');
+      $('#qty_bermasalah_level2').addClass('hidden').val('');
+      $('#qty_bermasalah_level3').addClass('hidden').val('');
+      $('#qty_bermasalah_level4').addClass('hidden').val('');
+      $('#qty_bermasalah').val(1);
+      
       $('#masalahPickerModal').hide();
       $("#div_container_latest_receipt").removeClass("tile-danger").addClass("tile-default");
     });
@@ -361,6 +384,140 @@
       }
     });
 
+    // Cascading dropdown untuk Quantity Bermasalah
+    $('#qty_bermasalah_level1').on('change', function() {
+      const level1Value = parseInt($(this).val()) || 0;
+      const level2 = $('#qty_bermasalah_level2');
+      const level3 = $('#qty_bermasalah_level3');
+      const level4 = $('#qty_bermasalah_level4');
+      
+      // Reset semua level
+      level2.addClass('hidden').val('');
+      level3.addClass('hidden').val('');
+      level4.addClass('hidden').val('');
+      
+      if (level1Value === 0) {
+        $('#qty_bermasalah').val(1);
+        return;
+      }
+      
+      if (level1Value === 1) {
+        // Jika pilih 1, langsung set nilai
+        $('#qty_bermasalah').val(1);
+        return;
+      }
+      
+      // Generate options untuk level 2
+      level2.removeClass('hidden').html('<option value="">-- Pilih --</option>');
+      
+      if (level1Value === 10) {
+        // Untuk range 10: tampilkan 1, 2, 3, ..., 10
+        for (let i = 1; i <= 10; i++) {
+          level2.append(`<option value="${i}">${i}</option>`);
+        }
+      } else if (level1Value === 100) {
+        // Untuk range 100: tampilkan 10, 20, 30, ..., 100
+        for (let i = 10; i <= 100; i += 10) {
+          level2.append(`<option value="${i}">${i}</option>`);
+        }
+      } else if (level1Value === 1000) {
+        // Untuk range 1000: tampilkan 100, 200, 300, ..., 1000 (ratusan)
+        for (let i = 100; i <= 1000; i += 100) {
+          level2.append(`<option value="${i}">${i}</option>`);
+        }
+      }
+    });
+
+    $('#qty_bermasalah_level2').on('change', function() {
+      const level1Value = parseInt($('#qty_bermasalah_level1').val()) || 0;
+      const level2Value = parseInt($(this).val()) || 0;
+      const level3 = $('#qty_bermasalah_level3');
+      const level4 = $('#qty_bermasalah_level4');
+      
+      // Reset level 3 dan 4
+      level3.addClass('hidden').val('');
+      level4.addClass('hidden').val('');
+      
+      if (level2Value === 0) {
+        $('#qty_bermasalah').val(1);
+        return;
+      }
+      
+      // Jika level1 adalah 10 dan level2 dipilih, langsung set nilai
+      if (level1Value === 10) {
+        $('#qty_bermasalah').val(level2Value);
+        return;
+      }
+      
+      // Generate options untuk level 3
+      level3.removeClass('hidden').html('<option value="">-- Pilih --</option>');
+      
+      if (level1Value === 100) {
+        // Jika level2 adalah 10, tampilkan 1-10
+        // Jika level2 adalah 20, tampilkan 11-20, dst
+        const start = level2Value === 10 ? 1 : level2Value - 9;
+        const end = level2Value;
+        for (let i = start; i <= end; i++) {
+          level3.append(`<option value="${i}">${i}</option>`);
+        }
+        // Set default ke nilai terendah dari range
+        $('#qty_bermasalah').val(start);
+      } else if (level1Value === 1000) {
+        // Jika level2 adalah 100, tampilkan 100 (hanya satu pilihan)
+        // Jika level2 adalah 200, tampilkan 100, 110, 120, ..., 200 (puluhan)
+        // Jika level2 adalah 300, tampilkan 100, 110, 120, ..., 300 (puluhan)
+        const start = 100;
+        const end = level2Value;
+        for (let i = start; i <= end; i += 10) {
+          level3.append(`<option value="${i}">${i}</option>`);
+        }
+        // Set default ke nilai terendah dari range
+        $('#qty_bermasalah').val(start);
+      }
+    });
+
+    $('#qty_bermasalah_level3').on('change', function() {
+      const level1Value = parseInt($('#qty_bermasalah_level1').val()) || 0;
+      const level3Value = parseInt($(this).val()) || 0;
+      const level4 = $('#qty_bermasalah_level4');
+      
+      // Reset level 4
+      level4.addClass('hidden').val('');
+      
+      if (level3Value === 0) {
+        $('#qty_bermasalah').val(1);
+        return;
+      }
+      
+      // Jika level1 adalah 100, langsung set nilai (tidak perlu level 4)
+      if (level1Value === 100) {
+        $('#qty_bermasalah').val(level3Value);
+        return;
+      }
+      
+      // Jika level1 adalah 1000, generate level 4 (satuan)
+      if (level1Value === 1000) {
+        level4.removeClass('hidden').html('<option value="">-- Pilih --</option>');
+        // Jika level3 adalah 100, tampilkan 100-109
+        // Jika level3 adalah 110, tampilkan 111-120, dst
+        // Jika level3 adalah 120, tampilkan 121-130, dst
+        const start = level3Value === 100 ? 100 : level3Value - 9;
+        const end = level3Value === 100 ? 109 : level3Value;
+        for (let i = start; i <= end; i++) {
+          level4.append(`<option value="${i}">${i}</option>`);
+        }
+        // Set default ke nilai terendah dari range
+        $('#qty_bermasalah').val(start);
+      }
+    });
+
+    $('#qty_bermasalah_level4').on('change', function() {
+      const level4Value = parseInt($(this).val()) || 0;
+      if (level4Value > 0) {
+        $('#qty_bermasalah').val(level4Value);
+      }
+    });
+
     // aksi button submit dari modal masalah picker, simpan ke tblmasalahpicker per sku
     $(document).on('click', '.btn-submit-popup', function () {
 
@@ -369,6 +526,31 @@
         rules: {
           type_masalah: {
             required: true,
+          },
+          qty_bermasalah: {
+            required: true,
+            min: 1,
+            max: 1000,
+            number: true
+          },
+          sku_salah: {
+            required: function() {
+              return $('#type_masalah').val() === '4';
+            }
+          }
+        },
+        messages: {
+          type_masalah: {
+            required: 'Tipe masalah harus dipilih'
+          },
+          qty_bermasalah: {
+            required: 'Quantity bermasalah harus diisi',
+            min: 'Quantity bermasalah minimal 1',
+            max: 'Quantity bermasalah maksimal 1000',
+            number: 'Quantity bermasalah harus berupa angka'
+          },
+          sku_salah: {
+            required: 'SKU Salah harus diisi untuk tipe masalah ini'
           }
         },
         submitHandler: function(form) {
@@ -385,23 +567,84 @@
             url: form.action,
             type: 'post',
             data: Object.fromEntries(formData),
-            success: function(data) {},
-            error: function(data) {},
-          }).done(function(response) {
-            $("#span_latest_receipt").text(sku);
+            dataType: 'json',
+            success: function(response) {
+              // Parse response if it's a string
+              if (typeof response === 'string') {
+                try {
+                  response = JSON.parse(response);
+                } catch (e) {
+                  console.error('Error parsing response:', e);
+                }
+              }
 
-            document.getElementById('audio-alert').play();
+              if (response && response.message) {
+                $("#span_latest_receipt").text(sku);
+                $("#div_container_latest_receipt").removeClass("tile-danger").addClass("tile-success");
 
-            $('#masalahPickerModal').hide();
-            // $('.custom-popup-overlay').fadeOut();
-            // table.ajax.reload(null, false);
-            // row.fadeOut(500, function() { $(this).remove(); });
+                if (document.getElementById('audio-alert')) {
+                  document.getElementById('audio-alert').play();
+                }
 
-          }).fail(function(response) {
+                // Show success message
+                $('#successMessage').text(response.message);
+                $('#successModal').fadeIn();
+                setTimeout(function() {
+                  $('#successModal').fadeOut();
+                }, 2000);
 
-            $("#div_container_latest_receipt").removeClass("tile-default").addClass("tile-danger");
+                // Reset form
+                $("#from_scan_packer")[0].reset();
+                $('#div_sku_salah').addClass('hidden');
+                // Reset cascading dropdowns
+                $('#qty_bermasalah_level1').val('').trigger('change');
+                $('#qty_bermasalah_level2').addClass('hidden').val('');
+                $('#qty_bermasalah_level3').addClass('hidden').val('');
+                $('#qty_bermasalah_level4').addClass('hidden').val('');
+                $('#qty_bermasalah').val(1);
 
-            document.getElementById('audio-fail').play();
+                // Close modal
+                $('#masalahPickerModal').hide();
+
+                // Reload table to reflect changes
+                if (typeof table !== 'undefined' && table) {
+                  table.ajax.reload(null, false);
+                }
+              }
+            },
+            error: function(xhr, status, error) {
+              let errorMessage = 'Terjadi kesalahan saat menyimpan data';
+
+              try {
+                // Try to parse error response
+                let responseText = xhr.responseText || '';
+                let jsonMatch = responseText.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                  let errorResponse = JSON.parse(jsonMatch[0]);
+                  if (errorResponse.message) {
+                    errorMessage = errorResponse.message;
+                  }
+                } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                  errorMessage = xhr.responseJSON.message;
+                }
+              } catch (e) {
+                console.error('Error parsing error response:', e);
+              }
+
+              $("#span_latest_receipt").text(errorMessage);
+              $("#div_container_latest_receipt").removeClass("tile-default tile-success").addClass("tile-danger");
+
+              // Show error message
+              $('#errorMessage').text(errorMessage);
+              $('#errorModal').fadeIn();
+              setTimeout(function() {
+                $('#errorModal').fadeOut();
+              }, 3000);
+
+              if (document.getElementById('audio-fail')) {
+                document.getElementById('audio-fail').play();
+              }
+            }
           });
           return false; // required to block normal submit since you used ajax
         }

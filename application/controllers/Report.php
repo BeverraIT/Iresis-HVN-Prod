@@ -941,6 +941,238 @@ class Report extends MY_Controller
         $this->load->view('template_report/retur_receipt_report', $data);
     }
 
+    // ==================== NEW RETUR REPORT METHODS ====================
+    
+    /**
+     * Get data for Terima Retur tab (with SKU details)
+     */
+    public function get_terima_retur_report_data()
+    {
+        $this->load->model('retur_fcd');
+        
+        $start_date = $this->input->post('start_date');
+        $end_date = $this->input->post('end_date');
+        $draw = intval($this->input->post('draw'));
+        $order = $this->input->post('order');
+
+        $data['start'] = intval($this->input->post('start'));
+        $data['length'] = intval($this->input->post('length'));
+        $data['search'] = $this->input->post('search')['value'];
+
+        $col = 0;
+        $dir = '';
+        if (!empty($order)) {
+            foreach ($order as $o) {
+                $col = $o['column'];
+                $dir = $o['dir'];
+            }
+        }
+
+        $data['dir'] = $dir;
+        $data['valid_columns'] = array(
+            0 => 'dp.no_pesanan',
+            1 => 'pr.noresi',
+            2 => 'mp.nama_marketplace',
+            3 => 'kr.nama_kurir',
+            4 => 'tr.tanggal_resiretur',
+            5 => 'tr.tanggal_resiretur',
+            6 => 'dp.sku',
+            7 => 'dp.jumlah',
+            8 => 'tr.status_retur',
+        );
+
+        $data['order'] = !isset($data['valid_columns'][$col]) ? null : $data['valid_columns'][$col];
+
+        $list_resi = $this->retur_fcd->get_terima_retur_with_details($data, $start_date, $end_date);
+        $total = $this->retur_fcd->get_total_terima_retur_with_details($data, $start_date, $end_date);
+
+        $i = $data['start'] + 1;
+        $result = array();
+        foreach ($list_resi->result() as $row) {
+            $result[] = array(
+                'no_pesanan' => $row->no_pesanan ?? '-',
+                'noresi' => $row->noresi,
+                'marketplace' => $row->nama_marketplace ?? '-',
+                'kurir' => $row->nama_kurir ?? '-',
+                'tanggal_terima' => empty($row->tanggal_resiretur) ? '-' : date('Y-m-d', strtotime($row->tanggal_resiretur)),
+                'jam_terima' => empty($row->tanggal_resiretur) ? '-' : date('H:i:s', strtotime($row->tanggal_resiretur)),
+                'sku' => $row->sku ?? '-',
+                'quantity' => $row->jumlah ?? 0,
+                'status_detail' => $row->status_retur ?? '-',
+                'action' => '<button class="btn btn-danger btn-xs btn-delete-retur" data-url="report/delete-terima-retur/' . $row->id_resiretur . '" data-type="terima"><i class="fa fa-trash"></i></button>'
+            );
+        }
+
+        $output = array(
+            "draw" => $draw,
+            "recordsTotal" => $total,
+            "recordsFiltered" => $total,
+            "data" => $result
+        );
+        echo json_encode($output);
+        exit();
+    }
+
+    /**
+     * Get data for Buka Retur tab (with SKU details)
+     */
+    public function get_buka_retur_report_data()
+    {
+        $this->load->model('retur_fcd');
+        
+        $start_date = $this->input->post('start_date');
+        $end_date = $this->input->post('end_date');
+        $draw = intval($this->input->post('draw'));
+        $order = $this->input->post('order');
+
+        $data['start'] = intval($this->input->post('start'));
+        $data['length'] = intval($this->input->post('length'));
+        $data['search'] = $this->input->post('search')['value'];
+
+        $col = 0;
+        $dir = '';
+        if (!empty($order)) {
+            foreach ($order as $o) {
+                $col = $o['column'];
+                $dir = $o['dir'];
+            }
+        }
+
+        $data['dir'] = $dir;
+        $data['valid_columns'] = array(
+            0 => 'br.resi_buka',
+            1 => 'br.resi_buka',
+            2 => 'mp.nama_marketplace',
+            3 => 'kr.nama_kurir',
+            4 => 'br.tanggal_buka_retur',
+            5 => 'br.tanggal_buka_retur',
+            6 => 'dp.sku',
+            7 => 'dp.jumlah',
+            8 => 'br.status_detail_buka',
+        );
+
+        $data['order'] = !isset($data['valid_columns'][$col]) ? null : $data['valid_columns'][$col];
+
+        $list_resi = $this->retur_fcd->get_buka_retur_with_details($data, $start_date, $end_date);
+        $total = $this->retur_fcd->get_total_buka_retur_with_details($data, $start_date, $end_date);
+
+        $i = $data['start'] + 1;
+        $result = array();
+        foreach ($list_resi->result() as $row) {
+            $result[] = array(
+                'no_pesanan' => $row->no_pesanan ?? '-',
+                'noresi' => $row->resi_buka ?? '-',
+                'marketplace' => $row->nama_marketplace ?? '-',
+                'kurir' => $row->nama_kurir ?? '-',
+                'tanggal_buka' => empty($row->tanggal_buka_retur) ? '-' : date('Y-m-d', strtotime($row->tanggal_buka_retur)),
+                'jam_buka' => empty($row->tanggal_buka_retur) ? '-' : date('H:i:s', strtotime($row->tanggal_buka_retur)),
+                'sku' => $row->sku ?? '-',
+                'quantity' => $row->jumlah ?? 0,
+                'status_detail' => $row->status_detail_buka ?? '-',
+                'action' => '<button class="btn btn-danger btn-xs btn-delete-retur" data-url="report/delete-buka-retur/' . $row->id_bukaretur . '" data-type="buka"><i class="fa fa-trash"></i></button>'
+            );
+        }
+
+        $output = array(
+            "draw" => $draw,
+            "recordsTotal" => $total,
+            "recordsFiltered" => $total,
+            "data" => $result
+        );
+        echo json_encode($output);
+        exit();
+    }
+
+    /**
+     * Export Excel for Terima Retur
+     */
+    public function export_to_excel_terima_retur_report()
+    {
+        $this->load->model('retur_fcd');
+        ini_set('memory_limit', '-1');
+        
+        $reportrange = $this->input->get('reportrange');
+        if (empty($reportrange)) {
+            $reportrange = date('Y-m-d 00:00:00') . ' - ' . date('Y-m-d H:i:s');
+        }
+
+        $start_date = explode(" - ", $reportrange)[0];
+        $end_date = explode(" - ", $reportrange)[1];
+
+        $data['reportrange'] = $reportrange;
+        $data['list_data'] = $this->retur_fcd->get_terima_retur_with_details([], $start_date, $end_date)->result_array();
+
+        header("Content-type: application/vnd-ms-excel");
+        header("Content-Disposition: attachment; filename=Laporan_Terima_Retur_" . date('YmdHis') . ".xls");
+
+        $this->load->view('template_report/terima_retur_report', $data);
+    }
+
+    /**
+     * Export Excel for Buka Retur
+     */
+    public function export_to_excel_buka_retur_report()
+    {
+        $this->load->model('retur_fcd');
+        ini_set('memory_limit', '-1');
+        
+        $reportrange = $this->input->get('reportrange');
+        if (empty($reportrange)) {
+            $reportrange = date('Y-m-d 00:00:00') . ' - ' . date('Y-m-d H:i:s');
+        }
+
+        $start_date = explode(" - ", $reportrange)[0];
+        $end_date = explode(" - ", $reportrange)[1];
+
+        $data['reportrange'] = $reportrange;
+        $data['list_data'] = $this->retur_fcd->get_buka_retur_with_details([], $start_date, $end_date)->result_array();
+
+        header("Content-type: application/vnd-ms-excel");
+        header("Content-Disposition: attachment; filename=Laporan_Buka_Retur_" . date('YmdHis') . ".xls");
+
+        $this->load->view('template_report/buka_retur_report', $data);
+    }
+
+    /**
+     * Delete Terima Retur record
+     */
+    public function delete_terima_retur($id_resiretur)
+    {
+        $this->load->model('retur_fcd');
+        
+        if ($this->input->method() != 'post') {
+            $this->make_ajax_response(400, 'Invalid request method');
+        }
+
+        $result = $this->retur_fcd->destroy($id_resiretur);
+
+        if ($result['affected_rows'] > 0) {
+            $this->make_ajax_response(200, 'Data berhasil dihapus');
+        } else {
+            $this->make_ajax_response(400, 'Gagal menghapus data');
+        }
+    }
+
+    /**
+     * Delete Buka Retur record
+     */
+    public function delete_buka_retur($id_bukaretur)
+    {
+        $this->load->model('retur_fcd');
+        
+        if ($this->input->method() != 'post') {
+            $this->make_ajax_response(400, 'Invalid request method');
+        }
+
+        $result = $this->retur_fcd->destroy_buka_retur($id_bukaretur);
+
+        if ($result['affected_rows'] > 0) {
+            $this->make_ajax_response(200, 'Data berhasil dihapus');
+        } else {
+            $this->make_ajax_response(400, 'Gagal menghapus data');
+        }
+    }
+
     public function production_team_report()
     {
         $data['message'] = $this->session->flashdata('message');

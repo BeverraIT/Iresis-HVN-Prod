@@ -55,6 +55,11 @@ class MY_Controller extends CI_Controller
 
     public function make_ajax_response($status_code, $message, $data = [])
     {
+        // Clear any output buffer to prevent HTML/whitespace before JSON
+        if (ob_get_length()) ob_clean();
+        
+        // Set JSON header
+        header('Content-Type: application/json');
         set_status_header($status_code);
 
         $response = array(

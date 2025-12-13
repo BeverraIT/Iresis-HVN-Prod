@@ -232,6 +232,55 @@ class Packer extends MY_Controller
 		$this->make_ajax_response(200, NOTHING_TO_SAVE);
 	}
 
+	public function masalah_picker_save()
+	{
+		if ($this->input->method() == 'get') {
+			$this->make_ajax_response(400, INVALID_REQUEST_METHOD);
+		}
+
+		// Get data from POST
+		$noresi = $this->input->post('noresi');
+		$id_printresi = $this->input->post('id_printresi');
+		$sku = $this->input->post('sku');
+		$qty = $this->input->post('qty');
+		$type_masalah = $this->input->post('type_masalah');
+		$qty_bermasalah = $this->input->post('qty_bermasalah');
+		$sku_salah = $this->input->post('sku_salah');
+
+		// Validate required fields
+		if (empty($noresi) || empty($id_printresi) || empty($sku) || empty($type_masalah)) {
+			$this->make_ajax_response(400, 'Data tidak lengkap. Mohon lengkapi semua field yang wajib diisi.');
+		}
+
+		// Validate sku_salah if type_masalah is 4 (PAKET SALAH KERANGJANG OLEH KARYAWAN)
+		if ($type_masalah == '4' && empty($sku_salah)) {
+			$this->make_ajax_response(400, 'SKU Salah harus diisi untuk tipe masalah ini.');
+		}
+
+		// Prepare data for save
+		$masalah_picker = [
+			'noresi' => $noresi,
+			'id_printresi' => $id_printresi,
+			'sku' => $sku,
+			'qty' => $qty,
+			'id_typemasalah' => $type_masalah,
+			'qty_bermasalah' => $qty_bermasalah ?? 1,
+			'sku_salah' => !empty($sku_salah) ? $sku_salah : null,
+		];
+
+		$save = $this->packer_fcd->save_masalah_picker($masalah_picker, $this->data['user']);
+
+		if (isset($save['error'])) {
+			$this->make_ajax_response($save['code'], $save['message']);
+		}
+
+		if ($save['affected_rows'] > 0) {
+			$this->make_ajax_response(201, SUCCESS_SAVE_DATA);
+		}
+
+		$this->make_ajax_response(200, NOTHING_TO_SAVE);
+	}
+
     public function search_packer()
     {
         $this->show();
