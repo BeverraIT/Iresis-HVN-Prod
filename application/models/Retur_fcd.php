@@ -43,6 +43,12 @@ class Retur_fcd extends CI_Model
             $retur_exist = $this->db->get('tblresiretur')->row_array();
             
             if (!empty($retur_exist)) {
+                // Jika input Buka Retur, cek apakah resi sudah ada dengan status Terima Retur
+                if ($retur['status_retur'] == 'Buka Retur' && $retur_exist['status_retur'] == 'Terima Retur') {
+                    $error_messages[] = "Resi $noresi sudah diinput di Terima Retur, tidak bisa diinput di Buka Retur";
+                    continue;
+                }
+                // Jika resi sudah ada dengan status yang sama atau status lain, tolak
                 $error_messages[] = "Resi $noresi sudah ada";
                 continue;
             }

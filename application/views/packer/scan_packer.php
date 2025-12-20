@@ -170,7 +170,6 @@
                         <option value="1">1</option>
                         <option value="10">10</option>
                         <option value="100">100</option>
-                        <option value="1000">1000</option>
                       </select>
                       <select name="qty_bermasalah_level2" id="qty_bermasalah_level2" class="form-control qty-dropdown hidden" style="margin-bottom: 5px;">
                         <option value="">-- Pilih --</option>
@@ -183,7 +182,7 @@
                       </select>
                       <input type="hidden" name="qty_bermasalah" id="qty_bermasalah" value="1" required />
                     </div>
-                    <small class="help-block text-muted">Pilih quantity bermasalah dari dropdown (1-1000)</small>
+                    <small class="help-block text-muted">Pilih quantity bermasalah dari dropdown (1-100)</small>
                   </div>
                 </div>
 
@@ -420,11 +419,6 @@
         for (let i = 10; i <= 100; i += 10) {
           level2.append(`<option value="${i}">${i}</option>`);
         }
-      } else if (level1Value === 1000) {
-        // Untuk range 1000: tampilkan 100, 200, 300, ..., 1000 (ratusan)
-        for (let i = 100; i <= 1000; i += 100) {
-          level2.append(`<option value="${i}">${i}</option>`);
-        }
       }
     });
 
@@ -449,7 +443,7 @@
         return;
       }
       
-      // Generate options untuk level 3
+        // Generate options untuk level 3
       level3.removeClass('hidden').html('<option value="">-- Pilih --</option>');
       
       if (level1Value === 100) {
@@ -458,17 +452,6 @@
         const start = level2Value === 10 ? 1 : level2Value - 9;
         const end = level2Value;
         for (let i = start; i <= end; i++) {
-          level3.append(`<option value="${i}">${i}</option>`);
-        }
-        // Set default ke nilai terendah dari range
-        $('#qty_bermasalah').val(start);
-      } else if (level1Value === 1000) {
-        // Jika level2 adalah 100, tampilkan 100 (hanya satu pilihan)
-        // Jika level2 adalah 200, tampilkan 100, 110, 120, ..., 200 (puluhan)
-        // Jika level2 adalah 300, tampilkan 100, 110, 120, ..., 300 (puluhan)
-        const start = 100;
-        const end = level2Value;
-        for (let i = start; i <= end; i += 10) {
           level3.append(`<option value="${i}">${i}</option>`);
         }
         // Set default ke nilai terendah dari range
@@ -494,21 +477,6 @@
         $('#qty_bermasalah').val(level3Value);
         return;
       }
-      
-      // Jika level1 adalah 1000, generate level 4 (satuan)
-      if (level1Value === 1000) {
-        level4.removeClass('hidden').html('<option value="">-- Pilih --</option>');
-        // Jika level3 adalah 100, tampilkan 100-109
-        // Jika level3 adalah 110, tampilkan 111-120, dst
-        // Jika level3 adalah 120, tampilkan 121-130, dst
-        const start = level3Value === 100 ? 100 : level3Value - 9;
-        const end = level3Value === 100 ? 109 : level3Value;
-        for (let i = start; i <= end; i++) {
-          level4.append(`<option value="${i}">${i}</option>`);
-        }
-        // Set default ke nilai terendah dari range
-        $('#qty_bermasalah').val(start);
-      }
     });
 
     $('#qty_bermasalah_level4').on('change', function() {
@@ -530,7 +498,7 @@
           qty_bermasalah: {
             required: true,
             min: 1,
-            max: 1000,
+            max: 100,
             number: true
           },
           sku_salah: {
@@ -546,7 +514,7 @@
           qty_bermasalah: {
             required: 'Quantity bermasalah harus diisi',
             min: 'Quantity bermasalah minimal 1',
-            max: 'Quantity bermasalah maksimal 1000',
+            max: 'Quantity bermasalah maksimal 100',
             number: 'Quantity bermasalah harus berupa angka'
           },
           sku_salah: {

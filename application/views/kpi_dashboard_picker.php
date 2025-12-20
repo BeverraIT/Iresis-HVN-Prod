@@ -26,7 +26,7 @@ if (!$user || !isset($user['id_user'])) {
                             <button type="submit" class="btn btn-info" id="btn-search">
                                 <i class="fa fa-search"></i> Filter
                             </button>
-                            <button type="button" class="btn btn-default" onclick="location.reload()">
+                            <button type="button" class="btn btn-default" id="btn-refresh-kpi-picker">
                                 <i class="fa fa-refresh"></i> Refresh
                             </button>
                             <button type="button" class="btn btn-success" id="btn-export-excel">
@@ -430,6 +430,12 @@ $(document).off('submit', '#form-filter-kpi-picker').on('submit', '#form-filter-
     });
     
     return false;
+});
+
+// Refresh button should reload the dashboard section only (no full page refresh)
+$(document).off('click', '#btn-refresh-kpi-picker').on('click', '#btn-refresh-kpi-picker', function(e) {
+    e.preventDefault();
+    $('#form-filter-kpi-picker').trigger('submit');
 });
 
 // Export Excel button
