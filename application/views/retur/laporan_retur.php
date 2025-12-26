@@ -17,7 +17,7 @@
                   <div class="form-group">
                     <label class="col-md-2 control-label">Rentang Waktu</label>
                     <div class="col-md-4">
-                      <input type="text" id="rentang_waktu_terima" class="form-control" placeholder="Pilih Rentang Waktu" readonly />
+                      <input type="text" id="rentang_waktu_terima" class="form-control" placeholder="Pilih Rentang Waktu" />
                     </div>
                     <label class="col-md-1 control-label">Kurir</label>
                     <div class="col-md-3">
@@ -81,7 +81,7 @@
                   <div class="form-group">
                     <label class="col-md-2 control-label">Rentang Waktu</label>
                     <div class="col-md-4">
-                      <input type="text" id="rentang_waktu_buka" class="form-control" placeholder="Pilih Rentang Waktu" readonly />
+                      <input type="text" id="rentang_waktu_buka" class="form-control" placeholder="Pilih Rentang Waktu" />
                     </div>
                     <label class="col-md-1 control-label">Kurir</label>
                     <div class="col-md-3">
@@ -306,6 +306,20 @@ $(document).ready(function() {
     });
 });
 </script>
+
+<style>
+#rentang_waktu_terima, #rentang_waktu_buka {
+    background-color: #fff !important;
+    cursor: pointer !important;
+    color: #555 !important;
+    border: 1px solid #ccc !important;
+}
+
+#rentang_waktu_terima:hover, #rentang_waktu_buka:hover {
+    border-color: #66afe9 !important;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102,175,233,.6) !important;
+}
+</style>
 
 <style>
 .form-group {
