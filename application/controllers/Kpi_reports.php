@@ -256,12 +256,12 @@ class Kpi_reports extends MY_Controller
                 WHERE rab.tanggal_resiambilbarang BETWEEN ? AND ?
             ", array($start_date, $end_date));
             $sku_result = $sku_query->row();
-            $stats['total_sku'] = $sku_result->total_sku_qty ?? 0;
+            $stats['total_qty'] = $sku_result->total_sku_qty ?? 0;
             $stats['total_sku_unique'] = $sku_result->total_sku_unique ?? 0;
 
             // Average SKU per Picker
             $stats['avg_sku_per_picker'] = $stats['total_picking'] > 0 
-                ? round($stats['total_sku'] / $stats['total_picking'], 2) 
+                ? round($stats['total_qty'] / $stats['total_picking'], 2) 
                 : 0;
 
             // Total Active Pickers
@@ -282,8 +282,9 @@ class Kpi_reports extends MY_Controller
                     t.target_resi,
                     COUNT(DISTINCT rab.id_resi) as total_resi,
                     COUNT(DISTINCT dr.sku) as total_sku_unique,
-                    SUM(CAST(dr.jumlah AS UNSIGNED)) as total_sku,
-                    ROUND(SUM(CAST(dr.jumlah AS UNSIGNED)) / COUNT(DISTINCT rab.id_resi), 2) as avg_sku_per_resi,
+                    SUM(CAST(dr.jumlah AS UNSIGNED)) as total_qty,
+                    ROUND(SUM(CAST(dr.jumlah AS UNSIGNED)) / COUNT(DISTINCT rab.id_resi), 2) as avg_qty_per_resi,
+                    ROUND(COUNT(DISTINCT dr.sku) / COUNT(DISTINCT rab.id_resi), 2) as avg_sku_per_resi,
                     (COUNT(DISTINCT rab.id_resi) - COALESCE(t.target_resi, 0)) as selisih,
                     CASE 
                         WHEN t.target_resi > 0 THEN ROUND((COUNT(DISTINCT rab.id_resi) / t.target_resi) * 100, 1)
@@ -368,8 +369,9 @@ class Kpi_reports extends MY_Controller
                     t.target_resi,
                     COUNT(DISTINCT rab.id_resi) as total_resi,
                     COUNT(DISTINCT dr.sku) as total_sku_unique,
-                    SUM(CAST(dr.jumlah AS UNSIGNED)) as total_sku,
-                    ROUND(SUM(CAST(dr.jumlah AS UNSIGNED)) / COUNT(DISTINCT rab.id_resi), 2) as avg_sku_per_resi,
+                    SUM(CAST(dr.jumlah AS UNSIGNED)) as total_qty,
+                    ROUND(SUM(CAST(dr.jumlah AS UNSIGNED)) / COUNT(DISTINCT rab.id_resi), 2) as avg_qty_per_resi,
+                    ROUND(COUNT(DISTINCT dr.sku) / COUNT(DISTINCT rab.id_resi), 2) as avg_sku_per_resi,
                     (COUNT(DISTINCT rab.id_resi) - COALESCE(t.target_resi, 0)) as selisih,
                     CASE 
                         WHEN t.target_resi > 0 THEN ROUND((COUNT(DISTINCT rab.id_resi) / t.target_resi) * 100, 1)
@@ -487,12 +489,12 @@ class Kpi_reports extends MY_Controller
                 WHERE p.tanggal_packing BETWEEN ? AND ?
             ", array($start_date, $end_date));
             $sku_result = $sku_query->row();
-            $stats['total_sku'] = $sku_result->total_sku_qty ?? 0;
+            $stats['total_qty'] = $sku_result->total_sku_qty ?? 0;
             $stats['total_sku_unique'] = $sku_result->total_sku_unique ?? 0;
 
             // Average SKU per Packer
             $stats['avg_sku_per_packer'] = $stats['total_packing'] > 0 
-                ? round($stats['total_sku'] / $stats['total_packing'], 2) 
+                ? round($stats['total_qty'] / $stats['total_packing'], 2) 
                 : 0;
 
             // Total Active Packers
@@ -514,8 +516,9 @@ class Kpi_reports extends MY_Controller
                     t.target_resi,
                     COUNT(DISTINCT p.id_resi) as total_resi,
                     COUNT(DISTINCT dr.sku) as total_sku_unique,
-                    SUM(CAST(dr.jumlah AS UNSIGNED)) as total_sku,
-                    ROUND(SUM(CAST(dr.jumlah AS UNSIGNED)) / COUNT(DISTINCT p.id_resi), 2) as avg_sku_per_resi,
+                    SUM(CAST(dr.jumlah AS UNSIGNED)) as total_qty,
+                    ROUND(SUM(CAST(dr.jumlah AS UNSIGNED)) / COUNT(DISTINCT p.id_resi), 2) as avg_qty_per_resi,
+                    ROUND(COUNT(DISTINCT dr.sku) / COUNT(DISTINCT p.id_resi), 2) as avg_sku_per_resi,
                     (COUNT(DISTINCT p.id_resi) - COALESCE(t.target_resi, 0)) as selisih,
                     CASE 
                         WHEN t.target_resi > 0 THEN ROUND((COUNT(DISTINCT p.id_resi) / t.target_resi) * 100, 1)
@@ -546,8 +549,9 @@ class Kpi_reports extends MY_Controller
                     t.target_resi,
                     COUNT(DISTINCT p.id_resi) as total_resi,
                     COUNT(DISTINCT dr.sku) as total_sku_unique,
-                    SUM(CAST(dr.jumlah AS UNSIGNED)) as total_sku,
-                    ROUND(SUM(CAST(dr.jumlah AS UNSIGNED)) / COUNT(DISTINCT p.id_resi), 2) as avg_sku_per_resi,
+                    SUM(CAST(dr.jumlah AS UNSIGNED)) as total_qty,
+                    ROUND(SUM(CAST(dr.jumlah AS UNSIGNED)) / COUNT(DISTINCT p.id_resi), 2) as avg_qty_per_resi,
+                    ROUND(COUNT(DISTINCT dr.sku) / COUNT(DISTINCT p.id_resi), 2) as avg_sku_per_resi,
                     (COUNT(DISTINCT p.id_resi) - COALESCE(t.target_resi, 0)) as selisih,
                     CASE 
                         WHEN t.target_resi > 0 THEN ROUND((COUNT(DISTINCT p.id_resi) / t.target_resi) * 100, 1)
