@@ -20,6 +20,10 @@
 <table class="table table-striped" id="datatable-receipt-process-tab2">
   <thead>
     <tr>
+      <th colspan="10" style="text-align:right">Grand Total</th>
+      <th id="grand-total-tab2">-</th>
+    </tr>
+    <tr>
       <th>#</th>
       <th>Market Place</th>
       <th>Tanggal Scan Resi</th>
@@ -78,6 +82,20 @@
         data: function(d) {
           d.start_date = $('#reportrange-receipt-process-tab2').val().split(" - ")[0];
           d.end_date = $('#reportrange-receipt-process-tab2').val().split(" - ")[1];
+        }
+      },
+      'initComplete': function() {
+        // Update grand total
+        var json = this.api().ajax.json();
+        if (json && json.grandTotal !== undefined) {
+          $('#grand-total-tab2').text(json.grandTotal);
+        }
+      },
+      'drawCallback': function() {
+        // Update grand total setiap kali draw
+        var json = this.api().ajax.json();
+        if (json && json.grandTotal !== undefined) {
+          $('#grand-total-tab2').text(json.grandTotal);
         }
       },
     });

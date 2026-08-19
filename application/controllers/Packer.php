@@ -12,6 +12,8 @@ class Packer extends MY_Controller
 		$this->load->model('packer_fcd');
         $this->load->model('receipt_fcd');
         $this->load->model('problemtype_fcd');
+        // Load nosubmit model
+        $this->load->model('packer_nosubmit_fcd');
 	}
 
 	public function scan_packer()
@@ -356,4 +358,76 @@ class Packer extends MY_Controller
 			echo json_encode(['status' => 'expired']);
 		}
 	}
+
+    // ==========================================
+    // NEW METHODS FOR SCAN PACKER NO SUBMIT
+    // ==========================================
+	public function scan_nosubmit()
+	{
+        $data = [];
+
+        // Initialize default values
+        $data['total_scan'] = 0;
+        $data['nama_picker'] = '-';
+        $data['komputer_picker'] = '-';
+        $data['komputer_packer'] = isset($this->data['nama_pk']) ? $this->data['nama_pk'] : (isset($this->data['user']['nama_komputer']) ? $this->data['user']['nama_komputer'] : '-');
+
+        // Get total scan for current user to display
+        $packer_scan = $this->packer_nosubmit_fcd->get_total_scan_user($this->data['user']['id_user'])->row();
+        if($packer_scan) {
+            $data['total_scan'] = $packer_scan->total_scan;
+        }
+
+        // Custom show logic to use specific view
+        if (ob_get_length()) ob_clean();
+        header('Content-Type: application/json');
+        
+        echo json_encode(array(
+            'view' => $this->load->view('packer/scan_packer_nosubmit', $data, TRUE),
+            'message' => empty($data['message']) ? null : $data['message'],
+        ));
+	}
+
+	public function save_nosubmit()
+	{
+		if ($this->input->method() == 'get') {
+			$this->make_ajax_response(400, "Invalid Request Method");
+		}
+
+		$packer['noresi'] = $this->input->post('noresi');
+		
+		$status_performa_code = $this->input->post('status_performa');
+		
+		if (!empty($status_performa_code)) {
+			$this->load->model('kpi_fcd');
+			$status_id = $this->kpi_fcd->get_status_id_by_name($status_performa_code);
+			if ($status_id) {
+				$packer['status_performa_id'] = $status_id;
+			}
+		} else {
+			$user_status_performa = $this->session->userdata('user_status_performa');
+			if ($user_status_performa && isset($user_status_performa->id_statusperforma)) {
+				$packer['status_performa_id'] = $user_status_performa->id_statusperforma;
+			} else {
+				$this->load->model('kpi_fcd');
+				$normal_status_id = $this->kpi_fcd->get_status_id_by_name('NORMAL_PACKER');
+				if ($normal_status_id) {
+					$packer['status_performa_id'] = $normal_status_id;
+				}
+			}
+		}
+
+		$save = $this->packer_nosubmit_fcd->save($packer, $this->data['user']);
+
+		if (isset($save['error'])) {
+			$this->make_ajax_response($save['code'], $save['message']);
+		}
+
+		if ($save['affected_rows'] > 0) {
+			$this->make_ajax_response(201, "Data berhasil disubmit!");
+		}
+
+		$this->make_ajax_response(200, "Tidak ada data yang disimpan.");
+	}
+
 }

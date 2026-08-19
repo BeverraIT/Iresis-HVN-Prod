@@ -220,6 +220,7 @@ class Receipt_fcd extends CI_Model
             $this->db->group_end();
         }
 
+        // Select tanggal_printresi dari tblprintresi untuk tanggal dan jam scan resi
         $this->db->select('
             t3.nama_marketplace,
             t.tanggal_printresi,
@@ -1109,6 +1110,11 @@ class Receipt_fcd extends CI_Model
         $total_duplicate_skip = 0;
         $total_skip_update_same_status = 0; // Track skipped updates
 
+        // Rincian baris yang dilewati, supaya kehilangan data tidak lagi senyap
+        $total_skip_no_resi  = 0; // pesanan belum punya nomor resi (wajar, akan masuk di upload berikutnya)
+        $total_skip_invalid  = 0; // sudah punya resi tapi no_pesanan/sku kosong (anomali, perlu dicek)
+        $total_detail_resync = 0; // resi lama yang detailnya disegarkan ulang
+
         // Start transaction
         $this->db->trans_start();
 
@@ -1120,7 +1126,31 @@ class Receipt_fcd extends CI_Model
             }
             $kurir_map = [];
             foreach ($this->db->get('tblkurir')->result() as $kr) {
-                $kurir_map[strtolower($kr->nama_kurir)] = $kr->id_kurir;
+                $nama_kurir_lower = strtolower($kr->nama_kurir);
+                $kurir_map[$nama_kurir_lower] = $kr->id_kurir;
+
+                // Pisahkan mapping untuk JNT biasa dan JNT Cargo (ini berbeda kurir)
+                $is_jnt = stripos($nama_kurir_lower, 'jnt') !== false
+                       || stripos($nama_kurir_lower, 'j&t') !== false;
+
+                if (!$is_jnt) {
+                    continue;
+                }
+
+                // Master kurir memakai ejaan Indonesia ("JNT KARGO") sementara file export
+                // Jubelio memakai ejaan Inggris ("J&T Cargo"). Kalau hanya 'cargo' yang dicek,
+                // baris "JNT KARGO" lolos ke cabang JNT biasa lalu menimpa mapping kurir JNT
+                // yang sebenarnya, sehingga J&T Express ikut tercatat sebagai kargo.
+                $is_cargo = stripos($nama_kurir_lower, 'cargo') !== false
+                         || stripos($nama_kurir_lower, 'kargo') !== false;
+
+                if ($is_cargo) {
+                    $kurir_map['jnt cargo'] = $kr->id_kurir;
+                    $kurir_map['j&t cargo'] = $kr->id_kurir;
+                } else {
+                    $kurir_map['jnt'] = $kr->id_kurir;
+                    $kurir_map['j&t'] = $kr->id_kurir;
+                }
             }
 
             // Helpers
@@ -1156,7 +1186,9 @@ class Receipt_fcd extends CI_Model
                 'instant/sameday'   => ['instant', 'gosend', 'grab'],
                 'jemput sendiri'    => ['jemput sendiri'],
                 'jne'               => ['jne'],
-                'jnt'               => ['j&t', 'jnt'],
+                // Ejaan Inggris maupun Indonesia sama-sama muncul di file export
+                'jnt cargo'         => ['j&t cargo', 'jnt cargo', 'j&t kargo', 'jnt kargo'],
+                'jnt'               => ['j&t', 'jnt'], // JNT biasa / J&T biasa (bukan cargo)
                 'lazada'            => ['lazada', 'lex id'],
                 'ninja'             => ['ninja'],
                 'rex'               => ['rex'],
@@ -1176,14 +1208,74 @@ class Receipt_fcd extends CI_Model
                     $parts = explode('delivery:', $rawLower);
                     $section = trim($parts[1]);
                 }
+                
+                // Urutan pemeriksaan menentukan hasil, karena alias saling bertumpang tindih.
+                //
+                // 'jnt cargo' harus lebih dulu dari 'central cargo': Central Cargo memakai alias
+                // telanjang 'kargo', sehingga "J&T KARGO" akan tertangkap sebagai Central Cargo
+                // kalau urutannya terbalik.
+                //
+                // Semua varian cargo lalu diperiksa sebelum kurir biasa, supaya "J&T Cargo"
+                // tidak keburu cocok dengan alias 'j&t' milik JNT biasa.
+                $ordered_aliases = [];
+                if (isset($courier_aliases['jnt cargo'])) {
+                    $ordered_aliases['jnt cargo'] = $courier_aliases['jnt cargo'];
+                }
+                foreach ($courier_aliases as $norm => $alts) {
+                    if (!isset($ordered_aliases[$norm]) && stripos($norm, 'cargo') !== false) {
+                        $ordered_aliases[$norm] = $alts;
+                    }
+                }
+                foreach ($courier_aliases as $norm => $alts) {
+                    if (!isset($ordered_aliases[$norm])) {
+                        $ordered_aliases[$norm] = $alts;
+                    }
+                }
+                
                 foreach ([$section, $rawLower] as $text) {
-                    foreach ($courier_aliases as $norm => $alts) {
+                    foreach ($ordered_aliases as $norm => $alts) {
                         foreach ($alts as $needle) {
                             if (stripos($text, $needle) !== false) return $norm;
                         }
                     }
                 }
                 return '';
+            };
+
+            // Penentuan marketplace & kurir dipakai di dua tempat (insert dan update), dan
+            // hasilnya juga perlu dibandingkan dengan data lama untuk memutuskan apakah header
+            // perlu diperbarui. Dijadikan closure supaya logikanya tidak bercabang dua.
+            $resolveMarketplace = function ($row) use ($marketplace_map) {
+                $marketplaceRaw = strtolower($row['N'] ?? '');
+                if (stripos($marketplaceRaw, 'tokopedia') !== false) {
+                    $marketplace = 'tokopedia';
+                } elseif (stripos($marketplaceRaw, 'internal') !== false) {
+                    $marketplace = 'reseller';
+                } else {
+                    $marketplace = $marketplaceRaw;
+                }
+
+                return [$marketplace, $marketplace_map[$marketplace] ?? 99];
+            };
+
+            $resolveKurir = function ($row, $marketplace) use ($kurir_map, $detectCourier) {
+                $kurir = $detectCourier($row['S'] ?? '');
+
+                // Lazada memakai kurir sendiri walau namanya tertulis JNE/Ninja
+                if ($marketplace === 'lazada' && in_array($kurir, ['jne', 'ninja'], true)) {
+                    $kurir = 'lazada';
+                }
+
+                $id_kurir = $kurir_map[$kurir] ?? null;
+                if (!$id_kurir) {
+                    if ($kurir === 'jnt cargo') {
+                        $id_kurir = $kurir_map['jnt cargo'] ?? $kurir_map['j&t cargo'] ?? null;
+                    } elseif ($kurir === 'jnt') {
+                        $id_kurir = $kurir_map['jnt'] ?? $kurir_map['j&t'] ?? null;
+                    }
+                }
+
+                return $id_kurir ?? 99;
             };
 
             // Check for existing records with status-based logic
@@ -1197,7 +1289,7 @@ class Receipt_fcd extends CI_Model
                 $noresi_chunks = array_chunk($noresi_list, $chunk_size);
 
                 foreach ($noresi_chunks as $chunk) {
-                    $this->db->select('noresi, status_pesanan, id_printresi');
+                    $this->db->select('noresi, status_pesanan, id_printresi, id_kurir, id_marketplace');
                     $this->db->from('tblprintresi');
                     $this->db->where_in('noresi', $chunk);
                     $existing_result = $this->db->get()->result();
@@ -1213,7 +1305,9 @@ class Receipt_fcd extends CI_Model
                             // Can be updated - status is null, empty string, or anything except COMPLETED
                             $update_candidates[$row->noresi] = [
                                 'id_printresi' => $row->id_printresi,
-                                'current_status' => $row->status_pesanan
+                                'current_status' => $row->status_pesanan,
+                                'id_kurir' => $row->id_kurir,
+                                'id_marketplace' => $row->id_marketplace
                             ];
                         }
                     }
@@ -1223,6 +1317,8 @@ class Receipt_fcd extends CI_Model
             $batch_header_map = [];
             $batch_detail_map = [];
             $batch_update_map = [];
+            $update_detail_map = []; // detail milik resi yang sudah ada, untuk disinkronkan ulang
+            $seen_same_status = [];  // supaya "data tidak berubah" dihitung per resi, bukan per baris
             $total_updated = 0;
 
             foreach ($receiptData as $row) {
@@ -1235,6 +1331,17 @@ class Receipt_fcd extends CI_Model
                 // Skip header row or invalid data
                 if ($no_pesanan === 'NO_PESANAN' || !$no_pesanan || !$sku || !$noresi) {
                     $total_skip_insert++;
+
+                    if ($no_pesanan !== 'NO_PESANAN') {
+                        if (!$noresi) {
+                            // Pesanan belum dapat nomor resi dari marketplace. Wajar, tidak perlu alarm.
+                            $total_skip_no_resi++;
+                        } else {
+                            // Sudah ada resi tapi SKU/no_pesanan kosong: ini item yang benar-benar hilang.
+                            $total_skip_invalid++;
+                            log_message('warning', "insert_receipt: baris dilewati, resi $noresi punya no_pesanan/sku kosong");
+                        }
+                    }
                     continue;
                 }
 
@@ -1245,29 +1352,38 @@ class Receipt_fcd extends CI_Model
 
                 // Check if this noresi needs to be updated instead of inserted
                 if (isset($update_candidates[$noresi])) {
+                    // Detail tetap dikumpulkan walaupun status pesanan tidak berubah, karena qty
+                    // di Jubelio bisa berubah tanpa status ikut berubah. Perbandingan dengan data
+                    // lama dilakukan belakangan supaya resi yang isinya sama tidak ditulis ulang.
+                    $id_resi_lama = $update_candidates[$noresi]['id_printresi'];
+                    $update_key   = $id_resi_lama . '|' . $no_pesanan . '|' . $sku;
+
+                    if (!isset($update_detail_map[$update_key])) {
+                        $update_detail_map[$update_key] = [
+                            'id_resi'    => $id_resi_lama,
+                            'no_pesanan' => $no_pesanan,
+                            'sku'        => $sku,
+                            'no_rak'     => $row['R'] ?? '',
+                            'jumlah'     => (int)($row['Q'] ?? 0)
+                        ];
+                    } else {
+                        $update_detail_map[$update_key]['jumlah'] += (int)($row['Q'] ?? 0);
+                    }
+
                     $current_status = strtoupper(trim($existing_status_map[$noresi] ?? ''));
-                    // Only update if status_pesanan is different (case-insensitive, trim)
-                    if ($current_status !== $new_status_upper) {
-                        // Normalize marketplace
-                        $marketplaceRaw = strtolower($row['N'] ?? '');
-                        if (stripos($marketplaceRaw, 'tokopedia') !== false) {
-                            $marketplace = 'tokopedia';
-                        }
-                        elseif (stripos($marketplaceRaw, 'internal') !== false) {
-                            $marketplace = 'reseller';
-                        }
-                        else $marketplace = $marketplaceRaw;
-                        $id_marketplace = $marketplace_map[$marketplace] ?? 99;
 
-                        // Normalize courier
-                        $kurirRaw = $row['S'] ?? '';
-                        $kurir = $detectCourier($kurirRaw);
-                        // Override: if marketplace is Lazada but detected courier is JNE or Ninja, force Lazada courier
-                        if ($marketplace === 'lazada' && in_array($kurir, ['jne', 'ninja'], true)) {
-                            $kurir = 'lazada';
-                        }
-                        $id_kurir = $kurir_map[$kurir] ?? 99;
+                    list($marketplace, $id_marketplace) = $resolveMarketplace($row);
+                    $id_kurir = $resolveKurir($row, $marketplace);
 
+                    // Header diperbarui bukan hanya saat status berubah. Kurir dan marketplace
+                    // ikut dibandingkan, karena hasil pemetaannya bisa berubah setelah perbaikan
+                    // kode - dan resi yang statusnya kebetulan tetap sama tidak boleh terkunci
+                    // dengan kurir yang salah selamanya.
+                    $perlu_update = $current_status !== $new_status_upper
+                        || (int) $update_candidates[$noresi]['id_kurir'] !== (int) $id_kurir
+                        || (int) $update_candidates[$noresi]['id_marketplace'] !== (int) $id_marketplace;
+
+                    if ($perlu_update) {
                         $batch_update_map[$noresi] = [
                             'id_printresi'        => $update_candidates[$noresi]['id_printresi'],
                             'id_marketplace'      => $id_marketplace,
@@ -1282,43 +1398,29 @@ class Receipt_fcd extends CI_Model
                             'modified_at'         => date('Y-m-d H:i:s'),
                             'modified_by'         => $user_id
                         ];
-                    } else {
+                    } elseif (!isset($seen_same_status[$noresi])) {
+                        $seen_same_status[$noresi] = true;
                         $total_skip_update_same_status++;
                     }
                     continue;
                 }
 
-                // Normalize marketplace
-                $marketplaceRaw = strtolower($row['N'] ?? '');
-                if (stripos($marketplaceRaw, 'tokopedia') !== false) {
-                    $marketplace = 'tokopedia';
-                }
-                elseif (stripos($marketplaceRaw, 'internal') !== false) {
-                    $marketplace = 'reseller';
-                }
-                else $marketplace = $marketplaceRaw;
-                $id_marketplace = $marketplace_map[$marketplace] ?? 99;
-
-                // Normalize courier
-                $kurirRaw = $row['S'] ?? '';
-                $kurir = $detectCourier($kurirRaw);
-                // Override: if marketplace is Lazada but detected courier is JNE or Ninja, force Lazada courier
-                if ($marketplace === 'lazada' && in_array($kurir, ['jne', 'ninja'], true)) {
-                    $kurir = 'lazada';
-                }
-                $id_kurir = $kurir_map[$kurir] ?? 99;
+                list($marketplace, $id_marketplace) = $resolveMarketplace($row);
+                $id_kurir = $resolveKurir($row, $marketplace);
 
                 // Always set detail_key
                 $detail_key = "$noresi-$no_pesanan-$sku";
 
                 // Header: one per noresi
                 if (!isset($batch_header_map[$noresi])) {
+                    // Gunakan created_at yang sama untuk tanggal_printresi agar konsisten
+                    $created_at = date('Y-m-d H:i:s');
                     $batch_header_map[$noresi] = [
                         'noresi'              => $noresi,
                         'id_marketplace'      => $id_marketplace,
                         'id_kurir'            => $id_kurir,
                         'admin_pegawai'       => $user_id,
-                        'tanggal_printresi'   => $combineDateTime($excelDateToPhpDate($row['F'] ?? ''), $excelTimeToPhpTime($row['G'] ?? '')),
+                        'tanggal_printresi'   => $created_at, // Sama dengan created_at
                         'tanggal_pesan'       => $combineDateTime($excelDateToPhpDate($row['D'] ?? null), $excelTimeToPhpTime($row['E'] ?? null)),
                         'tanggal_bataskirim'  => $combineDateTime($excelDateToPhpDate($row['H'] ?? null), $excelTimeToPhpTime($row['I'] ?? null)),
                         'tanggal_pengiriman'  => $combineDateTime($excelDateToPhpDate($row['J'] ?? null), $excelTimeToPhpTime($row['K'] ?? null)),
@@ -1328,7 +1430,7 @@ class Receipt_fcd extends CI_Model
                         'batal'               => '',
                         'keterangan'          => '',
                         'nomorpicklist'       => $row['C'] ?? '',
-                        'created_at'          => date('Y-m-d H:i:s'),
+                        'created_at'          => $created_at,
                         'created_by'          => $user_id
                     ];
                 }
@@ -1399,6 +1501,19 @@ class Receipt_fcd extends CI_Model
                 }
             }
 
+            // Sinkronkan detail milik resi yang sudah ada di database.
+            //
+            // Sebelumnya blok update hanya menyentuh tblprintresi, sehingga tbldetailprintresi
+            // tidak pernah ikut diperbaiki saat file diupload ulang. Akibatnya qty yang salah
+            // menetap selamanya dan berat standar di modul timbangan ikut salah.
+            //
+            // Yang dijaga di sini: progres picker/CS (status_kurangan, qty_kurang,
+            // tanggal_scan_kurangan) tidak boleh hilang, dan id_detail_resi dipertahankan
+            // untuk baris yang masih ada supaya halaman yang sedang terbuka tidak kehilangan acuan.
+            if (!empty($update_detail_map)) {
+                $total_detail_resync += $this->_sync_detail_receipt($update_detail_map, $batch_size);
+            }
+
             // Update records that were marked for update
             if (!empty($batch_update_map)) {
                 foreach ($batch_update_map as $noresi => $update_data) {
@@ -1415,8 +1530,13 @@ class Receipt_fcd extends CI_Model
                 throw new Exception('Transaction failed');
             }
 
-            $message = "Total Data Terinput: $total_success_insert | Dilewati: $total_skip_insert | Duplikat: $total_duplicate_skip | Diupdate: $total_updated | Data Tidak Berubah: $total_skip_update_same_status";
-            log_message('info', $message);
+            $message = "Total Data Terinput: $total_success_insert | Dilewati: $total_skip_insert | Duplikat: $total_duplicate_skip | Diupdate: $total_updated | Data Tidak Berubah: $total_skip_update_same_status | Detail Disinkronkan: $total_detail_resync";
+
+            if ($total_skip_invalid > 0) {
+                $message .= " | PERHATIAN: $total_skip_invalid baris punya nomor resi tapi SKU/no_pesanan kosong, cek log";
+            }
+
+            log_message('info', $message . " | Dilewati krn belum ada resi: $total_skip_no_resi");
 
             return $message;
 
@@ -1429,34 +1549,127 @@ class Receipt_fcd extends CI_Model
     }
 
     /**
-     * Helper to insert batch safely
+     * Menyegarkan tbldetailprintresi untuk resi yang sudah ada di database.
+     *
+     * Hanya resi yang isinya benar-benar berubah yang ditulis, supaya upload ulang
+     * file besar tidak menyentuh ratusan ribu baris tanpa perlu.
+     *
+     * Aturan yang dipakai per baris detail:
+     *   - masih ada di file & nilainya berubah  -> UPDATE (id_detail_resi dipertahankan)
+     *   - baru muncul di file                   -> INSERT
+     *   - tidak ada lagi di file                -> DELETE
+     *
+     * Progres picker/CS ikut dipertahankan. Kalau qty pesanan turun di bawah qty_kurang
+     * yang pernah dicatat picker, qty_kurang dipotong mengikuti qty baru supaya tidak
+     * ada kurangan yang melebihi jumlah pesanan.
+     *
+     * @param array $update_detail_map hasil agregasi file, key = "id_resi|no_pesanan|sku"
+     * @param int   $batch_size
+     * @return int jumlah resi yang detailnya berubah
      */
-    private function _flush_batch(&$batch_data_map, &$batch_detail_map, &$total_success_insert) {
-        $this->db->insert_batch('tblprintresi', array_values($batch_data_map));
-        $inserted_rows = count($batch_data_map);
-        $last_id = $this->db->insert_id();
-
-        $detail_batch = [];
-        $i = 0;
-        foreach ($batch_data_map as $k => $header) {
-            $id_resi = $last_id - $inserted_rows + (++$i);
-            $detail = $batch_detail_map[$k];
-            $detail_batch[] = [
-                'id_resi'   => $id_resi,
-                'no_pesanan'=> $detail['no_pesanan'],
-                'sku'       => $detail['sku'],
-                'no_rak'    => $detail['no_rak'],
-                'jumlah'    => $detail['jumlah']
-            ];
+    private function _sync_detail_receipt(array $update_detail_map, $batch_size = 500)
+    {
+        // Kelompokkan per id_resi
+        $per_resi = [];
+        foreach ($update_detail_map as $detail) {
+            $per_resi[$detail['id_resi']][$detail['no_pesanan'] . '|' . $detail['sku']] = $detail;
         }
 
-        if (!empty($detail_batch)) {
-            $this->db->insert_batch('tbldetailprintresi', $detail_batch);
+        $resi_berubah = 0;
+
+        foreach (array_chunk(array_keys($per_resi), 500) as $chunk_id_resi) {
+            $this->db->select('id_detail_resi, id_resi, no_pesanan, sku, no_rak, jumlah, qty_manual, status_kurangan, qty_kurang, tanggal_scan_kurangan');
+            $this->db->from('tbldetailprintresi');
+            $this->db->where_in('id_resi', $chunk_id_resi);
+            $existing_rows = $this->db->get()->result_array();
+
+            $existing = [];
+            foreach ($existing_rows as $row) {
+                $existing[$row['id_resi']][$row['no_pesanan'] . '|' . $row['sku']] = $row;
+            }
+
+            $rows_to_insert = [];
+            $ids_to_delete  = [];
+
+            foreach ($chunk_id_resi as $id_resi) {
+                $baru = $per_resi[$id_resi];
+                $lama = $existing[$id_resi] ?? [];
+
+                $ada_perubahan = false;
+
+                // Baris yang hilang dari file
+                foreach ($lama as $key => $row_lama) {
+                    if (!isset($baru[$key])) {
+                        $ids_to_delete[] = $row_lama['id_detail_resi'];
+                        $ada_perubahan = true;
+                    }
+                }
+
+                foreach ($baru as $key => $row_baru) {
+                    if (!isset($lama[$key])) {
+                        // Item baru yang sebelumnya belum tercatat
+                        $rows_to_insert[] = [
+                            'id_resi'    => $id_resi,
+                            'no_pesanan' => $row_baru['no_pesanan'],
+                            'sku'        => $row_baru['sku'],
+                            'no_rak'     => $row_baru['no_rak'],
+                            'jumlah'     => $row_baru['jumlah']
+                        ];
+                        $ada_perubahan = true;
+                        continue;
+                    }
+
+                    $row_lama = $lama[$key];
+
+                    // Qty yang sudah dikoreksi manual tidak boleh ditimpa oleh file. Selama
+                    // export Jubelio masih melebur qty Tokopedia, isi file justru lebih buruk
+                    // daripada angka hasil koreksi yang sudah dicocokkan ke layar Jubelio.
+                    $qty_dikunci = (int) $row_lama['qty_manual'] === 1;
+
+                    $jumlah_berubah = !$qty_dikunci
+                        && (int) $row_lama['jumlah'] !== (int) $row_baru['jumlah'];
+                    $rak_berubah = (string) $row_lama['no_rak'] !== (string) $row_baru['no_rak'];
+
+                    if (!$jumlah_berubah && !$rak_berubah) {
+                        continue;
+                    }
+
+                    $update_data = ['no_rak' => $row_baru['no_rak']];
+
+                    if ($jumlah_berubah) {
+                        $update_data['jumlah'] = $row_baru['jumlah'];
+
+                        // Kurangan tidak boleh melebihi jumlah pesanan yang baru
+                        if ((int) $row_lama['qty_kurang'] > (int) $row_baru['jumlah']) {
+                            $update_data['qty_kurang'] = $row_baru['jumlah'];
+                        }
+                    }
+
+                    $this->db->where('id_detail_resi', $row_lama['id_detail_resi']);
+                    $this->db->update('tbldetailprintresi', $update_data);
+                    $ada_perubahan = true;
+                }
+
+                if ($ada_perubahan) {
+                    $resi_berubah++;
+                }
+            }
+
+            if (!empty($ids_to_delete)) {
+                foreach (array_chunk($ids_to_delete, $batch_size) as $chunk_delete) {
+                    $this->db->where_in('id_detail_resi', $chunk_delete);
+                    $this->db->delete('tbldetailprintresi');
+                }
+            }
+
+            if (!empty($rows_to_insert)) {
+                foreach (array_chunk($rows_to_insert, $batch_size) as $chunk_insert) {
+                    $this->db->insert_batch('tbldetailprintresi', $chunk_insert);
+                }
+            }
         }
 
-        $total_success_insert += $inserted_rows;
-        $batch_data_map = [];
-        $batch_detail_map = [];
+        return $resi_berubah;
     }
 
     private function get_existing_receipt_data(array $dataResi) {

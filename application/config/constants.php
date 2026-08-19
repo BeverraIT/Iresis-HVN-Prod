@@ -100,7 +100,20 @@ define('DATA_NOT_FOUND', 'Data tidak ditemukan');
 define('INVALID_REQUEST_METHOD', 'Metode permintaan tidak valid');
 define('FAILED_SAVE_DATA', 'Gagal menyimpan data');
 
+define('CEK_ULANG_BERAT', 'Cek ulang berat SKU');
+
 define('PICKING_INSERT_PACKER', '1');
 define('PICKING_UPDATE_PACKER', '2');
 
 define('PARAMGROUP_ROLE', 'ROLE');
+
+/**
+ * Menu yang langsung dibuka setelah login / saat halaman utama dimuat.
+ *
+ * Isi dengan nilai kolom `uri` pada tabel `menu` (mis. 'timbangan/scan-timbangan').
+ * Isi string kosong untuk kembali ke dashboard bawaan.
+ *
+ * Instalasi ini dipakai khusus untuk stasiun timbangan, sehingga operator cukup
+ * membuka alamat pendek (tanpa path) dan halaman penimbangan langsung tampil.
+ */
+define('LANDING_MENU_URI', 'timbangan/scan-timbangan');

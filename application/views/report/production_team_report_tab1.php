@@ -32,6 +32,10 @@
     <table class="table table-striped" id="datatable-production-team-tab1">
         <thead>
         <tr>
+            <th colspan="2" style="text-align:right">Grand Total</th>
+            <th id="grand-total-tab1">-</th>
+        </tr>
+        <tr>
             <th>Nama</th>
             <th>Tanggal</th>
             <th>Total</th>
@@ -95,6 +99,12 @@
                 // Hide loading overlay when data loaded
                 $('#loading-overlay-tab1').hide();
                 $('#btn-search-production-team-tab1').prop('disabled', false).html('Tampilkan');
+                
+                // Update grand total
+                var json = this.api().ajax.json();
+                if (json && json.grandTotal !== undefined) {
+                    $('#grand-total-tab1').text(json.grandTotal);
+                }
             },
             'preDrawCallback': function() {
                 // Show loading on pagination/sorting
@@ -103,6 +113,12 @@
             'drawCallback': function() {
                 // Hide loading after draw
                 $('#loading-overlay-tab1').hide();
+                
+                // Update grand total setiap kali draw
+                var json = this.api().ajax.json();
+                if (json && json.grandTotal !== undefined) {
+                    $('#grand-total-tab1').text(json.grandTotal);
+                }
             }
         });
     });

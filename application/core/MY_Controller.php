@@ -33,8 +33,32 @@ class MY_Controller extends CI_Controller
 
     public function show($data_content = null)
     {
+        $isi = $this->load->view($this->router->class . '/' . $this->router->method, $data_content, TRUE);
+
+        // Halaman dimuat lewat AJAX oleh menu sidebar (devScript.openPage),
+        // yang menunggu JSON berisi potongan HTML.
+        //
+        // Tetapi alamat halaman juga sering dibuka langsung -- lewat bookmark,
+        // tautan yang dibagikan, atau setelah menekan F5. Tanpa penanganan di
+        // bawah ini, yang muncul di layar adalah JSON mentah. Maka untuk
+        // permintaan biasa, potongan tadi dibungkus rangka halaman penuh.
+        if (!$this->input->is_ajax_request()) {
+            $this->data['content'] = $isi;
+            $this->data['html_menu_tree'] = $this->session->userdata('html_menu_tree');
+
+            $this->load->view('main', $this->data);
+
+            return;
+        }
+
+        // Clear any output buffer to prevent HTML/whitespace before JSON
+        if (ob_get_length()) ob_clean();
+
+        // Set JSON header
+        header('Content-Type: application/json');
+
         echo json_encode(array(
-            'view' => $this->load->view($this->router->class . '/' . $this->router->method, $data_content, TRUE),
+            'view' => $isi,
             'message' => empty($data_content['message']) ? null : $data_content['message'],
         ));
     }

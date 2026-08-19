@@ -87,6 +87,13 @@ $route['packer/get-data-packer'] = 'packer/get_data_packer';
 $route['packer/get-scan-packer-data/(:any)'] = 'packer/get_scan_packer_data/$1';
 $route['packer/masalah-picker-save'] = 'packer/masalah_picker_save';
 
+// Routes for Packer No Submit (Using existing Packer controller)
+$route['packer/scan_nosubmit'] = 'packer/scan_nosubmit';
+$route['packer/save_nosubmit'] = 'packer/save_nosubmit';
+// Keep old for backward compatibility if user already inserted DB
+$route['packer_nosubmit/scan'] = 'packer/scan_nosubmit'; 
+$route['packer_nosubmit/save_packer'] = 'packer/save_nosubmit';
+
 $route['handover/save-handover'] = 'handover/save_handover';
 $route['handover/get-data-handover'] = 'handover/get_data_handover';
 
@@ -184,3 +191,21 @@ $route['cs/submit-kurangan-picker'] = 'cs/submit_kurangan_picker';
 $route['cs/masalah-picker'] = 'cs/masalah_picker';
 $route['cs/get-masalah-picker-data'] = 'cs/get_masalah_picker_data';
 $route['cs/get-detail-masalah-picker'] = 'cs/get_detail_masalah_picker';
+
+$route['timbangan/scan-timbangan'] = 'timbangan/scan_timbangan';
+$route['timbangan/get-resi-timbangan'] = 'timbangan/get_resi_timbangan';
+$route['timbangan/save-timbangan'] = 'timbangan/save_timbangan';
+$route['timbangan/master-timbangan'] = 'timbangan/master_timbangan';
+$route['timbangan/get-data-master-timbangan'] = 'timbangan/get_data_master_timbangan';
+$route['timbangan/upload-master-timbangan-action'] = 'timbangan/upload_master_timbangan_action';
+$route['timbangan/save-master-timbangan'] = 'timbangan/save_master_timbangan';
+$route['timbangan/save-setting-timbangan'] = 'timbangan/save_setting_timbangan';
+$route['timbangan/laporan-timbangan'] = 'timbangan/laporan_timbangan';
+$route['timbangan/get-data-timbangan'] = 'timbangan/get_data_timbangan';
+$route['timbangan/export-to-excel-timbangan'] = 'timbangan/export_to_excel_timbangan';
+$route['timbangan/resi-tidak-sesuai'] = 'timbangan/resi_tidak_sesuai';
+$route['timbangan/get-data-resi-tidak-sesuai'] = 'timbangan/get_data_resi_tidak_sesuai';
+$route['timbangan/tindak-lanjut-timbangan'] = 'timbangan/tindak_lanjut_timbangan';
+$route['timbangan/export-to-excel-resi-tidak-sesuai'] = 'timbangan/export_to_excel_resi_tidak_sesuai';
+$route['timbangan/export-to-excel-log-master'] = 'timbangan/export_to_excel_log_master';
+$route['timbangan/get-progres-batch'] = 'timbangan/get_progres_batch';

@@ -8,7 +8,7 @@
 
       <!-- search input by noresi -->
       <div class="panel-body">
-        <form action="packer/scan-packer" method="post" class="form-horizontal" autocomplete="off">
+        <form action="packer/scan-packer" method="post" class="form-horizontal" autocomplete="off" id="form-scan-packer">
           <div class="form-group">
             <div class="col-md-12">
               <div class="input-group">
@@ -673,10 +673,8 @@
       }
     });
 
-    // Handle submit selected, simpan ke tblpacking
-    $('#submit-selected').on('click', function() {
-      const noresi = $('#noresi-detail').val();
-
+    // Function untuk submit packing (bisa dipanggil manual atau auto)
+    function submitPacking(noresi) {
       if (!noresi || noresi.trim() === '') {
           // Show error popup for empty noresi
           $('#errorMessage').text("Nomor resi tidak boleh kosong!");
@@ -684,28 +682,55 @@
           setTimeout(function() {
             $('#errorModal').fadeOut();
           }, 1000);
-          return;
+          return false;
       }
 
       // Kirim pakai Ajax (status_performa otomatis dari session di controller)
       $.ajax({
-        url: 'packer/save-packer', // Ganti sesuai route kamu
+        url: 'packer/save-packer',
         method: 'POST',
         data: { 
           noresi: noresi
         },
         success: function(response) {
-          // alert("Data berhasil disubmit!");
+          // Parse response if it's a string
+          let responseData = response;
+          if (typeof response === 'string') {
+            try {
+              responseData = JSON.parse(response);
+            } catch (e) {
+              console.error('Error parsing response:', e);
+            }
+          }
+
+          // Show success message
+          let successMsg = 'Data berhasil disubmit!';
+          if (responseData && responseData.message) {
+            successMsg = responseData.message;
+          }
+          
+          $('#successMessage').text(successMsg);
           $('#successModal').fadeIn();
+
+          if (document.getElementById('audio-alert')) {
+            document.getElementById('audio-alert').play();
+          }
 
           setTimeout(function() {
             $('#successModal').fadeOut();
-          }, 1000);
+          }, 2000);
 
-            $resultInfo.hide();
-            $table.hide();
-            $footer.hide();
-            $('#noresi').focus();
+          // Clear scan count dan submitted flag dari localStorage
+          localStorage.removeItem('packer_scan_' + noresi);
+          localStorage.removeItem('packer_submitted_' + noresi);
+          
+          // Hide result info, table, footer
+          //$resultInfo.hide();
+          //$table.hide();
+          //$footer.hide();
+          
+          // Clear input dan focus
+          $('#noresi').val('').focus();
         },
         error: function(xhr, status, error) {
           // Show error popup instead of alert
@@ -725,21 +750,144 @@
           $('#errorMessage').text(errorText);
           $('#errorModal').fadeIn();
 
+          if (document.getElementById('audio-fail')) {
+              document.getElementById('audio-fail').play();
+          }
+
           setTimeout(function() {
             $('#errorModal').fadeOut();
-          }, 1000);
+          }, 3000);
         }
       });
+    }
+
+    // Handle submit selected (tombol Submit manual)
+    $('#submit-selected').on('click', function() {
+      const noresi = $('#noresi-detail').val();
+      submitPacking(noresi);
+    });
+
+    // Handle form scan (ketika user scan no resi)
+    $('#form-scan-packer').on('submit', function(e) {
+      e.preventDefault();
+      
+      const noresi = $('#noresi').val().trim();
+      
+      if (!noresi) {
+        $('#errorMessage').text("Nomor resi tidak boleh kosong!");
+        $('#errorModal').fadeIn();
+        setTimeout(function() {
+          $('#errorModal').fadeOut();
+        }, 2000);
+        return false;
+      }
+
+      // Cek scan count dari localStorage
+      const scanKey = 'packer_scan_' + noresi;
+      let scanCount = parseInt(localStorage.getItem(scanKey)) || 0;
+      
+      // Increment scan count
+      scanCount++;
+      localStorage.setItem(scanKey, scanCount);
+
+      // Submit form untuk load data via AJAX
+      const form = this;
+      const formData = new FormData(form);
+      
+      // Show loading
+      const loading = "<div style='max-width: 100%; display: flex; justify-content: center; align-items: center; padding: 50px;'><img src='assets/img/LoaderIcon.gif' /></div>";
+      $('.page-content-wrap').html(loading);
+      
+      $.ajax({
+        url: form.action,
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: function(response) {
+          // Parse response jika string
+          let responseData = response;
+          if (typeof response === 'string') {
+            try {
+              responseData = JSON.parse(response);
+            } catch (e) {
+              console.error('Error parsing response:', e);
+              // Fallback: reload page
+              location.reload();
+              return;
+            }
+          }
+
+          // Jika response berisi view, update page content
+          if (responseData && responseData.view) {
+            // Update page content dengan view baru
+            $('.page-content-wrap').html(responseData.view);
+            
+            // Reinitialize plugins jika diperlukan
+            if (typeof formElements !== 'undefined') formElements.init();
+            if (typeof uiElements !== 'undefined') uiElements.init();
+            if (typeof templatePlugins !== 'undefined') templatePlugins.init();
+            
+            // Show message jika ada
+            if (responseData.message && typeof noty !== 'undefined') {
+              noty({
+                text: responseData.message.message || responseData.message,
+                timeout: 3000,
+                layout: 'topRight',
+                type: responseData.message.type || 'success'
+              });
+            }
+          } else {
+            // Jika tidak ada view, reload page
+            location.reload();
+          }
+        },
+        error: function(xhr, status, error) {
+          console.error('AJAX Error:', error);
+          // On error, reload page
+          location.reload();
+        }
+      });
+    });
+
+    // Cek apakah ini scan kedua (setelah page reload)
+    $(document).ready(function() {
+      const noresiDetail = $('#noresi-detail').val();
+      
+      if (noresiDetail) {
+        const scanKey = 'packer_scan_' + noresiDetail;
+        const scanCount = parseInt(localStorage.getItem(scanKey)) || 0;
+        
+        // Cek apakah sudah pernah auto submit (prevent double submit)
+        const alreadySubmitted = localStorage.getItem('packer_submitted_' + noresiDetail);
+        
+          if (scanCount >= 1 && !alreadySubmitted) {
+          // Ini scan pertama atau lebih, auto submit
+          // Mark sebagai sudah submit untuk prevent double submit
+          localStorage.setItem('packer_submitted_' + noresiDetail, 'true');
+          
+          // Auto submit immediately
+          submitPacking(noresiDetail);
+        }
+      }
     });
 
     const $resultInfo = $('#result-info');
     const $table = $('#table-scan-packer');
     const $footer = $('#button-footer');
     $('#btn-reset').on('click', function () {
+        // Clear scan count dan submitted flag dari localStorage
+        const noresiDetail = $('#noresi-detail').val();
+        if (noresiDetail) {
+          localStorage.removeItem('packer_scan_' + noresiDetail);
+          localStorage.removeItem('packer_submitted_' + noresiDetail);
+        }
+        
         $resultInfo.hide();
         $table.hide();
         $footer.hide();
-        $('#noresi').focus();
+        $('#noresi').val('').focus();
     });
   })
 

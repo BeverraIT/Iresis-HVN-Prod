@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistem Penimbangan Cerdas</title>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <header class="app-header">
+        <h1>Dashboard Penimbangan</h1>
+        <p class="subtitle">Sistem Pemantauan RS-232</p>
+      </header>
+
+      <!-- Tab Navigation -->
+      <nav class="tab-nav">
+        <button class="tab-btn active" data-target="tab-beranda">Beranda</button>
+        <button class="tab-btn" data-target="tab-pengaturan">Pengaturan</button>
+        <button class="tab-btn" data-target="tab-riwayat">Riwayat</button>
+      </nav>
+
+      <main class="dashboard-content">
+        
+        <!-- ================= TAB: BERANDA ================= -->
+        <div id="tab-beranda" class="tab-pane active">
+          <!-- Main Weight Display -->
+          <section class="panel scale-panel text-center">
+            <div class="scale-display-container">
+              <h2 class="panel-title justify-center">Berat Aktual</h2>
+              <!-- The container that changes color based on Set Point -->
+              <div class="weight-display" id="weight-display">
+                <span class="weight-value" id="weight-value">0</span>
+                <span class="weight-unit">KG</span>
+              </div>
+              
+              <!-- Set Point Status Indicator Text -->
+              <div class="status-indicator" id="status-indicator">STANDBY</div>
+            </div>
+          </section>
+
+          <!-- Input Data & Record Action -->
+          <section class="panel input-panel">
+            <h2 class="panel-title">Data Penimbangan</h2>
+            <div class="input-grid">
+              <div class="control-group">
+                <label for="input-operator">Nama Operator:</label>
+                <select id="input-operator" class="modern-select">
+                  <option value="">Pilih Operator...</option>
+                </select>
+              </div>
+              <div class="control-group">
+                <label for="input-produk">Nama Produk:</label>
+                <select id="input-produk" class="modern-select">
+                  <option value="">Pilih Produk...</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="action-group mt-1">
+              <button id="btn-record" class="btn btn-success btn-large" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                REKAM BERAT
+              </button>
+            </div>
+          </section>
+        </div>
+
+        <!-- ================= TAB: PENGATURAN ================= -->
+        <div id="tab-pengaturan" class="tab-pane">
+          <div class="settings-grid">
+            
+            <!-- Connection Panel -->
+            <section class="panel">
+              <h2 class="panel-title">Koneksi Serial</h2>
+              <div class="control-group mb-1">
+                <label for="baud-rate-select">Baud Rate:</label>
+                <select id="baud-rate-select" class="modern-select">
+                  <option value="2400">2400 bps</option>
+                  <option value="4800">4800 bps</option>
+                  <option value="9600" selected>9600 bps</option>
+                  <option value="19200">19200 bps</option>
+                  <option value="38400">38400 bps</option>
+                  <option value="57600">57600 bps</option>
+                  <option value="115200">115200 bps</option>
+                </select>
+              </div>
+
+              <div class="button-group mb-1">
+                <button id="btn-connect" class="btn btn-primary">Hubungkan Port</button>
+                <button id="btn-disconnect" class="btn btn-danger" disabled>Putuskan Port</button>
+              </div>
+              
+              <div class="raw-data-container mt-1">
+                <span class="raw-data-label">Data Mentah: </span>
+                <span class="raw-data-value" id="raw-data-value">Belum ada data</span>
+              </div>
+            </section>
+
+            <!-- Data Master Panel -->
+            <section class="panel">
+              <h2 class="panel-title">Data Master</h2>
+              <div class="control-group mb-1">
+                <label>Tambah Operator:</label>
+                <div style="display:flex; gap:0.5rem;">
+                  <input type="text" id="new-operator-input" class="modern-input" placeholder="Nama operator..." />
+                  <button id="btn-add-operator" class="btn btn-outline" style="flex:0; padding: 0.8rem 1.2rem;">+</button>
+                </div>
+              </div>
+              <div class="control-group mb-1">
+                <label>Tambah Produk:</label>
+                <div style="display:flex; gap:0.5rem;">
+                  <input type="text" id="new-product-input" class="modern-input" placeholder="Nama produk..." />
+                  <button id="btn-add-product" class="btn btn-outline" style="flex:0; padding: 0.8rem 1.2rem;">+</button>
+                </div>
+              </div>
+              <div style="display:flex; gap:0.5rem; margin-top: 1rem;">
+                 <select id="delete-operator-select" class="modern-select" style="flex:1"><option value="">Hapus Operator...</option></select>
+                 <button id="btn-delete-operator" class="btn btn-danger" style="flex:0; padding: 0.8rem 1.2rem;">X</button>
+              </div>
+              <div style="display:flex; gap:0.5rem; margin-top: 0.5rem;">
+                 <select id="delete-product-select" class="modern-select" style="flex:1"><option value="">Hapus Produk...</option></select>
+                 <button id="btn-delete-product" class="btn btn-danger" style="flex:0; padding: 0.8rem 1.2rem;">X</button>
+              </div>
+            </section>
+
+            <!-- Set Point Panel -->
+            <section class="panel">
+              <h2 class="panel-title">Target Set Point</h2>
+              <p class="text-muted mb-1 text-sm">Tentukan rentang berat yang dapat diterima (Accept).</p>
+              
+              <div class="control-group mb-1">
+                <label for="setpoint-min">Batas Bawah (Under) - Kg:</label>
+                <input type="number" id="setpoint-min" class="modern-input" value="10.0" step="0.1" />
+              </div>
+              
+              <div class="control-group mb-1">
+                <label for="setpoint-max">Batas Atas (Over) - Kg:</label>
+                <input type="number" id="setpoint-max" class="modern-input" value="10.5" step="0.1" />
+              </div>
+              
+              <div class="setpoint-legend mt-1">
+                <div class="legend-item"><span class="color-box bg-yellow"></span> &lt; Batas Bawah (Under)</div>
+                <div class="legend-item"><span class="color-box bg-green"></span> Sesuai Target (Accept)</div>
+                <div class="legend-item"><span class="color-box bg-red"></span> &gt; Batas Atas (Over)</div>
+              </div>
+              
+              <div class="control-group mt-1" style="flex-direction: row; align-items: center; gap: 0.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--border-radius-md);">
+                <input type="checkbox" id="interlock-checkbox" style="width: 20px; height: 20px; cursor: pointer;" checked />
+                <label for="interlock-checkbox" style="color: var(--text-main); font-weight: 600; cursor: pointer; margin-bottom: 0;">Aktifkan Interlock (Hanya bisa simpan data ACCEPT)</label>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <!-- ================= TAB: RIWAYAT ================= -->
+        <div id="tab-riwayat" class="tab-pane">
+          <section class="panel records-panel">
+            <div class="panel-header-row">
+              <h2 class="panel-title" style="margin-bottom:0;">Riwayat Penimbangan</h2>
+              <div style="display:flex; gap:1rem; align-items:center;">
+                <input type="date" id="filter-date" class="modern-input" style="width:auto; padding: 0.5rem;" />
+                <button id="btn-export" class="btn btn-outline" disabled>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  Export CSV
+                </button>
+              </div>
+            </div>
+            <div class="table-container">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Waktu</th>
+                    <th>Operator</th>
+                    <th>Produk</th>
+                    <th>Berat (kg)</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="records-tbody">
+                  <tr class="empty-row"><td colspan="7">Belum ada data terekam.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+      </main>
+    </div>
+    <script src="./main.js" defer></script>
+  </body>
+</html>

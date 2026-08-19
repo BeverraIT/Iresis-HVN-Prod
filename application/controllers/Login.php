@@ -11,7 +11,9 @@ class Login extends CI_Controller
         $this->load->model('login_fcd');
 
         if ($this->session->userdata('user')) {
-            redirect('welcome');
+            // Pakai '/' (bukan 'welcome') supaya alamat di address bar tetap
+            // pendek: base_url saja, tanpa nama controller.
+            redirect('/');
         }
     }
 

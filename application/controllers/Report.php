@@ -60,26 +60,28 @@ class Report extends MY_Controller
 		$i = $data['start'] + 1;
 		$data = array();
 		foreach ($list_resi->result() as $row) {
+			// Tanggal dan jam scan resi diambil dari tblprintresi.tanggal_printresi
 			$data[] = array(
 				$i++ . '.',
 				$row->nama_marketplace,
-				date('Y-m-d', strtotime($row->tanggal_printresi)),
-				date('H:i:s', strtotime($row->tanggal_printresi)),
+				($row->tanggal_printresi && strtotime($row->tanggal_printresi)) ? date('Y-m-d', strtotime($row->tanggal_printresi)) : '-',
+				($row->tanggal_printresi && strtotime($row->tanggal_printresi)) ? date('H:i:s', strtotime($row->tanggal_printresi)) : '-',
 				$row->noresi,
 				$row->nama_kurir,
 				$row->nomorpicklist,
 			);
 		}
 
-		$output = array(
-			"draw" => $draw,
-			"recordsTotal" => $total,
-			"recordsFiltered" => $total,
-			"data" => $data
-		);
-		echo json_encode($output);
-		exit();
-	}
+        $output = array(
+            "draw" => $draw,
+            "recordsTotal" => $total,
+            "recordsFiltered" => $total,
+            "grandTotal" => $total, // Grand total = total records untuk resi proses
+            "data" => $data
+        );
+        echo json_encode($output);
+        exit();
+    }
 
 	public function get_receipt_in_process_data_tab1()
 	{
@@ -140,15 +142,16 @@ class Report extends MY_Controller
 			);
 		}
 
-		$output = array(
-			"draw" => $draw,
-			"recordsTotal" => $total,
-			"recordsFiltered" => $total,
-			"data" => $data
-		);
-		echo json_encode($output);
-		exit();
-	}
+        $output = array(
+            "draw" => $draw,
+            "recordsTotal" => $total,
+            "recordsFiltered" => $total,
+            "grandTotal" => $total, // Grand total = total records untuk resi proses
+            "data" => $data
+        );
+        echo json_encode($output);
+        exit();
+    }
 
 	public function get_receipt_in_process_data_tab2()
 	{
@@ -215,11 +218,12 @@ class Report extends MY_Controller
 			"draw" => $draw,
 			"recordsTotal" => $total,
 			"recordsFiltered" => $total,
+			"grandTotal" => $total, // Grand total = total records untuk resi proses
 			"data" => $data
 		);
 		echo json_encode($output);
 		exit();
-	}
+    }
 
 	public function export_to_excel_receipt_in_process_tab0()
 	{
@@ -1205,9 +1209,12 @@ class Report extends MY_Controller
         $total = $this->receipt_fcd->get_total_data_production_team_tab0($data, $start_date, $end_date);
 
         $data = array();
+        $grand_total = 0;
         
         // Data DIPISAH per picker per hari PER STATUS
         foreach ($list_resi->result() as $row) {
+            $grand_total += $row->total; // Hitung grand total dari jumlah per row
+            
             $data[] = array(
                 $row->pegawai . ' - ' . $row->total,
                 $row->waktu_scan_picker ?: $row->tanggal_resiambilbarang,
@@ -1226,6 +1233,7 @@ class Report extends MY_Controller
             "draw" => $draw,
             "recordsTotal" => $total,
             "recordsFiltered" => $total,
+            "grandTotal" => $grand_total,
             "data" => $data
         );
         echo json_encode($output);
@@ -1257,9 +1265,12 @@ class Report extends MY_Controller
         $total = $this->receipt_fcd->get_total_data_production_team_tab1($data, $start_date, $end_date);
 
         $data = array();
+        $grand_total = 0;
         
         // Data sudah ter-group by status, tinggal tampilkan langsung
         foreach ($list_resi->result() as $row) {
+            $grand_total += $row->total; // Hitung grand total dari jumlah per row
+            
             $data[] = array(
                 $row->pegawai . ' - ' . $row->total,
                 $row->waktu_scan_packer ?: $row->tanggal_packing,
@@ -1280,6 +1291,7 @@ class Report extends MY_Controller
             "draw" => $draw,
             "recordsTotal" => $total,
             "recordsFiltered" => $total,
+            "grandTotal" => $grand_total,
             "data" => $data
         );
         echo json_encode($output);

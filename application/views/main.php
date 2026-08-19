@@ -131,6 +131,11 @@
 	<audio id="audio-sicepat" src="assets/audio/sicepat.mp3" preload="auto"></audio>
 	<audio id="audio-ninja" src="assets/audio/ninja.mp3" preload="auto"></audio>
 	<audio id="audio-instant" src="assets/audio/instant.mp3" preload="auto"></audio>
+
+	<!-- Bunyi khusus modul timbangan -->
+	<audio id="audio-benar" src="assets/audio/benar.wav" preload="auto"></audio>
+	<audio id="audio-beda" src="assets/audio/beda.wav" preload="auto"></audio>
+	<audio id="audio-salah" src="assets/audio/salah.wav" preload="auto"></audio>
 	<!-- END PRELOADS -->
 
 	<!-- START PLUGINS -->
@@ -166,6 +171,33 @@
 	<script type="text/javascript" src="assets/js/plugins.js?v=<?= time() ?>"></script>
 	<script type="text/javascript" src="assets/js/actions.js?v=<?= time() ?>"></script>
 	<!-- END TEMPLATE -->
+
+	<!-- START HALAMAN AWAL -->
+	<?php
+	// Hanya berlaku di halaman utama. Kalau pengguna membuka alamat halaman
+	// tertentu secara langsung, halaman itulah yang harus tampil -- jangan
+	// ditimpa menu awal.
+	$di_halaman_utama = $this->router->class === 'welcome';
+	?>
+	<?php if ($di_halaman_utama && defined('LANDING_MENU_URI') && LANDING_MENU_URI !== '') : ?>
+		<script type="text/javascript">
+			// Buka menu tertentu begitu shell selesai dimuat. Karena isi halaman
+			// diambil lewat AJAX (devScript.openPage), alamat di address bar tetap
+			// pendek: <?= base_url() ?> tanpa embel-embel /timbangan/scan-timbangan.
+			//
+			// Kalau user tidak punya hak akses menu itu, link-nya tidak ada di
+			// sidebar dan blok ini tidak melakukan apa-apa (dashboard biasa tampil).
+			$(function() {
+				var uriAwal = <?= json_encode(LANDING_MENU_URI) ?>;
+				var $menu = $('a.link[href="' + uriAwal + '"]').first();
+
+				if ($menu.length) {
+					$menu.trigger('click');
+				}
+			});
+		</script>
+	<?php endif; ?>
+	<!-- END HALAMAN AWAL -->
 </body>
 
 </html>

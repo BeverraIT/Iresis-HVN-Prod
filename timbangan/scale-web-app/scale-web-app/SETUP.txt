@@ -1,0 +1,5 @@
+cd C:\Users\Sakti\.gemini\antigravity\scratch\scale-web-app
+# 1. Install semua alat database baru yang baru saja ditambahkan
+npm.cmd install
+# 2. Jalankan Server Database DAN Aplikasi Web secara bersamaan
+npm.cmd start

@@ -67,34 +67,47 @@
   $("#noresi").focus();
   var total_scan = document.getElementById('total_scan');
 
-  // REQUEST QUEUE untuk handle scan cepat
-  var requestQueue = [];
-  var isProcessing = false;
-
-  // Function untuk process queue
-  function processQueue() {
-    if (isProcessing || requestQueue.length === 0) {
-      return;
-    }
-
-    isProcessing = true;
-    var request = requestQueue.shift(); // Ambil request pertama
-    
+  // Function untuk process request directly (Parallel)
+  function sendRequest(url, formData, noresiValue) {
     $.ajax({
-      url: request.url,
+      url: url,
       type: 'post',
-      data: request.data,
+      data: formData,
+      processData: false, // Don't process the files
+      contentType: false, // Set content type to false as jQuery will tell the server its a query string request
       timeout: 10000,
       cache: false,
       success: function(data) {
-        request.success(data);
-        isProcessing = false;
-        processQueue(); // Process next request in queue
+          // Success feedback
+          $("#div_container_latest_receipt").removeClass("tile-danger").addClass("tile-default");
+          $("#span_latest_receipt").text(noresiValue);
+          $("#p_latest_receipt_message").text("Nomor resi terakhir yang sudah di-scan Picker");
+
+          // Play success sound
+          if (document.getElementById('audio-alert')) {
+            document.getElementById('audio-alert').play();
+          }
       },
       error: function(xhr, status, error) {
-        request.error(xhr, status, error);
-        isProcessing = false;
-        processQueue(); // Process next request in queue
+          // Error feedback
+          var response = {};
+          try {
+            response = JSON.parse(xhr.responseText);
+          } catch (e) {
+            response.message = "Terjadi kesalahan pada server";
+          }
+
+          // Rollback counter on error
+          total_scan.value = Number(total_scan.value) - 1;
+
+          $("#span_latest_receipt").text(noresiValue);
+          $("#div_container_latest_receipt").removeClass("tile-default").addClass("tile-danger");
+          $("#p_latest_receipt_message").text(response.message);
+
+          // Play error sound
+          if (document.getElementById('audio-fail')) {
+            document.getElementById('audio-fail').play();
+          }
       }
     });
   }
@@ -128,47 +141,8 @@
       // Increment counter immediately
       total_scan.value = Number(total_scan.value) + 1;
 
-      // Tambahkan ke queue
-      requestQueue.push({
-        url: form.action,
-        data: Object.fromEntries(formData),
-        noresiValue: noresiValue,
-        success: function(data) {
-          // Success feedback
-          $("#div_container_latest_receipt").removeClass("tile-danger").addClass("tile-default");
-          $("#span_latest_receipt").text(noresiValue);
-          $("#p_latest_receipt_message").text("Nomor resi terakhir yang sudah di-scan Picker");
-
-          // Play success sound
-          if (document.getElementById('audio-alert')) {
-            document.getElementById('audio-alert').play();
-          }
-        },
-        error: function(xhr, status, error) {
-          // Error feedback
-          var response = {};
-          try {
-            response = JSON.parse(xhr.responseText);
-          } catch (e) {
-            response.message = "Terjadi kesalahan pada server";
-          }
-
-          // Rollback counter on error
-          total_scan.value = Number(total_scan.value) - 1;
-
-          $("#span_latest_receipt").text(noresiValue);
-          $("#div_container_latest_receipt").removeClass("tile-default").addClass("tile-danger");
-          $("#p_latest_receipt_message").text(response.message);
-
-          // Play error sound
-          if (document.getElementById('audio-fail')) {
-            document.getElementById('audio-fail').play();
-          }
-        }
-      });
-
-      // Process queue
-      processQueue();
+      // Submit immediately
+      sendRequest(form.action, formData, noresiValue);
 
       // Reset form immediately untuk scan berikutnya
       form.noresi.value = "";

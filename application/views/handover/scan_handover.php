@@ -74,10 +74,32 @@
       }).done(function(response) {
         $("#div_container_latest_receipt").removeClass("tile-danger").addClass("tile-default");
         $("#span_latest_receipt").text(form.noresi.value);
-        $("#p_latest_receipt_message").text("Nomor resi terakhir yang sudah di-scan Packer");
+        $("#p_latest_receipt_message").text("Nomor resi terakhir yang sudah di-scan keluar");
 
         const courrier_code = form.noresi.value.substring(0, 2);
         const courrier_code_2 = form.noresi.value.substring(0, 3);
+        let audioPlayed = false;
+        
+        // Helper function untuk memutar audio dengan error handling
+        function playAudio(audioId) {
+          try {
+            var audio = document.getElementById(audioId);
+            if (audio) {
+              audio.currentTime = 0; // Reset audio ke awal
+              var playPromise = audio.play();
+              if (playPromise !== undefined) {
+                playPromise.catch(function(error) {
+                  console.log('Audio play failed:', error);
+                });
+              }
+              return true;
+            }
+          } catch (e) {
+            console.log('Error playing audio:', e);
+          }
+          return false;
+        }
+        
         switch (courrier_code) {
           case 'JP':
           case 'JX':
@@ -85,42 +107,46 @@
           case 'JZ':
           case 'TJ':
           case '20':
-            document.getElementById('audio-jnt').play();
+            audioPlayed = playAudio('audio-jnt');
             break;
 
           case 'SP':
-            document.getElementById('audio-shopee').play();
+            audioPlayed = playAudio('audio-shopee');
             break;
 
           case 'JN':
           case 'LX':
           case 'NL':
-            document.getElementById('audio-lazada').play();
+            audioPlayed = playAudio('audio-lazada');
             break;
 
           case 'JT':
           case 'TL':
-            document.getElementById('audio-jne').play();
+            audioPlayed = playAudio('audio-jne');
             break;
 
           case '00':
           case 'TK':
             if (courrier_code_2 === 'TKP') {
-              document.getElementById('audio-rekomen').play();
+              audioPlayed = playAudio('audio-rekomen');
             } else {
-              document.getElementById('audio-sicepat').play();
+              audioPlayed = playAudio('audio-sicepat');
             }
             break;
 
           case 'NJ':
-            document.getElementById('audio-ninja').play();
+            audioPlayed = playAudio('audio-ninja');
             break;
 
           case 'IN':
           case '24':
           case 'GT':
-            document.getElementById('audio-instant').play();
+            audioPlayed = playAudio('audio-instant');
             break;
+        }
+
+        if (!audioPlayed) {
+          playAudio('audio-alert');
         }
 
         total_scan.value = Number(total_scan.value) + 1;
@@ -135,10 +161,28 @@
         $("#div_container_latest_receipt").removeClass("tile-default").addClass("tile-danger");
         $("#p_latest_receipt_message").text(response.message);
 
+        // Helper function untuk memutar audio dengan error handling
+        function playAudioError(audioId) {
+          try {
+            var audio = document.getElementById(audioId);
+            if (audio) {
+              audio.currentTime = 0;
+              var playPromise = audio.play();
+              if (playPromise !== undefined) {
+                playPromise.catch(function(error) {
+                  console.log('Audio play failed:', error);
+                });
+              }
+            }
+          } catch (e) {
+            console.log('Error playing audio:', e);
+          }
+        }
+        
         if (error.status === 400) { // already handover
-          document.getElementById('audio-error').play();
+          playAudioError('audio-error');
         } else {
-          document.getElementById('audio-fail').play();
+          playAudioError('audio-fail');
         }
 
         form.noresi.value = "";
